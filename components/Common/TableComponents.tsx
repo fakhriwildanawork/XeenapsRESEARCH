@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeftIcon, ChevronRightIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
@@ -109,13 +108,19 @@ export const StandardTr: React.FC<{
 
 /**
  * Standard Xeenaps Table Data Cell
+ * Fix: Extended props to include standard td HTML attributes (like onClick) 
+ * to resolve TS errors in consuming components.
  */
-export const StandardTd: React.FC<{ children: React.ReactNode; isActiveSort?: boolean; className?: string }> = ({ 
+export const StandardTd: React.FC<React.TdHTMLAttributes<HTMLTableCellElement> & { isActiveSort?: boolean }> = ({ 
   children, 
   isActiveSort, 
-  className = "" 
+  className = "",
+  ...props
 }) => (
-  <td className={`px-4 py-4 text-sm transition-colors ${className}`}>
+  <td 
+    {...props}
+    className={`px-4 py-4 text-sm transition-colors ${className}`}
+  >
     {children}
   </td>
 );

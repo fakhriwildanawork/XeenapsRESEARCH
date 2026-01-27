@@ -158,7 +158,9 @@ const FindArticle: React.FC = () => {
             {results.map((article) => (
               <div 
                 key={article.paperId}
-                className="group bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col h-full"
+                // Requirement Fix: Click card to open preview
+                onClick={() => setPreviewItem(article)}
+                className="group bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col h-full cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-4">
                   <span className="px-3 py-1 bg-[#004A74]/5 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">
@@ -182,13 +184,13 @@ const FindArticle: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={() => setPreviewItem(article)}
+                    onClick={(e) => { e.stopPropagation(); setPreviewItem(article); }}
                     className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-50 text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all active:scale-95"
                   >
                     <BookOpen className="w-3.5 h-3.5" /> Preview
                   </button>
                   <button 
-                    onClick={() => handleOpenSaveModal(article)}
+                    onClick={(e) => { e.stopPropagation(); handleOpenSaveModal(article); }}
                     className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#003859] transition-all active:scale-95"
                   >
                     <Save className="w-3.5 h-3.5" /> Save

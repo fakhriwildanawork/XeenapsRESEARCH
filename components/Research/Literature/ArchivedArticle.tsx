@@ -15,11 +15,15 @@ import {
   MoreVertical,
   CheckCircle2,
   FileText,
-  // Fix: AdjustmentsHorizontal does not exist in lucide-react, using Settings2 as alias
   Settings2 as AdjustmentsHorizontal,
   Plus,
   Eye,
-  Check
+  Check,
+  X,
+  Info,
+  BookOpen,
+  Calendar,
+  Link as LinkIcon
 } from 'lucide-react';
 import { ArchivedArticleItem } from '../../../types';
 import { fetchArchivedArticlesPaginated, deleteArchivedArticle, toggleFavoriteArticle } from '../../../services/LiteratureService';
@@ -63,6 +67,7 @@ const ArchivedArticle: React.FC = () => {
   const [sortConfig, setSortConfig] = useState<{ key: keyof ArchivedArticleItem; dir: 'asc' | 'desc' }>({ key: 'createdAt', dir: 'desc' });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [detailItem, setDetailItem] = useState<ArchivedArticleItem | null>(null);
 
   const itemsPerPage = isMobile ? 12 : 20;
 
@@ -73,9 +78,10 @@ const ArchivedArticle: React.FC = () => {
   }, []);
 
   const loadData = useCallback(() => {
+    // Requirement 1 Fix: Ensure loading state is reset correctly on every fetch attempt
+    setIsLoading(true);
     workflow.execute(
       async (signal) => {
-        setIsLoading(true);
         const result = await fetchArchivedArticlesPaginated(
           currentPage,
           itemsPerPage,
@@ -123,7 +129,8 @@ const ArchivedArticle: React.FC = () => {
     else setSelectedIds(serverItems.map(i => i.id));
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
       await performDelete(
@@ -133,6 +140,7 @@ const ArchivedArticle: React.FC = () => {
         async (articleId) => await deleteArchivedArticle(articleId)
       );
       showXeenapsToast('success', 'Article removed from archive');
+      if (detailItem?.id === id) setDetailItem(null);
     }
   };
 
@@ -178,6 +186,96 @@ const ArchivedArticle: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden">
+      {/* Detail Modal for Archived Items */}
+      {detailItem && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-black/60 backdrop-blur-xl animate-in fade-in">
+          <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl overflow-hidden relative flex flex-col max-h-[85vh] border border-white/20">
+            <div className="px-8 py-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
+               <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight truncate max-w-md">Archive Detail</h3>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Personal Knowledge Asset</p>
+                  </div>
+               </div>
+               <button onClick={() => setDetailItem(null)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
+                  <X className="w-8 h-8" />
+               </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-8 md:p-10 space-y-8">
+               <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 bg-[#FED400] text-[#004A74] text-[10px] font-black uppercase tracking-widest rounded-full">{detailItem.label}</span>
+                    <button onClick={(e) => handleToggleFavorite(e, detailItem)} className="p-1 hover:scale-125 transition-transform">
+                      <Star size={20} className={detailItem.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
+                    </button>
+                  </div>
+                  <h1 className="text-2xl font-black text-[#004A74] leading-tight uppercase">{detailItem.title}</h1>
+               </div>
+
+               <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100 space-y-4">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-[#004A74] uppercase tracking-[0.2em]">
+                     <FileText className="w-4 h-4" /> Harvard Citation
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed font-bold italic">
+                    {detailItem.citationHarvard}
+                  </p>
+               </div>
+
+               {detailItem.info && (
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                      <Info className="w-3.5 h-3.5" /> Personal Remark / Abstract
+                    </h4>
+                    <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                      {detailItem.info}
+                    </div>
+                  </div>
+               )}
+
+               <div className="flex flex-col gap-2 pt-4 border-t border-gray-50">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-gray-400">
+                    <Calendar className="w-3 h-3" /> Saved on {formatDateTime(detailItem.createdAt)}
+                  </div>
+                  {detailItem.doi && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+                       <span className="text-[9px] font-black uppercase tracking-widest">DOI:</span>
+                       <span className="font-mono text-[11px] text-[#004A74] opacity-70">{detailItem.doi}</span>
+                    </div>
+                  )}
+               </div>
+            </div>
+
+            <div className="px-10 py-8 border-t border-gray-100 flex items-center justify-between gap-3 bg-gray-50/30">
+               <button 
+                 onClick={(e) => handleDelete(e, detailItem.id)}
+                 className="p-3 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"
+                 title="Delete from Archive"
+               >
+                 <Trash2 className="w-5 h-5" />
+               </button>
+               <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => window.open(detailItem.url || `https://doi.org/${detailItem.doi}`, '_blank')}
+                    className="px-8 py-4 text-[#004A74] bg-white border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-[#FED400]/20 transition-all flex items-center gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4" /> Open Source
+                  </button>
+                  <button 
+                    onClick={() => setDetailItem(null)}
+                    className="px-8 py-4 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#004A74]/10 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    Dismiss
+                  </button>
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Area */}
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 shrink-0">
         <div className="flex items-center justify-between mb-8">
@@ -270,7 +368,7 @@ const ArchivedArticle: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {serverItems.map(item => (
-                  <StandardTr key={item.id} className="cursor-default">
+                  <StandardTr key={item.id} className="cursor-pointer" onClick={() => setDetailItem(item)}>
                     <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={e => e.stopPropagation()}>
                        <StandardCheckbox checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} />
                     </td>
@@ -297,7 +395,7 @@ const ArchivedArticle: React.FC = () => {
                     <StandardTd className="text-[10px] font-bold text-gray-400 text-center">
                        {formatDateTime(item.createdAt)}
                     </StandardTd>
-                    <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] text-center shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">
+                    <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] text-center shadow-[-4px_0_10px_rgba(0,0,0,0.02)]" onClick={e => e.stopPropagation()}>
                        <div className="flex items-center justify-center gap-1">
                           <button 
                             onClick={() => window.open(item.url || `https://doi.org/${item.doi}`, '_blank')}
@@ -307,7 +405,7 @@ const ArchivedArticle: React.FC = () => {
                              <ExternalLink size={16} />
                           </button>
                           <button 
-                            onClick={() => handleDelete(item.id)}
+                            onClick={(e) => handleDelete(e, item.id)}
                             className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-all"
                             title="Delete"
                           >
@@ -334,7 +432,8 @@ const ArchivedArticle: React.FC = () => {
                 <StandardItemCard 
                   key={item.id}
                   isSelected={selectedIds.includes(item.id)}
-                  onClick={() => toggleSelect(item.id)}
+                  onClick={() => setDetailItem(item)}
+                  className="cursor-pointer"
                 >
                   <div className="absolute top-4 right-4 flex gap-1.5 z-10" onClick={e => handleToggleFavorite(e, item)}>
                     <Star size={18} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
@@ -369,7 +468,7 @@ const ArchivedArticle: React.FC = () => {
                         <ExternalLink size={14} />
                       </button>
                       <button 
-                        onClick={() => handleDelete(item.id)}
+                        onClick={(e) => handleDelete(e, item.id)}
                         className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all"
                       >
                         <Trash2 size={14} />
