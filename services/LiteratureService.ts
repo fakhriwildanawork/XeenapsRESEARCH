@@ -3,7 +3,7 @@ import { GAS_WEB_APP_URL } from '../constants';
 
 /**
  * XEENAPS LITERATURE SEARCH SERVICE
- * Integrasi Semantic Scholar (Discovery via GAS Proxy) & GAS (Archiving)
+ * Integrasi OpenAlex (Discovery via GAS Proxy) & GAS (Archiving)
  */
 
 export const searchArticles = async (
@@ -15,7 +15,7 @@ export const searchArticles = async (
   if (!GAS_WEB_APP_URL) return [];
   try {
     // REDIRECT: Pemanggilan dialihkan ke GAS Web App (Proxy) untuk menghindari CORS
-    // Parameter dikirim sebagai query string ke doGet backend.
+    // Menggunakan OpenAlex di backend untuk menghindari Error 429 dan 400.
     const url = `${GAS_WEB_APP_URL}?action=searchGlobalArticles&query=${encodeURIComponent(query)}&yearStart=${yearStart || ''}&yearEnd=${yearEnd || ''}&limit=${limit}`;
     
     const response = await fetch(url);

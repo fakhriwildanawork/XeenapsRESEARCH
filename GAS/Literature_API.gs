@@ -1,6 +1,6 @@
 /**
- * XEENAPS PKM - GLOBAL LITERATURE SEARCH PROXY
- * Memproses pencarian ke Semantic Scholar (bypass CORS) dan terjemahan via Lingva.
+ * XEENAPS PKM - GLOBAL LITERATURE SEARCH PROXY (OPENALEX EDITION)
+ * Memproses pencarian ke OpenAlex (bypass CORS) dan terjemahan via Lingva.
  */
 
 function handleGlobalArticleSearch(params) {
@@ -9,7 +9,6 @@ function handleGlobalArticleSearch(params) {
   const yearEnd = params.yearEnd;
 
   // 1. TERJEMAHAN OTOMATIS VIA LINGVA (Target: EN)
-  // Memastikan pencarian maksimal di Semantic Scholar meskipun input bahasa lokal.
   let searchTerms = query;
   try {
     const translated = lingvaTranslateQuery(query);
@@ -20,23 +19,21 @@ function handleGlobalArticleSearch(params) {
     console.log("Lingva Engine Error: " + e.toString());
   }
 
-  // 2. PENYUSUNAN PARAMETER SEMANTIC SCHOLAR
-  const fields = 'paperId,title,authors,year,doi,url,venue,citationCount,abstract';
+  // 2. PENYUSUNAN PARAMETER OPENALEX
+  // OpenAlex lebih stabil (Rate limit lebih besar) dan tidak memerlukan API Key untuk pencarian publik.
   let limit = params.limit || 12;
+  let openAlexUrl = `https://api.openalex.org/works?search=${encodeURIComponent(searchTerms)}&per_page=${limit}`;
   
-  // Base URL
-  let scholarUrl = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(searchTerms)}&limit=${limit}&fields=${fields}`;
-  
-  // Append Year Range if provided
+  // Append Filter Tahun (publication_year)
   if (yearStart && yearEnd) {
-    scholarUrl += `&year=${yearStart}-${yearEnd}`;
+    openAlexUrl += `&filter=publication_year:${yearStart}-${yearEnd}`;
   } else if (yearStart) {
-    scholarUrl += `&year=${yearStart}-2026`;
+    openAlexUrl += `&filter=publication_year:${yearStart}-2026`;
   }
 
   // 3. FETCH SERVER-TO-SERVER (BYPASS CORS)
   try {
-    const response = UrlFetchApp.fetch(scholarUrl, { 
+    const response = UrlFetchApp.fetch(openAlexUrl, { 
       muteHttpExceptions: true,
       headers: { "Accept": "application/json" }
     });
@@ -45,14 +42,29 @@ function handleGlobalArticleSearch(params) {
     if (responseCode !== 200) {
       return { 
         status: 'error', 
-        message: 'Semantic Scholar API Error (' + responseCode + '): ' + response.getContentText() 
+        message: 'OpenAlex API Error (' + responseCode + '): ' + response.getContentText() 
       };
     }
 
     const result = JSON.parse(response.getContentText());
+    
+    // 4. MAPPING OPENALEX TO XEENAPS SCHEMA
+    // Sesuai permintaan: Abstract dikosongkan untuk menghemat kredit & mempercepat loading.
+    const mappedData = (result.results || []).map(item => ({
+      paperId: item.id,
+      title: item.display_name || "Untitled",
+      authors: (item.authorships || []).map(a => ({ name: a.author.display_name })),
+      year: item.publication_year || null,
+      doi: item.doi ? item.doi.replace('https://doi.org/', '') : "",
+      url: item.doi || item.ids?.openalex || "",
+      venue: item.primary_location?.source?.display_name || "Academic Source",
+      citationCount: item.cited_by_count || 0,
+      abstract: "" // Dihilangkan sesuai permintaan (user cek via DOI)
+    }));
+
     return { 
       status: 'success', 
-      data: result.data || [],
+      data: mappedData,
       translatedQuery: searchTerms !== query ? searchTerms : null
     };
   } catch (err) {
@@ -66,7 +78,6 @@ function handleGlobalArticleSearch(params) {
 function lingvaTranslateQuery(text) {
   if (!text) return "";
   
-  // Mencoba beberapa instance publik Lingva untuk stabilitas
   const instances = [
     "https://lingva.ml/api/v1/auto/en/",
     "https://lingva.garudalinux.org/api/v1/auto/en/",
@@ -89,5 +100,5 @@ function lingvaTranslateQuery(text) {
       console.log("Instance failure: " + baseUrl);
     }
   }
-  return text; // Fallback ke teks asli jika semua gagal
+  return text; 
 }
