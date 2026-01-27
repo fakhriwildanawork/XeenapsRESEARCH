@@ -24,32 +24,76 @@ function setupLiteratureArchiveDatabase() {
 }
 
 /**
- * Mengambil semua artikel tersimpan
+ * Mengambil artikel tersimpan dengan Pagination, Search, dan Sort
  */
-function getArchivedArticlesFromRegistry() {
+function getArchivedArticlesFromRegistry(page = 1, limit = 25, search = "", sortKey = "createdAt", sortDir = "desc") {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.LITERATURE_ARCHIVE);
     const sheet = ss.getSheetByName("Archives");
-    if (!sheet) return [];
+    if (!sheet) return { items: [], totalCount: 0 };
     
-    const data = sheet.getDataRange().getValues();
-    if (data.length <= 1) return [];
+    const allValues = sheet.getDataRange().getValues();
+    if (allValues.length <= 1) return { items: [], totalCount: 0 };
     
-    const headers = data[0];
-    return data.slice(1).map(row => {
+    const headers = allValues[0];
+    const rawData = allValues.slice(1);
+    
+    // 1. FILTERING
+    const searchLower = search.toLowerCase();
+    let filtered = rawData.filter(row => {
+      if (!searchLower) return true;
+      // Search in Title, Label, Harvard Citation
+      const titleIdx = headers.indexOf('title');
+      const labelIdx = headers.indexOf('label');
+      const citIdx = headers.indexOf('citationHarvard');
+      return String(row[titleIdx] || "").toLowerCase().includes(searchLower) ||
+             String(row[labelIdx] || "").toLowerCase().includes(searchLower) ||
+             String(row[citIdx] || "").toLowerCase().includes(searchLower);
+    });
+
+    const totalCount = filtered.length;
+
+    // 2. SORTING
+    const sortIdx = headers.indexOf(sortKey);
+    if (sortIdx !== -1) {
+      filtered.sort((a, b) => {
+        let valA = a[sortIdx];
+        let valB = b[sortIdx];
+
+        if (sortKey === 'createdAt') {
+          const timeA = valA ? new Date(valA).getTime() : 0;
+          const timeB = valB ? new Date(valB).getTime() : 0;
+          return sortDir === 'asc' ? timeA - timeB : timeB - timeA;
+        }
+
+        valA = String(valA || "").toLowerCase();
+        valB = String(valB || "").toLowerCase();
+        if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    // 3. PAGINATION
+    const startIdx = (page - 1) * limit;
+    const paginated = filtered.slice(startIdx, startIdx + limit);
+
+    // 4. MAPPING
+    const items = paginated.map(row => {
       let obj = {};
       headers.forEach((h, i) => {
         let val = row[i];
-        // Handle boolean conversion for isFavorite
         if (h === 'isFavorite') {
           val = (val === true || val === 'true');
         }
         obj[h] = val;
       });
       return obj;
-    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    });
+
+    return { items, totalCount };
   } catch (e) {
-    return [];
+    return { items: [], totalCount: 0 };
   }
 }
 

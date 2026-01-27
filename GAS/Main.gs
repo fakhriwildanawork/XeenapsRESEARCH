@@ -34,14 +34,21 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
-    // NEW: searchGlobalArticles (Proxy for Semantic Scholar + Lingva)
+    // NEW: searchGlobalArticles (Proxy for OpenAlex)
     if (action === 'searchGlobalArticles') {
       return createJsonResponse(handleGlobalArticleSearch(e.parameter));
     }
 
-    // NEW: getArchivedArticles
+    // NEW: getArchivedArticles (UPDATED FOR PAGINATION & SEARCH)
     if (action === 'getArchivedArticles') {
-      return createJsonResponse({ status: 'success', data: getArchivedArticlesFromRegistry() });
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "25");
+      const search = e.parameter.search || "";
+      const sortKey = e.parameter.sortKey || "createdAt";
+      const sortDir = e.parameter.sortDir || "desc";
+      
+      const result = getArchivedArticlesFromRegistry(page, limit, search, sortKey, sortDir);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
     // NEW: getBrainstorming

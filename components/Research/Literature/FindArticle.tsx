@@ -40,7 +40,11 @@ const FindArticle: React.FC = () => {
       yearStart ? parseInt(yearStart) : undefined, 
       yearEnd ? parseInt(yearEnd) : undefined
     );
-    setResults(data);
+    
+    // Requirement 1: Urutkan berdasarkan tahun terkini (descending)
+    const sortedData = [...data].sort((a, b) => (b.year || 0) - (a.year || 0));
+    
+    setResults(sortedData);
     setIsSearching(false);
     if (data.length === 0) {
       showXeenapsToast('info', 'No articles found. Try different keywords.');
@@ -62,6 +66,7 @@ const FindArticle: React.FC = () => {
 
     if (success) {
       showXeenapsToast('success', 'Article archived successfully');
+      // Requirement 3: Jangan hilangkan daftar setelah selesai disimpan
       setIsSaveModalOpen(false);
       setItemToSave(null);
     } else {
@@ -70,7 +75,7 @@ const FindArticle: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white animate-in fade-in duration-500 overflow-hidden">
+    <div className="flex flex-col min-h-full bg-white animate-in fade-in duration-500">
       {/* Header / Search Form */}
       <div className="px-6 md:px-10 py-8 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
         <div className="flex items-center justify-between mb-8">
@@ -134,8 +139,8 @@ const FindArticle: React.FC = () => {
         </form>
       </div>
 
-      {/* Results Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10">
+      {/* Results Area - Requirement 2: Biarkan ikut content page scroll */}
+      <div className="px-6 md:px-10 py-10">
         {isSearching ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
@@ -143,7 +148,7 @@ const FindArticle: React.FC = () => {
             ))}
           </div>
         ) : results.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center opacity-20 py-20">
+          <div className="flex flex-col items-center justify-center text-center opacity-20 py-20">
             <Search className="w-20 h-20 mb-4 text-[#004A74]" />
             <h3 className="text-lg font-black text-[#004A74] uppercase tracking-[0.3em]">Ready to Discover</h3>
             <p className="text-sm font-medium mt-2">Enter keywords to browse millions of research papers.</p>

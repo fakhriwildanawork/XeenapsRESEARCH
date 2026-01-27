@@ -34,15 +34,41 @@ export const searchArticles = async (
   }
 };
 
-export const fetchArchivedArticles = async (): Promise<ArchivedArticleItem[]> => {
-  if (!GAS_WEB_APP_URL) return [];
+/**
+ * Fetch Archived Articles with Pagination and Filtering Support
+ */
+export const fetchArchivedArticlesPaginated = async (
+  page: number = 1,
+  limit: number = 25,
+  search: string = "",
+  sortKey: string = "createdAt",
+  sortDir: string = "desc",
+  signal?: AbortSignal
+): Promise<{ items: ArchivedArticleItem[], totalCount: number }> => {
+  if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
   try {
-    const response = await fetch(`${GAS_WEB_APP_URL}?action=getArchivedArticles`);
-    const result: GASResponse<ArchivedArticleItem[]> = await response.json();
-    return result.status === 'success' ? (result.data || []) : [];
+    const url = `${GAS_WEB_APP_URL}?action=getArchivedArticles&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sortKey=${sortKey}&sortDir=${sortDir}`;
+    const response = await fetch(url, { signal });
+    const result: GASResponse<{ items: ArchivedArticleItem[], totalCount: number }> = await response.json();
+    
+    // The legacy structure from registry returns data as array, 
+    // we need to handle both direct array or paginated object from Main.gs
+    if ((result as any).status === 'success') {
+      return {
+        items: (result as any).data || [],
+        totalCount: (result as any).totalCount || 0
+      };
+    }
+    return { items: [], totalCount: 0 };
   } catch (error) {
-    return [];
+    return { items: [], totalCount: 0 };
   }
+};
+
+// Legacy fallback wrapper
+export const fetchArchivedArticles = async (): Promise<ArchivedArticleItem[]> => {
+  const result = await fetchArchivedArticlesPaginated(1, 1000);
+  return result.items;
 };
 
 export const archiveArticle = async (article: LiteratureArticle, label: string): Promise<boolean> => {
@@ -58,7 +84,7 @@ export const archiveArticle = async (article: LiteratureArticle, label: string):
       citationHarvard: citation,
       doi: article.doi || '',
       url: article.url || '',
-      info: article.abstract || '',
+      info: article.abstract || '', // Typically empty string based on recent instructions
       label: label.toUpperCase(),
       isFavorite: false,
       createdAt: new Date().toISOString()
