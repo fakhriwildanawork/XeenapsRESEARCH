@@ -3,7 +3,7 @@ import { GAS_WEB_APP_URL } from '../constants';
 
 /**
  * XEENAPS LITERATURE SEARCH SERVICE
- * Integrasi Semantic Scholar (Discovery) & GAS (Archiving)
+ * Integrasi Semantic Scholar (Discovery via GAS Proxy) & GAS (Archiving)
  */
 
 export const searchArticles = async (
@@ -12,18 +12,24 @@ export const searchArticles = async (
   yearEnd?: number,
   limit: number = 12
 ): Promise<LiteratureArticle[]> => {
+  if (!GAS_WEB_APP_URL) return [];
   try {
-    const fields = 'paperId,title,authors,year,doi,url,venue,citationCount,abstract';
-    const yearRange = yearStart && yearEnd ? `&year=${yearStart}-${yearEnd}` : '';
-    const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=${limit}${yearRange}&fields=${fields}`;
+    // REDIRECT: Pemanggilan dialihkan ke GAS Web App (Proxy) untuk menghindari CORS
+    // Parameter dikirim sebagai query string ke doGet backend.
+    const url = `${GAS_WEB_APP_URL}?action=searchGlobalArticles&query=${encodeURIComponent(query)}&yearStart=${yearStart || ''}&yearEnd=${yearEnd || ''}&limit=${limit}`;
     
     const response = await fetch(url);
-    if (!response.ok) throw new Error('Search API failed');
+    if (!response.ok) throw new Error('Proxy Search failed');
     
     const result = await response.json();
-    return result.data || [];
+    if (result.status === 'success') {
+      return result.data || [];
+    } else {
+      console.warn("Search Proxy Warning:", result.message);
+      return [];
+    }
   } catch (error) {
-    console.error("Search articles error:", error);
+    console.error("Search articles exception:", error);
     return [];
   }
 };

@@ -34,6 +34,11 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: searchGlobalArticles (Proxy for Semantic Scholar + Lingva)
+    if (action === 'searchGlobalArticles') {
+      return createJsonResponse(handleGlobalArticleSearch(e.parameter));
+    }
+
     // NEW: getArchivedArticles
     if (action === 'getArchivedArticles') {
       return createJsonResponse({ status: 'success', data: getArchivedArticlesFromRegistry() });
