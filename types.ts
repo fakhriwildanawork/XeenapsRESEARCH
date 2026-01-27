@@ -186,6 +186,32 @@ export interface BrainstormingItem {
   updatedAt: string;
 }
 
+// --- LITERATURE SEARCH TYPES ---
+
+export interface LiteratureArticle {
+  paperId: string;
+  title: string;
+  authors: { name: string }[];
+  year: number;
+  doi: string;
+  url: string;
+  venue: string;
+  citationCount: number;
+  abstract: string;
+}
+
+export interface ArchivedArticleItem {
+  id: string;
+  title: string;
+  citationHarvard: string;
+  doi: string;
+  url: string;
+  info: string;
+  label: string;
+  isFavorite: boolean;
+  createdAt: string;
+}
+
 // --- NEW PRESENTATION TYPES ---
 
 export enum PresentationTemplate {

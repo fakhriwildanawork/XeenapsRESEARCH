@@ -34,6 +34,11 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: getArchivedArticles
+    if (action === 'getArchivedArticles') {
+      return createJsonResponse({ status: 'success', data: getArchivedArticlesFromRegistry() });
+    }
+
     // NEW: getBrainstorming
     if (action === 'getBrainstorming') {
       const page = parseInt(e.parameter.page || "1");
@@ -142,6 +147,19 @@ function doPost(e) {
     if (action === 'setupResearchDatabase') return createJsonResponse(setupResearchDatabase());
     if (action === 'setupBrainstormingDatabase') return createJsonResponse(setupBrainstormingDatabase());
     
+    // NEW ACTION: saveArchivedArticle
+    if (action === 'saveArchivedArticle') {
+      return createJsonResponse(saveArchivedArticleToRegistry(body.item));
+    }
+    // NEW ACTION: deleteArchivedArticle
+    if (action === 'deleteArchivedArticle') {
+      return createJsonResponse(deleteArchivedArticleFromRegistry(body.id));
+    }
+    // NEW ACTION: toggleFavoriteArticle
+    if (action === 'toggleFavoriteArticle') {
+      return createJsonResponse(toggleFavoriteArticleInRegistry(body.id, body.status));
+    }
+
     // NEW ACTION: saveBrainstorming
     if (action === 'saveBrainstorming') {
       return createJsonResponse(saveBrainstormingToRegistry(body.item));

@@ -10,4 +10,5 @@ export const SPREADSHEET_CONFIG = {
   TUTORIAL_CSV: 'https://docs.google.com/spreadsheets/d/1YHxDvqpxqNzb0n__z2_uKyOCZOfQl6WbeymR6xYOTx8/export?format=csv&gid=0',
   EXPLORE_MAINDI_CSV: 'https://docs.google.com/spreadsheets/d/1HYNx5hJn_0uM3aKlrjfaeTFYkkUDune6rdUuTxWfOQg/export?format=csv&gid=0',
   EXPLORE_MAINDI_FALLBACK: 'https://docs.google.com/spreadsheets/d/1HYNx5hJn_0uM3aKlrjfaeTFYkkUDune6rdUuTxWfOQg/edit',
+  LITERATURE_ARCHIVE_ID: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE'
 };

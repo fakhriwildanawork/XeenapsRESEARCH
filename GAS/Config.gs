@@ -18,7 +18,8 @@ const CONFIG = {
     PRESENTATION: '1Sfng6xCz2d4NAmBZFgyjZ9Fy8X1k149c7ohXS9uO2r8',
     QUESTION_BANK: '14ZbesZJvLLr3d1rhTW_L4E_D6gqWj_e7AJIiLJ2b5OU',
     RESEARCH: '1XRmeIuj2vyXO9a0BFwODdkMNd_o7bmPIw9KHQOtFhoE',
-    BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM'
+    BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM',
+    LITERATURE_ARCHIVE: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE'
   },
   SCHEMAS: {
     LIBRARY: [
@@ -123,6 +124,17 @@ const CONFIG = {
       'isUsed',
       'createdAt',
       'updatedAt'
+    ],
+    ARCHIVED_ARTICLES: [
+      'id',
+      'title',
+      'citationHarvard',
+      'doi',
+      'url',
+      'info',
+      'label',
+      'isFavorite',
+      'createdAt'
     ]
   }
 };

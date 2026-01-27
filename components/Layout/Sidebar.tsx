@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { NavLink, useLocation } from 'react-router-dom';
@@ -15,7 +14,8 @@ import {
   GraduationCap,
   Sparkles,
   Zap,
-  Target
+  Target,
+  SearchCode
 } from 'lucide-react';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
 
@@ -34,6 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
     { name: 'Library', path: '/', icon: LayoutGrid },
     { name: 'Favorite', path: '/favorite', icon: Star },
     { name: 'Bookmark', path: '/bookmark', icon: Bookmark },
+    { name: 'Find Article', path: '/find-article', icon: SearchCode },
     // Research is handled separately as a dropdown below
     { name: 'Presentations', path: '/presentations', icon: Presentation },
     { name: 'Question Bank', path: '/questions', icon: GraduationCap },
@@ -150,8 +151,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
 
       {/* Menu Area */}
       <nav className="flex-1 mt-4 lg:mt-6 px-2 space-y-1 lg:space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
-        {/* First 3 static items */}
-        {navItems.slice(0, 3).map((item) => {
+        {/* Static items including Find Article */}
+        {navItems.slice(0, 4).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink
@@ -219,7 +220,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         </div>
 
         {/* Last 2 static items */}
-        {navItems.slice(3).map((item) => {
+        {navItems.slice(4).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink
