@@ -126,7 +126,7 @@ export const StandardTd: React.FC<React.TdHTMLAttributes<HTMLTableCellElement> &
 );
 
 /**
- * Standard Xeenaps Responsive Grid Container for Cards
+ * Standard Xeenaps Responsive Grid Container for Cards 
  */
 export const StandardGridContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
   <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 ${className}`}>
