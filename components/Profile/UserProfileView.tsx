@@ -4,7 +4,7 @@ import { fetchUserProfile, fetchEducationHistory, fetchCareerHistory, saveUserPr
 import IDCardSection from './IDCardSection';
 import AcademicGrid from './AcademicGrid';
 import HistoryTimeline from './HistoryTimeline';
-import { EducationModal, CareerModal } from './ProfileModals';
+import { EducationModal, CareerModal, UniqueIdModal } from './ProfileModals';
 import { 
   GraduationCap, 
   Briefcase, 
@@ -25,6 +25,7 @@ const UserProfileView: React.FC = () => {
   // Modals state
   const [isEduModalOpen, setIsEduModalOpen] = useState(false);
   const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
+  const [isUniqueIdModalOpen, setIsUniqueIdModalOpen] = useState(false);
   const [selectedEdu, setSelectedEdu] = useState<EducationEntry | undefined>();
   const [selectedCareer, setSelectedCareer] = useState<CareerEntry | undefined>();
 
@@ -38,7 +39,7 @@ const UserProfileView: React.FC = () => {
       ]);
       
       const defaultProfile: UserProfile = {
-        fullName: "Xeenaps User",
+        fullName: "Xeenaps User, Degree",
         degree: "",
         photoUrl: "",
         photoFileId: "",
@@ -77,33 +78,9 @@ const UserProfileView: React.FC = () => {
   // Unified Inline Update Handler
   const handleFieldUpdate = async (field: keyof UserProfile, value: string) => {
     if (!localProfile || !profile) return;
-    if (localProfile[field] === value) return; // No change
+    if (localProfile[field] === value) return;
 
     const newProfile = { ...localProfile, [field]: value };
-    
-    // SPECIAL CASE: Unique App ID (Double Confirmation)
-    if (field === 'uniqueAppId') {
-      const confirm1 = await showXeenapsConfirm(
-        'CHANGE UNIQUE ID?', 
-        'This ID is your primary system identity. Changing it might affect your traceability.',
-        'PROCEED'
-      );
-      if (!confirm1.isConfirmed) {
-        setLocalProfile({ ...localProfile }); // Revert local state
-        return;
-      }
-      
-      const confirm2 = await showXeenapsConfirm(
-        'ARE YOU ABSOLUTELY SURE?', 
-        'This is the last warning. Changing your Unique App ID is a critical system action.',
-        'YES, CHANGE IT'
-      );
-      if (!confirm2.isConfirmed) {
-        setLocalProfile({ ...localProfile }); // Revert local state
-        return;
-      }
-    }
-
     setLocalProfile(newProfile);
     setIsSyncing(true);
     
@@ -116,6 +93,11 @@ const UserProfileView: React.FC = () => {
       showXeenapsToast('error', 'Cloud sync failed');
     }
     setIsSyncing(false);
+  };
+
+  const handleUniqueIdUpdate = async (newId: string) => {
+    if (!localProfile) return;
+    await handleFieldUpdate('uniqueAppId', newId);
   };
 
   if (isLoading) {
@@ -131,7 +113,6 @@ const UserProfileView: React.FC = () => {
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#fcfcfc] animate-in fade-in duration-700 h-full">
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 pb-32">
         
-        {/* SYNC INDICATOR */}
         {isSyncing && (
           <div className="fixed top-24 right-10 z-[100] flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full animate-pulse border border-emerald-100 shadow-sm">
              <Loader2 size={12} className="animate-spin" />
@@ -139,7 +120,6 @@ const UserProfileView: React.FC = () => {
           </div>
         )}
 
-        {/* TOP GRID: Identity visuals & Data Hub */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT: VISUAL IDENTITY */}
           <div className="lg:col-span-4 xl:col-span-3">
@@ -159,14 +139,12 @@ const UserProfileView: React.FC = () => {
             <AcademicGrid 
               profile={localProfile!} 
               onUpdate={handleFieldUpdate}
+              onEditUniqueId={() => setIsUniqueIdModalOpen(true)}
             />
           </div>
         </div>
 
-        {/* BOTTOM GRID: History Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
-          
-          {/* Education Section */}
           <div className="space-y-6">
             <div className="flex items-center justify-between px-4">
               <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
@@ -187,7 +165,6 @@ const UserProfileView: React.FC = () => {
             />
           </div>
 
-          {/* Career Section */}
           <div className="space-y-6">
             <div className="flex items-center justify-between px-4">
               <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
@@ -207,7 +184,6 @@ const UserProfileView: React.FC = () => {
               onRefresh={loadAllData}
             />
           </div>
-
         </div>
 
         <footer className="pt-20 pb-10 opacity-20 text-center">
@@ -216,7 +192,6 @@ const UserProfileView: React.FC = () => {
         </footer>
       </div>
 
-      {/* Modals for List Entries */}
       {isEduModalOpen && (
         <EducationModal 
           entry={selectedEdu} 
@@ -230,6 +205,14 @@ const UserProfileView: React.FC = () => {
           entry={selectedCareer} 
           onClose={() => setIsCareerModalOpen(false)} 
           onSuccess={loadAllData} 
+        />
+      )}
+
+      {isUniqueIdModalOpen && (
+        <UniqueIdModal 
+          currentId={localProfile?.uniqueAppId || ''} 
+          onClose={() => setIsUniqueIdModalOpen(false)} 
+          onConfirm={handleUniqueIdUpdate} 
         />
       )}
 

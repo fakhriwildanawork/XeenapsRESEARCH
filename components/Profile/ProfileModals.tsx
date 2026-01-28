@@ -1,14 +1,55 @@
 import React, { useState } from 'react';
 import { EducationEntry, CareerEntry } from '../../types';
 import { saveEducationEntry, saveCareerEntry } from '../../services/ProfileService';
-import { X, Save, GraduationCap, Briefcase, Loader2 } from 'lucide-react';
+import { X, Save, GraduationCap, Briefcase, Loader2, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { FormField, FormDropdown } from '../Common/FormComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
+import { showXeenapsConfirm } from '../../utils/swalUtils';
 
 interface ModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
+
+/**
+ * YEAR INPUT COMPONENT
+ */
+const YearInput: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+  allowPresent?: boolean;
+  placeholder?: string;
+  required?: boolean;
+}> = ({ value, onChange, allowPresent, placeholder, required }) => {
+  return (
+    <div className="flex items-center gap-2">
+      <input 
+        type="text"
+        required={required}
+        pattern="^[0-9]{4}$"
+        className={`flex-1 px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-mono font-bold text-sm ${value === 'Present' ? 'text-emerald-600 italic' : 'text-[#004A74]'}`}
+        placeholder={placeholder || "YYYY"}
+        value={value === 'Present' ? '' : value}
+        disabled={value === 'Present'}
+        onChange={e => {
+          const val = e.target.value.replace(/[^0-9]/g, '').substring(0, 4);
+          onChange(val);
+        }}
+      />
+      {allowPresent && (
+        <button 
+          type="button"
+          onClick={() => onChange(value === 'Present' ? '' : 'Present')}
+          className={`px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
+            value === 'Present' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-white text-gray-400 border-gray-200'
+          }`}
+        >
+          Present
+        </button>
+      )}
+    </div>
+  );
+};
 
 /**
  * EDUCATION MODAL
@@ -50,8 +91,8 @@ export const EducationModal: React.FC<ModalProps & { entry?: EducationEntry }> =
           </div>
           <FormField label="Degree Awarded"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl" placeholder="e.g. S.Ars, M.T." value={formData.degree} onChange={e => setFormData({...formData, degree: e.target.value})} /></FormField>
           <div className="grid grid-cols-2 gap-4">
-             <FormField label="Start Year"><input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl" placeholder="YYYY" value={formData.startYear} onChange={e => setFormData({...formData, startYear: e.target.value})} /></FormField>
-             <FormField label="End Year"><input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl" placeholder="YYYY or Present" value={formData.endYear} onChange={e => setFormData({...formData, endYear: e.target.value})} /></FormField>
+             <FormField label="Start Year"><YearInput required value={formData.startYear} onChange={v => setFormData({...formData, startYear: v})} /></FormField>
+             <FormField label="End Year"><YearInput allowPresent value={formData.endYear} onChange={v => setFormData({...formData, endYear: v})} /></FormField>
           </div>
           <div className="pt-6"><button type="submit" disabled={isSaving} className="w-full py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2">{isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />} Sync Record</button></div>
         </form>
@@ -100,12 +141,76 @@ export const CareerModal: React.FC<ModalProps & { entry?: CareerEntry }> = ({ en
           </div>
           <FormField label="Location (City, Country)"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} /></FormField>
           <div className="grid grid-cols-2 gap-4">
-             <FormField label="Start Date"><input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl" placeholder="MMM YYYY" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} /></FormField>
-             <FormField label="End Date"><input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl" placeholder="MMM YYYY or Present" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} /></FormField>
+             <FormField label="Start Year"><YearInput required value={formData.startDate} onChange={v => setFormData({...formData, startDate: v})} /></FormField>
+             <FormField label="End Year"><YearInput allowPresent value={formData.endDate} onChange={v => setFormData({...formData, endDate: v})} /></FormField>
           </div>
           <FormField label="Description / Achievements"><textarea className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl min-h-[100px]" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></FormField>
           <div className="pt-6"><button type="submit" disabled={isSaving} className="w-full py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2">{isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />} Sync Career</button></div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * UNIQUE ID EDIT MODAL
+ */
+export const UniqueIdModal: React.FC<{
+  currentId: string;
+  onClose: () => void;
+  onConfirm: (newId: string) => void;
+}> = ({ currentId, onClose, onConfirm }) => {
+  const [newId, setNewId] = useState(currentId);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!newId.trim()) return;
+    setIsSaving(true);
+    const confirm = await showXeenapsConfirm(
+      'FINAL CONFIRMATION', 
+      'This will change your global identity. Are you absolutely sure?',
+      'YES, UPDATE ID'
+    );
+    if (confirm.isConfirmed) {
+      onConfirm(newId);
+      onClose();
+    }
+    setIsSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-[#004A74]/40 backdrop-blur-xl animate-in zoom-in-95">
+      <div className="bg-white p-10 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-100 text-center space-y-8">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-[1.5rem] flex items-center justify-center mx-auto shadow-sm animate-pulse">
+           <ShieldAlert size={32} />
+        </div>
+        <div className="space-y-2">
+           <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Identity Overwrite</h3>
+           <p className="text-xs font-medium text-gray-400">Modify your system tracking code with extreme caution.</p>
+        </div>
+        <div className="space-y-4">
+           <input 
+             className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-center text-lg font-mono font-bold text-[#004A74] focus:ring-4 focus:ring-red-100 outline-none uppercase"
+             value={newId}
+             onChange={e => setNewId(e.target.value.toUpperCase())}
+           />
+           <div className="flex gap-3">
+              <button 
+                onClick={onClose}
+                className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex-1 py-4 bg-[#004A74] text-[#FED400] rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2"
+              >
+                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                Confirm
+              </button>
+           </div>
+        </div>
       </div>
     </div>
   );

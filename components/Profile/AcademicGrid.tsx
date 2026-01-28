@@ -12,15 +12,19 @@ import {
   BookMarked, 
   Calendar,
   ShieldCheck,
+  Edit3,
+  Share2,
   Link as LinkIcon
 } from 'lucide-react';
+import { showXeenapsConfirm } from '../../utils/swalUtils';
 
 interface AcademicGridProps {
   profile: UserProfile;
   onUpdate: (field: keyof UserProfile, value: string) => void;
+  onEditUniqueId: () => void;
 }
 
-const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate }) => {
+const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUniqueId }) => {
   
   const calculateAge = (dob: string) => {
     if (!dob) return "-";
@@ -43,6 +47,17 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate }) => {
       return `${years} Years, ${months} Months, ${days} Days`;
     } catch (e) {
       return "-";
+    }
+  };
+
+  const handleUniqueIdRequest = async () => {
+    const confirm = await showXeenapsConfirm(
+      'MODIFY SYSTEM IDENTITY?', 
+      'Changing your Unique App ID is a critical action that may affect system traceability. Proceed to edit?',
+      'AUTHORIZE EDIT'
+    );
+    if (confirm.isConfirmed) {
+      onEditUniqueId();
     }
   };
 
@@ -72,7 +87,6 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate }) => {
       {/* DATA HUB FORM */}
       <div className="bg-white p-8 md:p-10 rounded-[3rem] border border-gray-100 shadow-sm space-y-10">
          
-         {/* SECTION: PERSONAL & CONTACT */}
          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
             
             {/* DOB & AGE */}
@@ -132,6 +146,18 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate }) => {
 
                <div className="space-y-2">
                   <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                    <Share2 size={14} /> Social Media Handle
+                  </label>
+                  <input 
+                    className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-[11px] font-bold text-[#004A74] outline-none focus:bg-white transition-all"
+                    defaultValue={profile.socialMedia}
+                    onBlur={(e) => onUpdate('socialMedia', e.target.value)}
+                    placeholder="@username or profile link..."
+                  />
+               </div>
+
+               <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
                     <Briefcase size={14} /> Job Title
                   </label>
                   <input 
@@ -159,16 +185,22 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate }) => {
 
          {/* SECTION: ACADEMIC IDS & SYSTEM */}
          <div className="pt-10 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* UNIQUE ID (PROTECTED) */}
+            {/* UNIQUE ID (LOCKED BY DEFAULT) */}
             <div className="space-y-2">
-               <label className="text-[9px] font-black uppercase tracking-widest text-red-400 flex items-center gap-2">
-                 <ShieldCheck size={14} /> Unique App ID
-               </label>
-               <input 
-                 className="w-full bg-red-50/30 border border-red-100 px-5 py-3.5 rounded-2xl text-xs font-mono font-bold text-[#004A74] outline-none focus:bg-white focus:border-red-400 transition-all"
-                 defaultValue={profile.uniqueAppId}
-                 onBlur={(e) => onUpdate('uniqueAppId', e.target.value)}
-               />
+               <div className="flex items-center justify-between">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-red-400 flex items-center gap-2">
+                    <ShieldCheck size={14} /> Unique App ID
+                  </label>
+                  <button 
+                    onClick={handleUniqueIdRequest}
+                    className="p-1 text-gray-300 hover:text-red-400 transition-all"
+                  >
+                    <Edit3 size={12} />
+                  </button>
+               </div>
+               <div className="w-full bg-red-50/20 border border-red-100 px-5 py-3.5 rounded-2xl text-xs font-mono font-bold text-gray-400 select-none">
+                  {profile.uniqueAppId}
+               </div>
             </div>
 
             {/* IDS GRID */}

@@ -25,7 +25,6 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
     const result = await uploadProfilePhoto(file);
     if (result) {
       onPhotoChange(result.photoUrl, result.fileId, result.nodeUrl);
-      // Auto-save the new references to profile
       await saveUserProfile({ 
         ...profile, 
         photoUrl: result.photoUrl, 
@@ -73,7 +72,6 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
                )}
             </div>
 
-            {/* HOVER CONTROLS */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                <button 
                  onClick={() => fileInputRef.current?.click()}
@@ -96,25 +94,21 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
          <input type="file" ref={fileInputRef} onChange={handleUpload} accept="image/*" className="hidden" />
       </div>
 
-      {/* IDENTITY INPUTS */}
+      {/* IDENTITY INPUTS - MERGED NAME AND DEGREE */}
       <div className="w-full space-y-4 text-center">
          <div className="space-y-1">
-            <span className="text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Official Name</span>
-            <input 
-              className="w-full bg-transparent border-none text-xl md:text-2xl font-bold text-[#004A74] text-center focus:ring-0 placeholder:text-gray-100 outline-none"
+            <span className="text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Full Name & Degree</span>
+            <textarea 
+              className="w-full bg-transparent border-none text-xl md:text-2xl font-bold text-[#004A74] text-center focus:ring-0 placeholder:text-gray-100 outline-none resize-none overflow-hidden"
               defaultValue={profile.fullName}
               onBlur={(e) => onUpdate('fullName', e.target.value)}
-              placeholder="Full Name..."
-            />
-         </div>
-
-         <div className="space-y-1 pt-2 border-t border-gray-50">
-            <span className="text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Academic Degree</span>
-            <input 
-              className="w-full bg-transparent border-none text-xs md:text-sm font-semibold text-gray-500 text-center focus:ring-0 placeholder:text-gray-100 outline-none italic"
-              defaultValue={profile.degree}
-              onBlur={(e) => onUpdate('degree', e.target.value)}
-              placeholder="e.g. B.Arch, M.Sc, Ph.D..."
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = target.scrollHeight + 'px';
+              }}
+              placeholder="Official Name & Academic Degree..."
+              rows={2}
             />
          </div>
       </div>
