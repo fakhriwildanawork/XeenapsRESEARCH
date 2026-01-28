@@ -316,6 +316,10 @@ export interface UserProfile {
   scopusId: string;
   wosId: string;
   googleScholarId: string;
+  jobTitle: string;
+  affiliation: string;
+  uniqueAppId: string;
+  socialMedia: string;
 }
 
 export interface EducationEntry {

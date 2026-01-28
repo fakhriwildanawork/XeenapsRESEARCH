@@ -1,29 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserProfile, EducationEntry, CareerEntry } from '../../types';
-import { fetchUserProfile, fetchEducationHistory, fetchCareerHistory } from '../../services/ProfileService';
+import { fetchUserProfile, fetchEducationHistory, fetchCareerHistory, saveUserProfile } from '../../services/ProfileService';
 import IDCardSection from './IDCardSection';
 import AcademicGrid from './AcademicGrid';
 import HistoryTimeline from './HistoryTimeline';
-import { EditProfileModal, EducationModal, CareerModal } from './ProfileModals';
+import { EducationModal, CareerModal } from './ProfileModals';
 import { 
   User, 
   GraduationCap, 
   Briefcase, 
   Plus, 
-  Settings2,
   Loader2,
-  Sparkles
+  ShieldCheck,
+  Save
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
+import { showXeenapsAlert, showXeenapsConfirm } from '../../utils/swalUtils';
 
 const UserProfileView: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [education, setEducation] = useState<EducationEntry[]>([]);
   const [career, setCareer] = useState<CareerEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // Modals state
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isEduModalOpen, setIsEduModalOpen] = useState(false);
   const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
   const [selectedEdu, setSelectedEdu] = useState<EducationEntry | undefined>();
@@ -37,7 +39,27 @@ const UserProfileView: React.FC = () => {
         fetchEducationHistory(),
         fetchCareerHistory()
       ]);
-      setProfile(p);
+      
+      const defaultProfile: UserProfile = {
+        fullName: "Xeenaps User",
+        photoUrl: "",
+        bio: "Add your academic or professional bio here to personalize your PKM workspace.",
+        address: "Not set",
+        email: "user@xeenaps.app",
+        phone: "-",
+        sintaId: "",
+        scopusId: "",
+        wosId: "",
+        googleScholarId: "",
+        jobTitle: "Researcher",
+        affiliation: "Independent",
+        uniqueAppId: `XN-${Math.random().toString(36).substring(7).toUpperCase()}`,
+        socialMedia: ""
+      };
+
+      const finalProfile = p || defaultProfile;
+      setProfile(finalProfile);
+      setLocalProfile(finalProfile);
       setEducation(e);
       setCareer(c);
     } catch (err) {
@@ -51,6 +73,50 @@ const UserProfileView: React.FC = () => {
     loadAllData();
   }, [loadAllData]);
 
+  // Unified Inline Update Handler
+  const handleFieldUpdate = async (field: keyof UserProfile, value: string) => {
+    if (!localProfile || !profile) return;
+    if (localProfile[field] === value) return; // No change
+
+    const newProfile = { ...localProfile, [field]: value };
+    
+    // SPECIAL CASE: Unique App ID (Double Confirmation)
+    if (field === 'uniqueAppId') {
+      const confirm1 = await showXeenapsConfirm(
+        'CHANGE UNIQUE ID?', 
+        'This ID is your primary system identity. Changing it might affect your traceability.',
+        'PROCEED'
+      );
+      if (!confirm1.isConfirmed) {
+        setLocalProfile({ ...localProfile }); // Revert local state
+        return;
+      }
+      
+      const confirm2 = await showXeenapsConfirm(
+        'ARE YOU ABSOLUTELY SURE?', 
+        'This is the last warning. Changing your Unique App ID is a critical system action.',
+        'YES, CHANGE IT'
+      );
+      if (!confirm2.isConfirmed) {
+        setLocalProfile({ ...localProfile }); // Revert local state
+        return;
+      }
+    }
+
+    setLocalProfile(newProfile);
+    setIsSyncing(true);
+    
+    const success = await saveUserProfile(newProfile);
+    if (success) {
+      setProfile(newProfile);
+      showXeenapsToast('success', `${field.charAt(0).toUpperCase() + field.slice(1)} synchronized`);
+    } else {
+      setLocalProfile(profile); // Rollback
+      showXeenapsToast('error', 'Cloud sync failed');
+    }
+    setIsSyncing(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-10">
@@ -60,27 +126,12 @@ const UserProfileView: React.FC = () => {
     );
   }
 
-  const defaultProfile: UserProfile = {
-    fullName: "Xeenaps User",
-    photoUrl: "",
-    bio: "Add your academic or professional bio here to personalize your PKM workspace.",
-    address: "Not set",
-    email: "user@xeenaps.app",
-    phone: "-",
-    sintaId: "",
-    scopusId: "",
-    wosId: "",
-    googleScholarId: ""
-  };
-
-  const activeProfile = profile || defaultProfile;
-
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8fafc] animate-in fade-in duration-700">
+    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8fafc] animate-in fade-in duration-700 h-full">
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-32">
         
         {/* HEADER SECTION (HUD STYLE) */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
               <User size={32} />
@@ -90,21 +141,27 @@ const UserProfileView: React.FC = () => {
               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Personal & Academic Portfolio</p>
             </div>
           </div>
-          <button 
-            onClick={() => setIsProfileModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gray-50 text-[#004A74] hover:bg-[#FED400]/20 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all border border-gray-100 shadow-sm"
-          >
-            <Settings2 size={16} /> Edit Profile
-          </button>
+          {isSyncing && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full animate-pulse border border-emerald-100">
+               <Loader2 size={12} className="animate-spin" />
+               <span className="text-[8px] font-black uppercase tracking-widest">Syncing to Cloud</span>
+            </div>
+          )}
         </div>
 
         {/* TOP GRID: ID Card & Info Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           <div className="lg:col-span-5 xl:col-span-4">
-            <IDCardSection profile={activeProfile} />
+            <IDCardSection 
+              profile={localProfile!} 
+              onUpdate={handleFieldUpdate}
+            />
           </div>
-          <div className="lg:col-span-7 xl:col-span-8">
-            <AcademicGrid profile={activeProfile} />
+          <div className="lg:col-span-7 xl:col-span-8 h-full">
+            <AcademicGrid 
+              profile={localProfile!} 
+              onUpdate={handleFieldUpdate}
+            />
           </div>
         </div>
 
@@ -161,15 +218,7 @@ const UserProfileView: React.FC = () => {
         </footer>
       </div>
 
-      {/* Modals */}
-      {isProfileModalOpen && (
-        <EditProfileModal 
-          profile={activeProfile} 
-          onClose={() => setIsProfileModalOpen(false)} 
-          onSuccess={loadAllData} 
-        />
-      )}
-      
+      {/* Modals for List Entries */}
       {isEduModalOpen && (
         <EducationModal 
           entry={selectedEdu} 

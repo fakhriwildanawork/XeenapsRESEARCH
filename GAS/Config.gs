@@ -178,7 +178,11 @@ const CONFIG = {
       'sintaId',
       'scopusId',
       'wosId',
-      'googleScholarId'
+      'googleScholarId',
+      'jobTitle',
+      'affiliation',
+      'uniqueAppId',
+      'socialMedia'
     ],
     EDUCATION: [
       'id',
