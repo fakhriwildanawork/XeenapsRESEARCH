@@ -310,7 +310,6 @@ export interface UserProfile {
   photoUrl: string;
   photoFileId: string;
   photoNodeUrl: string;
-  bio: string;
   birthDate: string;
   address: string;
   email: string;

@@ -173,7 +173,6 @@ const CONFIG = {
       'photoUrl',
       'photoFileId',
       'photoNodeUrl',
-      'bio',
       'birthDate',
       'address',
       'email',

@@ -9,7 +9,11 @@ import {
   GraduationCap, 
   Briefcase, 
   Plus, 
-  Loader2
+  Loader2,
+  Award,
+  BookMarked,
+  Globe,
+  Link as LinkIcon
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsConfirm } from '../../utils/swalUtils';
@@ -43,7 +47,6 @@ const UserProfileView: React.FC = () => {
         photoUrl: "",
         photoFileId: "",
         photoNodeUrl: "",
-        bio: "Add your academic or professional bio here.",
         birthDate: "",
         address: "Not set",
         email: "user@xeenaps.app",
@@ -108,9 +111,16 @@ const UserProfileView: React.FC = () => {
     );
   }
 
+  const idCards = [
+    { key: 'sintaId' as keyof UserProfile, label: 'SINTA ID', icon: Award, color: 'text-orange-500' },
+    { key: 'scopusId' as keyof UserProfile, label: 'Scopus ID', icon: BookMarked, color: 'text-emerald-500' },
+    { key: 'wosId' as keyof UserProfile, label: 'WoS ID', icon: Globe, color: 'text-blue-500' },
+    { key: 'googleScholarId' as keyof UserProfile, label: 'Scholar ID', icon: LinkIcon, color: 'text-indigo-500' },
+  ];
+
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#fcfcfc] animate-in fade-in duration-700 h-full">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 pb-32">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-32">
         
         {isSyncing && (
           <div className="fixed top-24 right-10 z-[100] flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full animate-pulse border border-emerald-100 shadow-sm">
@@ -119,8 +129,8 @@ const UserProfileView: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          {/* LEFT: VISUAL IDENTITY (50%) */}
+        {/* BLOK ATAS: 50% 50% SPLIT */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           <div className="h-full">
             <IDCardSection 
               profile={localProfile!} 
@@ -130,19 +140,39 @@ const UserProfileView: React.FC = () => {
                 setLocalProfile(updated);
                 setProfile(updated);
               }}
+              onEditUniqueId={() => setIsUniqueIdModalOpen(true)}
             />
           </div>
 
-          {/* RIGHT: DATA HUB FORM (50%) */}
           <div className="h-full">
             <AcademicGrid 
               profile={localProfile!} 
               onUpdate={handleFieldUpdate}
-              onEditUniqueId={() => setIsUniqueIdModalOpen(true)}
             />
           </div>
         </div>
 
+        {/* BLOK TENGAH: FULL WIDTH ACADEMIC IDS */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+           <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 mb-6 px-2">Academic Meta-Identifiers</h3>
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {idCards.map((id) => (
+                <div key={id.key} className="space-y-2 p-4 bg-gray-50 rounded-2xl border border-gray-100 focus-within:border-[#FED400] transition-all">
+                   <label className={`text-[8px] font-black uppercase tracking-tighter flex items-center gap-1.5 ${id.color}`}>
+                      <id.icon size={12} /> {id.label}
+                   </label>
+                   <input 
+                     className="w-full bg-transparent border-none p-0 text-[10px] font-mono font-bold text-[#004A74] outline-none placeholder:text-gray-200"
+                     defaultValue={localProfile![id.key]}
+                     onBlur={(e) => handleFieldUpdate(id.key, e.target.value)}
+                     placeholder="CODE..."
+                   />
+                </div>
+              ))}
+           </div>
+        </div>
+
+        {/* BLOK BAWAH: 50% 50% HISTORY */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
           <div className="space-y-6">
             <div className="flex items-center justify-between px-4">

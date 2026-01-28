@@ -1,30 +1,22 @@
 import React from 'react';
 import { UserProfile } from '../../types';
 import { 
-  Quote, 
   MapPin, 
   Mail, 
   Phone, 
-  Globe, 
   Briefcase, 
   Building2, 
-  Award, 
-  BookMarked, 
   Calendar,
-  ShieldCheck,
-  Edit3,
   Share2,
-  Link as LinkIcon
+  Clock
 } from 'lucide-react';
-import { showXeenapsConfirm } from '../../utils/swalUtils';
 
 interface AcademicGridProps {
   profile: UserProfile;
   onUpdate: (field: keyof UserProfile, value: string) => void;
-  onEditUniqueId: () => void;
 }
 
-const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUniqueId }) => {
+const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate }) => {
   
   const calculateAge = (dob: string) => {
     if (!dob) return "-";
@@ -50,185 +42,126 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUn
     }
   };
 
-  const handleUniqueIdRequest = async () => {
-    const confirm = await showXeenapsConfirm(
-      'MODIFY SYSTEM IDENTITY?', 
-      'Changing your Unique App ID is a critical action that may affect system traceability. Proceed to edit?',
-      'AUTHORIZE EDIT'
-    );
-    if (confirm.isConfirmed) {
-      onEditUniqueId();
-    }
-  };
-
-  const idCards = [
-    { key: 'sintaId' as keyof UserProfile, label: 'SINTA ID', icon: Award, color: 'text-orange-500' },
-    { key: 'scopusId' as keyof UserProfile, label: 'Scopus ID', icon: BookMarked, color: 'text-emerald-500' },
-    { key: 'wosId' as keyof UserProfile, label: 'WoS ID', icon: Globe, color: 'text-blue-500' },
-    { key: 'googleScholarId' as keyof UserProfile, label: 'Scholar ID', icon: LinkIcon, color: 'text-indigo-500' },
-  ];
-
   return (
-    <div className="space-y-8 animate-in slide-in-from-right duration-1000 h-full flex flex-col">
-      
-      {/* NARRATIVE BIO */}
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group shrink-0">
-         <Quote size={48} className="absolute top-6 right-8 opacity-5 text-[#004A74]" />
-         <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-4">Personal Narrative</h3>
-         <textarea 
-            className="w-full bg-transparent border-none outline-none text-sm font-medium text-gray-600 leading-relaxed italic resize-none focus:ring-4 focus:ring-[#FED400]/5 rounded-2xl p-2 transition-all"
-            defaultValue={profile.bio}
-            onBlur={(e) => onUpdate('bio', e.target.value)}
-            placeholder="Introduce your academic focus or professional journey here..."
-            rows={3}
-         />
-      </div>
+    <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-gray-100 shadow-sm h-full animate-in slide-in-from-right duration-1000">
+       <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-10 flex items-center gap-3">
+         Personal Metadata Hub
+       </h3>
+       
+       <div className="space-y-10">
+          
+          {/* TANGGAL LAHIR & USIA */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+             <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Calendar size={14} className="text-[#FED400]" /> Date of Birth
+                </label>
+                <input 
+                  type="date"
+                  className="w-full bg-gray-50 border border-gray-100 px-5 py-4 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all"
+                  defaultValue={profile.birthDate}
+                  onBlur={(e) => onUpdate('birthDate', e.target.value)}
+                />
+             </div>
+             <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Clock size={14} className="text-emerald-500" /> Current Age
+                </label>
+                <div className="w-full bg-[#004A74]/5 border border-[#004A74]/10 px-5 py-4 rounded-2xl">
+                   <p className="text-xs font-black text-[#004A74]">{calculateAge(profile.birthDate)}</p>
+                </div>
+             </div>
+          </div>
 
-      {/* DATA HUB FORM - SINGLE COLUMN STACKING */}
-      <div className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-10 flex-1">
-         
-         <div className="grid grid-cols-1 gap-10">
-            
-            {/* DOB & AGE */}
-            <div className="space-y-6">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                       <Calendar size={14} className="text-[#FED400]" /> Date of Birth
-                     </label>
-                     <input 
-                       type="date"
-                       className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all"
-                       defaultValue={profile.birthDate}
-                       onBlur={(e) => onUpdate('birthDate', e.target.value)}
-                     />
-                  </div>
-                  <div className="p-4 bg-[#004A74]/5 rounded-2xl border border-[#004A74]/10 flex flex-col justify-center">
-                     <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block mb-1">Actual Age</span>
-                     <p className="text-sm font-black text-[#004A74]">{calculateAge(profile.birthDate)}</p>
-                  </div>
-               </div>
-               
-               <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                    <MapPin size={14} /> Public Address
-                  </label>
-                  <input 
-                    className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all"
-                    defaultValue={profile.address}
-                    onBlur={(e) => onUpdate('address', e.target.value)}
-                    placeholder="City, Country..."
-                  />
-               </div>
-            </div>
+          {/* ALAMAT LENGKAP - AUTO EXPANDABLE */}
+          <div className="space-y-2">
+             <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+               <MapPin size={14} /> Full Residence Address
+             </label>
+             <textarea 
+               className="w-full bg-gray-50 border border-gray-100 px-5 py-4 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all resize-none overflow-hidden leading-relaxed"
+               defaultValue={profile.address}
+               onBlur={(e) => onUpdate('address', e.target.value)}
+               onInput={(e) => {
+                 const target = e.target as HTMLTextAreaElement;
+                 target.style.height = 'auto';
+                 target.style.height = target.scrollHeight + 'px';
+               }}
+               placeholder="Enter full address..."
+               rows={2}
+               ref={(el) => {
+                 if (el) {
+                   el.style.height = 'auto';
+                   el.style.height = el.scrollHeight + 'px';
+                 }
+               }}
+             />
+          </div>
 
-            {/* CONTACT & SOCIAL */}
-            <div className="space-y-6">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                       <Mail size={14} /> Email Address
-                     </label>
-                     <input 
-                       className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
-                       defaultValue={profile.email}
-                       onBlur={(e) => onUpdate('email', e.target.value)}
-                     />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                       <Phone size={14} /> WhatsApp
-                     </label>
-                     <input 
-                       className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
-                       defaultValue={profile.phone}
-                       onBlur={(e) => onUpdate('phone', e.target.value)}
-                     />
-                  </div>
-               </div>
+          {/* KONTAK: EMAIL & WHATSAPP */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+             <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Mail size={14} /> Official Email
+                </label>
+                <input 
+                  className="w-full bg-gray-50 border border-gray-100 px-5 py-4 rounded-2xl text-[11px] font-bold text-[#004A74] outline-none focus:bg-white transition-all"
+                  defaultValue={profile.email}
+                  onBlur={(e) => onUpdate('email', e.target.value)}
+                />
+             </div>
+             <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Phone size={14} /> WhatsApp Number
+                </label>
+                <input 
+                  className="w-full bg-gray-50 border border-gray-100 px-5 py-4 rounded-2xl text-[11px] font-bold text-[#004A74] outline-none focus:bg-white transition-all"
+                  defaultValue={profile.phone}
+                  onBlur={(e) => onUpdate('phone', e.target.value)}
+                />
+             </div>
+          </div>
 
-               <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                    <Share2 size={14} /> Social Media Handle
-                  </label>
-                  <input 
-                    className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
-                    defaultValue={profile.socialMedia}
-                    onBlur={(e) => onUpdate('socialMedia', e.target.value)}
-                    placeholder="@username or profile link..."
-                  />
-               </div>
-            </div>
+          {/* SOCIAL MEDIA */}
+          <div className="space-y-2">
+             <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+               <Share2 size={14} /> Social Media Handle
+             </label>
+             <input 
+               className="w-full bg-gray-50 border border-gray-100 px-5 py-4 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
+               defaultValue={profile.socialMedia}
+               onBlur={(e) => onUpdate('socialMedia', e.target.value)}
+               placeholder="@username or profile link..."
+             />
+          </div>
 
-            {/* JOB & AFFILIATION */}
-            <div className="space-y-6">
-               <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                    <Briefcase size={14} /> Job Title
-                  </label>
-                  <input 
-                    className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
-                    defaultValue={profile.jobTitle}
-                    onBlur={(e) => onUpdate('jobTitle', e.target.value)}
-                    placeholder="Researcher, Professor, etc..."
-                  />
-               </div>
+          {/* PEKERJAAN & AFILIASI */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+             <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Briefcase size={14} /> Current Job Title
+                </label>
+                <input 
+                  className="w-full bg-gray-50 border border-gray-100 px-5 py-4 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
+                  defaultValue={profile.jobTitle}
+                  onBlur={(e) => onUpdate('jobTitle', e.target.value)}
+                  placeholder="Researcher, Professor, etc..."
+                />
+             </div>
+             <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Building2 size={14} /> Recent Affiliation
+                </label>
+                <input 
+                  className="w-full bg-gray-50 border border-gray-100 px-5 py-4 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
+                  defaultValue={profile.affiliation}
+                  onBlur={(e) => onUpdate('affiliation', e.target.value)}
+                  placeholder="University / Organization..."
+                />
+             </div>
+          </div>
 
-               <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                    <Building2 size={14} /> Recent Affiliation
-                  </label>
-                  <input 
-                    className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
-                    defaultValue={profile.affiliation}
-                    onBlur={(e) => onUpdate('affiliation', e.target.value)}
-                    placeholder="University or Company name..."
-                  />
-               </div>
-            </div>
-
-         </div>
-
-         {/* SECTION: ACADEMIC IDS & SYSTEM */}
-         <div className="pt-10 border-t border-gray-100 space-y-8">
-            {/* UNIQUE ID (LOCKED) */}
-            <div className="space-y-2">
-               <div className="flex items-center justify-between">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-red-400 flex items-center gap-2">
-                    <ShieldCheck size={14} /> Unique App ID
-                  </label>
-                  <button 
-                    onClick={handleUniqueIdRequest}
-                    className="p-1 text-gray-300 hover:text-red-400 transition-all"
-                  >
-                    <Edit3 size={12} />
-                  </button>
-               </div>
-               <div className="w-full bg-red-50/20 border border-red-100 px-5 py-3.5 rounded-2xl text-xs font-mono font-bold text-gray-400 select-none">
-                  {profile.uniqueAppId}
-               </div>
-            </div>
-
-            {/* IDS GRID - 2 COLUMNS COMPACT */}
-            <div className="grid grid-cols-2 gap-4">
-               {idCards.map((id) => (
-                 <div key={id.key} className="space-y-2">
-                    <label className={`text-[8px] font-black uppercase tracking-tighter flex items-center gap-1.5 ${id.color}`}>
-                       <id.icon size={12} /> {id.label}
-                    </label>
-                    <input 
-                      className="w-full bg-gray-50 border border-gray-100 px-4 py-3 rounded-xl text-[10px] font-mono font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all"
-                      defaultValue={profile[id.key]}
-                      onBlur={(e) => onUpdate(id.key, e.target.value)}
-                      placeholder="CODE..."
-                    />
-                 </div>
-               ))}
-            </div>
-         </div>
-
-      </div>
-
+       </div>
     </div>
   );
 };
