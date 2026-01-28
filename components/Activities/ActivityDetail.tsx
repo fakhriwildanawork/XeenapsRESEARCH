@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate } from 'react-router-dom';
 import { ActivityItem, ActivityType, ActivityLevel, ActivityRole } from '../../types';
-import { fetchActivitiesPaginated, saveActivity } from '../../services/ActivityService';
+import { fetchActivitiesPaginated, saveActivity, deleteActivity } from '../../services/ActivityService';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -23,85 +23,99 @@ import {
   Link as LinkIcon,
   Zap,
   Info,
-  // Added missing icon imports
   AlignLeft,
-  ClipboardCheck
+  ClipboardCheck,
+  FolderOpen,
+  FileText
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
-import DocumentationVault from './DocumentationVault';
 import { GoogleGenAI } from "@google/genai";
 
 /**
- * Inline Editable Text Component
+ * Optimized Inline Input for Auto-Expand Textarea with conditional border
  */
-const InlineInput: React.FC<{
+const IdentityTitleInput: React.FC<{
   value: string;
   onSave: (val: string) => void;
-  placeholder?: string;
-  className?: string;
-  multiline?: boolean;
-  prefixIcon?: React.ReactNode;
-}> = ({ value, onSave, placeholder, className = "", multiline = false, prefixIcon }) => {
+}> = ({ value, onSave }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
-  const inputRef = useRef<any>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setLocalValue(value);
   }, [value]);
 
   useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
-  }, [isEditing]);
+  }, [localValue, isEditing]);
 
   const handleBlur = () => {
     setIsEditing(false);
-    if (localValue !== value) {
-      onSave(localValue);
-    }
+    if (localValue !== value) onSave(localValue);
   };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !multiline) {
-      handleBlur();
-    }
-    if (e.key === 'Escape') {
-      setLocalValue(value);
-      setIsEditing(false);
-    }
-  };
-
-  if (isEditing) {
-    const commonProps = {
-      ref: inputRef,
-      value: localValue,
-      onChange: (e: any) => setLocalValue(e.target.value),
-      onBlur: handleBlur,
-      onKeyDown: handleKeyDown,
-      placeholder: placeholder,
-      className: `w-full px-3 py-2 bg-gray-50 border-none rounded-lg text-sm font-bold text-[#004A74] outline-none ring-2 ring-[#FED400]/40 transition-all ${className}`
-    };
-
-    return multiline ? <textarea {...commonProps} rows={3} /> : <input type="text" {...commonProps} />;
-  }
 
   return (
-    <div 
-      onClick={() => setIsEditing(true)}
-      className={`group flex items-center gap-3 cursor-pointer rounded-xl hover:bg-gray-50/80 transition-all p-2 -ml-2 w-full ${className}`}
-    >
-      {prefixIcon && <div className="shrink-0 text-gray-300 group-hover:text-[#004A74] transition-colors">{prefixIcon}</div>}
-      <div className="flex-1 min-w-0">
-        {localValue ? (
-          <p className="text-sm font-bold text-[#004A74] leading-relaxed break-words">{localValue}</p>
-        ) : (
-          <p className="text-sm font-bold text-gray-200 uppercase tracking-widest">{placeholder || "Click to add content..."}</p>
-        )}
-      </div>
-      <Edit3 size={14} className="opacity-0 group-hover:opacity-100 text-[#FED400] transition-all shrink-0" />
+    <div className="w-full">
+      <textarea
+        ref={textareaRef}
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onFocus={() => setIsEditing(true)}
+        onBlur={handleBlur}
+        rows={1}
+        placeholder="ENTER ACTIVITY TITLE..."
+        className={`w-full bg-transparent border-none outline-none text-2xl md:text-4xl font-black text-[#004A74] tracking-tighter leading-tight resize-none transition-all placeholder:text-gray-100 ${
+          isEditing ? 'ring-2 ring-[#004A74]/20 rounded-xl p-2 -m-2' : ''
+        }`}
+      />
+    </div>
+  );
+};
+
+const InlineField: React.FC<{
+  label: string;
+  value: string;
+  onSave: (val: string) => void;
+  icon?: React.ReactNode;
+  placeholder?: string;
+}> = ({ label, value, onSave, icon, placeholder }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => { setLocalValue(value); }, [value]);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (localValue !== value) onSave(localValue);
+  };
+
+  return (
+    <div className="space-y-1 group">
+      <label className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-1.5">
+        {icon} {label}
+      </label>
+      {isEditing ? (
+        <input 
+          autoFocus
+          className="w-full bg-white border border-[#004A74]/20 rounded-lg px-3 py-1.5 text-xs font-bold text-[#004A74] outline-none"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={(e) => e.key === 'Enter' && handleBlur()}
+        />
+      ) : (
+        <p 
+          onClick={() => setIsEditing(true)}
+          className={`text-xs font-bold text-[#004A74] cursor-pointer hover:bg-gray-50 rounded-lg py-1 transition-all ${!value ? 'text-gray-200 italic' : ''}`}
+        >
+          {value || placeholder || 'Not set'}
+        </p>
+      )}
     </div>
   );
 };
@@ -112,309 +126,228 @@ const ActivityDetail: React.FC = () => {
   
   const [item, setItem] = useState<ActivityItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isBusy, setIsBusy] = useState(false);
-  const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       const res = await fetchActivitiesPaginated(1, 1000);
       const found = res.items.find(i => i.id === id);
-      if (found) {
-        setItem(found);
-      } else {
-        showXeenapsToast('error', 'Activity not found');
-        navigate('/activities');
-      }
+      if (found) setItem(found);
+      else navigate('/activities');
       setIsLoading(false);
     };
     load();
   }, [id, navigate]);
 
-  const handleUpdate = async (updated: ActivityItem) => {
+  const handleFieldSave = async (field: keyof ActivityItem, val: any) => {
+    if (!item) return;
+    const updated = { ...item, [field]: val, updatedAt: new Date().toISOString() };
     setItem(updated);
     setIsSyncing(true);
     try {
-      await saveActivity({ ...updated, updatedAt: new Date().toISOString() });
+      await saveActivity(updated);
     } catch (e) {
-      showXeenapsToast('error', 'Cloud sync failed');
+      showXeenapsToast('error', 'Sync failed');
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const handleFieldSave = (field: keyof ActivityItem, val: any) => {
+  const handleDelete = async () => {
     if (!item) return;
-    handleUpdate({ ...item, [field]: val });
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (confirmed) {
+      setIsSyncing(true);
+      const success = await deleteActivity(item.id);
+      if (success) {
+        showXeenapsToast('success', 'Activity removed');
+        navigate('/activities');
+      } else {
+        setIsSyncing(false);
+        showXeenapsToast('error', 'Delete failed');
+      }
+    }
   };
 
   const handleAiReflection = async () => {
     if (!item?.description && !item?.notes) {
-      showXeenapsToast('warning', 'Please provide description or notes for AI context.');
+      showXeenapsToast('warning', 'Need description for AI context.');
       return;
     }
-    
     setIsAiProcessing(true);
-    showXeenapsToast('info', 'AI is synthesizing reflection points...');
-
     try {
-      // Corrected: use proper initialization according to Gemini guidelines
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `ACT AS AN ACADEMIC REFLECTION EXPERT. 
-      SUMMARIZE THE FOLLOWING ACTIVITY EXPERIENCE INTO 3 HIGH-IMPACT LEARNING POINTS.
-      
-      ACTIVITY: ${item.eventName}
-      DESC: ${item.description}
-      NOTES: ${item.notes}
-      
-      --- RULES ---
-      - USE BULLET POINTS (•).
-      - MAX 100 WORDS.
-      - FOCUS ON COMPETENCY AND PROFESSIONAL GROWTH.
-      - OUTPUT PLAIN TEXT ONLY.`;
-
-      // Corrected: use ai.models.generateContent directly with the model and prompt
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-      });
-
-      // Corrected: Accessing response.text property directly
+      const prompt = `Synthesize 3 professional growth points from this activity:\nEvent: ${item.eventName}\nDesc: ${item.description}\nNotes: ${item.notes}\nFormat: Plain text bullet points.`;
+      const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
       const reflection = response.text || "";
       if (reflection) {
-        handleUpdate({ ...item, notes: `${item.notes}\n\n[AI REFLECTION]\n${reflection}` });
-        showXeenapsToast('success', 'Reflection points added to notes.');
+        handleFieldSave('notes', `${item.notes}\n\n[AI REFLECTION]\n${reflection}`);
       }
     } catch (e) {
-      showXeenapsToast('error', 'AI Reflection interrupted.');
+      showXeenapsToast('error', 'AI synthesis error');
     } finally {
       setIsAiProcessing(false);
     }
   };
 
-  if (isLoading) return <div className="p-20 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Architecting Workspace...</div>;
+  if (isLoading) return <div className="p-20 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Loading Portfolio...</div>;
   if (!item) return null;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-hidden relative animate-in slide-in-from-right duration-500">
+    <div className="flex-1 flex flex-col bg-[#FCFCFC] h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-500">
       
-      {/* HUD Header */}
-      <header className="px-6 md:px-10 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 z-[90]">
-         <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/activities')} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90">
-               <ArrowLeft size={18} />
-            </button>
-            <div className="min-w-0">
-               <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tighter truncate max-w-xs md:max-w-md">Activity Workspace</h2>
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Portfolio & Credential Hub</p>
-            </div>
-         </div>
+      {/* 1. APP-INTEGRATED HEADER (NON-STICKY) */}
+      <nav className="px-6 md:px-10 py-4 flex items-center justify-between border-b border-gray-100 bg-white">
+        <button onClick={() => navigate('/activities')} className="flex items-center gap-2 text-[#004A74] font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 px-3 py-2 rounded-xl transition-all">
+          <ArrowLeft size={16} strokeWidth={3} /> Back to Portfolio
+        </button>
+        {isSyncing && (
+           <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-[#004A74] rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse">
+             <Loader2 size={10} className="animate-spin" /> Saving Changes
+           </div>
+        )}
+      </nav>
 
-         <div className="flex items-center gap-3">
-            {isSyncing && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#004A74]/5 rounded-full">
-                 <Loader2 size={12} className="animate-spin text-[#004A74]" />
-                 <span className="text-[8px] font-black text-[#004A74] uppercase tracking-widest">Syncing...</span>
+      {/* MAIN CONTAINER */}
+      <div className="max-w-7xl mx-auto w-full p-6 md:p-10 space-y-8 relative">
+        
+        {/* TOP RIGHT ACTION BOX */}
+        <div className="absolute top-10 right-10 flex items-center gap-2 z-10">
+           <button 
+             onClick={() => handleFieldSave('isFavorite', !item.isFavorite)}
+             className={`p-3 rounded-2xl border transition-all shadow-sm active:scale-90 ${item.isFavorite ? 'bg-yellow-50 border-yellow-200 text-[#FED400]' : 'bg-white border-gray-100 text-gray-300'}`}
+           >
+             <Star size={20} className={item.isFavorite ? "fill-[#FED400]" : ""} />
+           </button>
+           <button 
+             onClick={handleDelete}
+             className="p-3 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all shadow-sm active:scale-90"
+           >
+             <Trash2 size={20} />
+           </button>
+        </div>
+
+        {/* SECTION 1: IDENTITY BLOCK */}
+        <section className="bg-white p-8 md:p-12 rounded-[3rem] border border-gray-100 shadow-sm space-y-10">
+          {/* Top Grid: Title */}
+          <div className="max-w-4xl space-y-2">
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.4em] block">Authenticated Activity Label</span>
+            <IdentityTitleInput value={item.eventName} onSave={(v) => handleFieldSave('eventName', v)} />
+          </div>
+
+          {/* Bottom Grid: 50/50 Split */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-gray-50">
+             {/* Left Stacking */}
+             <div className="space-y-6">
+                <InlineField label="Held By / Organizer" value={item.organizer} onSave={(v) => handleFieldSave('organizer', v)} icon={<User size={12}/>} placeholder="ORGANIZATION NAME..." />
+                <InlineField label="Specific Location" value={item.location} onSave={(v) => handleFieldSave('location', v)} icon={<MapPin size={12}/>} placeholder="CITY / ONLINE..." />
+                <div className="grid grid-cols-2 gap-4 items-center">
+                   <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">Start</label>
+                      <input type="date" value={item.startDate} onChange={(e) => handleFieldSave('startDate', e.target.value)} className="w-full bg-gray-50 border-none rounded-lg p-2 text-xs font-bold text-[#004A74] outline-none" />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">End</label>
+                      <input type="date" value={item.endDate} onChange={(e) => handleFieldSave('endDate', e.target.value)} className="w-full bg-gray-50 border-none rounded-lg p-2 text-xs font-bold text-[#004A74] outline-none" />
+                   </div>
+                </div>
+             </div>
+
+             {/* Right Stacking */}
+             <div className="space-y-6">
+                <div className="space-y-1">
+                   <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">Activity Type</label>
+                   <select value={item.type} onChange={(e) => handleFieldSave('type', e.target.value)} className="w-full bg-gray-50 border-none rounded-lg p-2 text-xs font-bold text-[#004A74] outline-none cursor-pointer">
+                      {Object.values(ActivityType).map(t => <option key={t} value={t}>{t}</option>)}
+                   </select>
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">Recognition Magnitude</label>
+                   <select value={item.level} onChange={(e) => handleFieldSave('level', e.target.value)} className="w-full bg-gray-50 border-none rounded-lg p-2 text-xs font-bold text-[#004A74] outline-none cursor-pointer">
+                      {Object.values(ActivityLevel).map(l => <option key={l} value={l}>{l}</option>)}
+                   </select>
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">Assigned Role</label>
+                   <select value={item.role} onChange={(e) => handleFieldSave('role', e.target.value)} className="w-full bg-gray-50 border-none rounded-lg p-2 text-xs font-bold text-[#004A74] outline-none cursor-pointer">
+                      {Object.values(ActivityRole).map(r => <option key={r} value={r}>{r}</option>)}
+                   </select>
+                </div>
+             </div>
+          </div>
+        </section>
+
+        {/* SECTION 2: CREDENTIAL BLOCK */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+           {/* Left: Certificate Folder Button */}
+           <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center space-y-6 group/vault">
+              <div className="w-20 h-20 bg-gray-50 text-[#004A74] rounded-[2rem] flex items-center justify-center shadow-inner group-hover/vault:bg-[#004A74] group-hover/vault:text-[#FED400] transition-all duration-500">
+                 <FolderOpen size={40} />
               </div>
-            )}
-            <button 
-              onClick={() => handleFieldSave('isFavorite', !item.isFavorite)}
-              className="p-2.5 bg-white text-[#FED400] hover:bg-yellow-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100"
-            >
-              <Star size={18} className={item.isFavorite ? "fill-[#FED400]" : ""} />
-            </button>
-         </div>
-      </header>
+              <div className="space-y-2">
+                 <h4 className="text-sm font-black text-[#004A74] uppercase tracking-widest">Documentation Vault</h4>
+                 <p className="text-[10px] font-medium text-gray-400 max-w-[200px]">Securely store your certificates, photos, and links.</p>
+              </div>
+              <button 
+                onClick={() => navigate(`/activities/${item.id}/vault`)}
+                className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-[#004A74]/10 hover:scale-105 active:scale-95 transition-all"
+              >
+                 Open Gallery
+              </button>
+           </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 space-y-10">
-         <div className="max-w-7xl mx-auto space-y-10">
-            
-            {/* PRIMARY BLOCK: IDENTITY */}
-            <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-[#004A74]/5 -translate-y-24 translate-x-24 rounded-full" />
-               
-               <div className="relative z-10 space-y-8">
-                  <div className="space-y-4">
-                     <label className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">
-                        <Tag size={14} /> Activity Branding
-                     </label>
-                     <div className="text-2xl md:text-4xl font-black text-[#004A74] tracking-tighter uppercase leading-tight">
-                        <InlineInput 
-                          value={item.eventName} 
-                          onSave={(v) => handleFieldSave('eventName', v)} 
-                          placeholder="EVENT NAME..." 
-                        />
-                     </div>
-                  </div>
+           {/* Right: Cert Details Vertical Stack */}
+           <div className="bg-[#004A74] p-8 rounded-[3rem] shadow-xl space-y-8 flex flex-col justify-center">
+              <div className="space-y-1">
+                 <label className="text-[9px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-2">
+                   <ShieldCheck size={14} /> Certificate Tracking
+                 </label>
+                 <IdentityTitleInput value={item.certificateNumber} onSave={(v) => handleFieldSave('certificateNumber', v)} />
+              </div>
+              <div className="space-y-1 border-t border-white/10 pt-6">
+                 <label className="text-[9px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-2">
+                   <Zap size={14} /> Academic Credit Points
+                 </label>
+                 <IdentityTitleInput value={item.credit} onSave={(v) => handleFieldSave('credit', v)} />
+              </div>
+           </div>
+        </section>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                     <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Held By / Organizer</label>
-                        <InlineInput 
-                          value={item.organizer} 
-                          onSave={(v) => handleFieldSave('organizer', v)} 
-                          prefixIcon={<User size={14} />} 
-                          placeholder="ORGANIZER..." 
-                        />
-                     </div>
-                     <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Type & Magnitude</label>
-                        <div className="flex gap-2 p-1 bg-gray-50 rounded-xl">
-                           <select 
-                             className="bg-transparent border-none text-[10px] font-bold text-[#004A74] uppercase outline-none px-2 py-1 flex-1 cursor-pointer"
-                             value={item.type}
-                             onChange={(e) => handleFieldSave('type', e.target.value)}
-                           >
-                              {Object.values(ActivityType).map(t => <option key={t} value={t}>{t}</option>)}
-                           </select>
-                           <select 
-                             className="bg-transparent border-none text-[10px] font-bold text-[#004A74] uppercase outline-none px-2 py-1 flex-1 cursor-pointer border-l border-gray-200"
-                             value={item.level}
-                             onChange={(e) => handleFieldSave('level', e.target.value)}
-                           >
-                              {Object.values(ActivityLevel).map(l => <option key={l} value={l}>{l}</option>)}
-                           </select>
-                        </div>
-                     </div>
-                     <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Assigned Role</label>
-                        <select 
-                          className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-[10px] font-black text-[#004A74] uppercase outline-none cursor-pointer"
-                          value={item.role}
-                          onChange={(e) => handleFieldSave('role', e.target.value)}
-                        >
-                           {Object.values(ActivityRole).map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
-                     </div>
-                  </div>
-               </div>
-            </div>
+        {/* SECTION 3: SUMMARY BLOCK */}
+        <section className="bg-white p-8 md:p-12 rounded-[3rem] border border-gray-100 shadow-sm space-y-6">
+           <div className="flex items-center justify-between">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">
+                <AlignLeft size={16} /> Activity Synthesis & Summary
+              </h3>
+              <button 
+                onClick={handleAiReflection}
+                disabled={isAiProcessing}
+                className="flex items-center gap-2 px-5 py-2 bg-gray-50 text-[#004A74] rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all disabled:opacity-50"
+              >
+                {isAiProcessing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} AI Analysis
+              </button>
+           </div>
+           <textarea 
+             className="w-full bg-transparent border-none outline-none text-sm font-medium text-gray-600 leading-relaxed min-h-[300px] resize-none"
+             value={item.description}
+             onChange={(e) => setItem({...item, description: e.target.value})}
+             onBlur={() => handleFieldSave('description', item.description)}
+             placeholder="DESCRIBE YOUR EXPERIENCE AND LEARNING OUTCOMES HERE..."
+           />
+           {item.notes && (
+              <div className="pt-8 border-t border-gray-50">
+                 <label className="text-[9px] font-black uppercase tracking-widest text-gray-300 block mb-4">Strategic Reflection Log</label>
+                 <p className="text-xs font-bold text-[#004A74] italic leading-relaxed whitespace-pre-wrap">{item.notes}</p>
+              </div>
+           )}
+        </section>
 
-            {/* TECHNICAL BLOCK: LOGISTICS & CREDENTIALS */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-               <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#004A74] flex items-center gap-2 mb-6">
-                     <Globe size={16} className="text-[#FED400]" /> Logistics & Location
-                  </h3>
-                  <div className="space-y-6">
-                     <InlineInput 
-                       value={item.location} 
-                       onSave={(v) => handleFieldSave('location', v)} 
-                       prefixIcon={<MapPin size={16} />} 
-                       placeholder="SPECIFIC LOCATION (ONLINE/OFFLINE)..." 
-                     />
-                     <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                           <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">Start Date</label>
-                           <input 
-                             type="date" 
-                             className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-[#004A74] uppercase outline-none cursor-pointer"
-                             value={item.startDate}
-                             onChange={(e) => handleFieldSave('startDate', e.target.value)}
-                           />
-                        </div>
-                        <div className="space-y-2">
-                           <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">End Date</label>
-                           <input 
-                             type="date" 
-                             className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-[#004A74] uppercase outline-none cursor-pointer"
-                             value={item.endDate}
-                             onChange={(e) => handleFieldSave('endDate', e.target.value)}
-                           />
-                        </div>
-                     </div>
-                  </div>
-               </div>
+        <footer className="pt-20 pb-10 space-y-3 opacity-20 text-center">
+          <ClipboardCheck size={48} className="mx-auto text-[#004A74]" />
+          <p className="text-[8px] font-black uppercase tracking-[0.8em] text-[#004A74]">XEENAPS PORTFOLIO INFRASTRUCTURE</p>
+        </footer>
 
-               <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#004A74] flex items-center gap-2 mb-6">
-                     <ShieldCheck size={16} className="text-[#FED400]" /> Credentials
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div className="space-y-2">
-                        <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">Certificate Number</label>
-                        <InlineInput 
-                          value={item.certificateNumber} 
-                          onSave={(v) => handleFieldSave('certificateNumber', v)} 
-                          placeholder="CERT NO..." 
-                        />
-                     </div>
-                     <div className="space-y-2">
-                        <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">Credit Points (SKP/CPD)</label>
-                        <InlineInput 
-                          value={item.credit} 
-                          onSave={(v) => handleFieldSave('credit', v)} 
-                          placeholder="0 POINTS..." 
-                        />
-                     </div>
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-[8px] font-black uppercase tracking-widest text-gray-400">External Event Link</label>
-                     <InlineInput 
-                       value={item.link} 
-                       onSave={(v) => handleFieldSave('link', v)} 
-                       prefixIcon={<LinkIcon size={14} />} 
-                       placeholder="HTTPS://..." 
-                     />
-                  </div>
-               </div>
-            </div>
-
-            {/* CONTENT BLOCK: DESCRIPTION & NOTES */}
-            <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-gray-100 shadow-sm space-y-10">
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                  <div className="space-y-4">
-                     <label className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">
-                        <AlignLeft size={14} /> Activity Summary / Experience
-                     </label>
-                     <InlineInput 
-                       multiline 
-                       value={item.description} 
-                       onSave={(v) => handleFieldSave('description', v)} 
-                       placeholder="What happened? What were the key takeaways..." 
-                       className="min-h-[250px] !p-0 !bg-transparent text-sm"
-                     />
-                  </div>
-
-                  <div className="space-y-4 flex flex-col">
-                     <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">
-                           <Zap size={14} /> Personal Reflection & Reflection
-                        </label>
-                        <button 
-                          onClick={handleAiReflection}
-                          disabled={isAiProcessing}
-                          className="flex items-center gap-2 px-4 py-1.5 bg-[#FED400]/20 text-[#004A74] rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all disabled:opacity-50"
-                        >
-                           {isAiProcessing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} AI Reflect
-                        </button>
-                     </div>
-                     <InlineInput 
-                       multiline 
-                       value={item.notes} 
-                       onSave={(v) => handleFieldSave('notes', v)} 
-                       placeholder="Private notes, thoughts, or AI synthesized reflections..." 
-                       className="flex-1 min-h-[250px] !p-0 !bg-transparent text-sm italic"
-                     />
-                  </div>
-               </div>
-            </div>
-
-            {/* DOCUMENTATION VAULT BLOCK */}
-            <DocumentationVault 
-              activityId={item.id} 
-              vaultJsonId={item.vaultJsonId} 
-              storageNodeUrl={item.storageNodeUrl}
-              onUpdateVault={(newVaultId, newNodeUrl) => {
-                handleUpdate({ ...item, vaultJsonId: newVaultId || '', storageNodeUrl: newNodeUrl || '' });
-              }}
-            />
-
-            <footer className="pt-20 pb-10 space-y-3 opacity-20 text-center">
-              <ClipboardCheck size={48} className="mx-auto text-[#004A74]" />
-              <p className="text-[8px] font-black uppercase tracking-[0.8em] text-[#004A74]">XEENAPS PORTFOLIO INFRASTRUCTURE</p>
-            </footer>
-         </div>
       </div>
 
       <style>{`

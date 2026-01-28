@@ -45,6 +45,7 @@ import { useOptimisticUpdate } from '../../hooks/useOptimisticUpdate';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import ActivityDetail from './ActivityDetail';
+import DocumentationVault from './DocumentationVault';
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 
@@ -285,6 +286,7 @@ const ActivityMain: React.FC = () => {
     <Routes>
       <Route path="/" element={<ActivityDashboard />} />
       <Route path="/:id" element={<ActivityDetail />} />
+      <Route path="/:id/vault" element={<DocumentationVault />} />
     </Routes>
   );
 };
