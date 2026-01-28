@@ -69,10 +69,10 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUn
   ];
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-right duration-1000">
+    <div className="space-y-8 animate-in slide-in-from-right duration-1000 h-full flex flex-col">
       
       {/* NARRATIVE BIO */}
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group shrink-0">
          <Quote size={48} className="absolute top-6 right-8 opacity-5 text-[#004A74]" />
          <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-4">Personal Narrative</h3>
          <textarea 
@@ -84,28 +84,31 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUn
          />
       </div>
 
-      {/* DATA HUB FORM */}
-      <div className="bg-white p-8 md:p-10 rounded-[3rem] border border-gray-100 shadow-sm space-y-10">
+      {/* DATA HUB FORM - SINGLE COLUMN STACKING */}
+      <div className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-10 flex-1">
          
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+         <div className="grid grid-cols-1 gap-10">
             
             {/* DOB & AGE */}
             <div className="space-y-6">
-               <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                    <Calendar size={14} className="text-[#FED400]" /> Date of Birth
-                  </label>
-                  <input 
-                    type="date"
-                    className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all"
-                    defaultValue={profile.birthDate}
-                    onBlur={(e) => onUpdate('birthDate', e.target.value)}
-                  />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                       <Calendar size={14} className="text-[#FED400]" /> Date of Birth
+                     </label>
+                     <input 
+                       type="date"
+                       className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all"
+                       defaultValue={profile.birthDate}
+                       onBlur={(e) => onUpdate('birthDate', e.target.value)}
+                     />
+                  </div>
+                  <div className="p-4 bg-[#004A74]/5 rounded-2xl border border-[#004A74]/10 flex flex-col justify-center">
+                     <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block mb-1">Actual Age</span>
+                     <p className="text-sm font-black text-[#004A74]">{calculateAge(profile.birthDate)}</p>
+                  </div>
                </div>
-               <div className="p-4 bg-[#004A74]/5 rounded-2xl border border-[#004A74]/10">
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block mb-1">Actual Age</span>
-                  <p className="text-sm font-black text-[#004A74]">{calculateAge(profile.birthDate)}</p>
-               </div>
+               
                <div className="space-y-2">
                   <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
                     <MapPin size={14} /> Public Address
@@ -119,15 +122,15 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUn
                </div>
             </div>
 
-            {/* CONTACT & JOB */}
+            {/* CONTACT & SOCIAL */}
             <div className="space-y-6">
-               <div className="grid grid-cols-2 gap-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                      <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                       <Mail size={14} /> Email
+                       <Mail size={14} /> Email Address
                      </label>
                      <input 
-                       className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-[11px] font-bold text-[#004A74] outline-none focus:bg-white transition-all"
+                       className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
                        defaultValue={profile.email}
                        onBlur={(e) => onUpdate('email', e.target.value)}
                      />
@@ -137,7 +140,7 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUn
                        <Phone size={14} /> WhatsApp
                      </label>
                      <input 
-                       className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-[11px] font-bold text-[#004A74] outline-none focus:bg-white transition-all"
+                       className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
                        defaultValue={profile.phone}
                        onBlur={(e) => onUpdate('phone', e.target.value)}
                      />
@@ -149,13 +152,16 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUn
                     <Share2 size={14} /> Social Media Handle
                   </label>
                   <input 
-                    className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-[11px] font-bold text-[#004A74] outline-none focus:bg-white transition-all"
+                    className="w-full bg-gray-50 border border-gray-100 px-5 py-3.5 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white transition-all"
                     defaultValue={profile.socialMedia}
                     onBlur={(e) => onUpdate('socialMedia', e.target.value)}
                     placeholder="@username or profile link..."
                   />
                </div>
+            </div>
 
+            {/* JOB & AFFILIATION */}
+            <div className="space-y-6">
                <div className="space-y-2">
                   <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
                     <Briefcase size={14} /> Job Title
@@ -184,8 +190,8 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUn
          </div>
 
          {/* SECTION: ACADEMIC IDS & SYSTEM */}
-         <div className="pt-10 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* UNIQUE ID (LOCKED BY DEFAULT) */}
+         <div className="pt-10 border-t border-gray-100 space-y-8">
+            {/* UNIQUE ID (LOCKED) */}
             <div className="space-y-2">
                <div className="flex items-center justify-between">
                   <label className="text-[9px] font-black uppercase tracking-widest text-red-400 flex items-center gap-2">
@@ -203,15 +209,15 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate, onEditUn
                </div>
             </div>
 
-            {/* IDS GRID */}
-            <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {/* IDS GRID - 2 COLUMNS COMPACT */}
+            <div className="grid grid-cols-2 gap-4">
                {idCards.map((id) => (
                  <div key={id.key} className="space-y-2">
                     <label className={`text-[8px] font-black uppercase tracking-tighter flex items-center gap-1.5 ${id.color}`}>
                        <id.icon size={12} /> {id.label}
                     </label>
                     <input 
-                      className="w-full bg-gray-50 border border-gray-100 px-3 py-3 rounded-xl text-[10px] font-mono font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all"
+                      className="w-full bg-gray-50 border border-gray-100 px-4 py-3 rounded-xl text-[10px] font-mono font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all"
                       defaultValue={profile[id.key]}
                       onBlur={(e) => onUpdate(id.key, e.target.value)}
                       placeholder="CODE..."

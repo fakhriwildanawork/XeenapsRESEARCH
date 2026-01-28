@@ -307,7 +307,6 @@ export interface NoveltySynthesis {
 
 export interface UserProfile {
   fullName: string;
-  degree: string;
   photoUrl: string;
   photoFileId: string;
   photoNodeUrl: string;

@@ -40,7 +40,6 @@ const UserProfileView: React.FC = () => {
       
       const defaultProfile: UserProfile = {
         fullName: "Xeenaps User, Degree",
-        degree: "",
         photoUrl: "",
         photoFileId: "",
         photoNodeUrl: "",
@@ -120,9 +119,9 @@ const UserProfileView: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT: VISUAL IDENTITY */}
-          <div className="lg:col-span-4 xl:col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          {/* LEFT: VISUAL IDENTITY (50%) */}
+          <div className="h-full">
             <IDCardSection 
               profile={localProfile!} 
               onUpdate={handleFieldUpdate}
@@ -134,8 +133,8 @@ const UserProfileView: React.FC = () => {
             />
           </div>
 
-          {/* RIGHT: DATA HUB FORM */}
-          <div className="lg:col-span-8 xl:col-span-9">
+          {/* RIGHT: DATA HUB FORM (50%) */}
+          <div className="h-full">
             <AcademicGrid 
               profile={localProfile!} 
               onUpdate={handleFieldUpdate}
