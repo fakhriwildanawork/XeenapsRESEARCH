@@ -157,17 +157,23 @@ const ActivityDetail: React.FC = () => {
     }
 
     setIsUploading(true);
-    // Fix: removed unnecessary 'as any' casts as properties now exist in ActivityItem interface
     const oldFileId = item.certificateFileId;
     const oldNodeUrl = item.certificateNodeUrl;
 
     const result = await uploadVaultFile(file);
     if (result) {
-      // Fix: removed unnecessary 'as any' casts as properties now exist in ActivityItem interface
-      handleFieldChange('certificateFileId', result.fileId);
-      handleFieldChange('certificateNodeUrl', result.nodeUrl);
+      // 2. FORCE SYNC: Update state and save immediately to Registry
+      const updatedItem = { 
+        ...item, 
+        certificateFileId: result.fileId, 
+        certificateNodeUrl: result.nodeUrl,
+        updatedAt: new Date().toISOString() 
+      };
       
-      // 2. PERMANENT DELETION OF OLD CERTIFICATE
+      setItem(updatedItem);
+      await saveActivity(updatedItem); // Immediate Cloud Sync
+      
+      // 3. PERMANENT DELETION OF OLD CERTIFICATE
       if (oldFileId && oldNodeUrl) {
         await deleteRemoteFile(oldFileId, oldNodeUrl);
       }
@@ -289,14 +295,12 @@ const ActivityDetail: React.FC = () => {
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Primary Certificate File</label>
               <div 
                 onClick={() => !isUploading && fileInputRef.current?.click()}
-                // Fix: Accessing certificate properties directly after interface update
                 className={`relative group w-full h-40 bg-gray-50 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden hover:bg-white hover:border-[#004A74]/30 ${item.certificateFileId || optimisticCertPreview ? 'border-emerald-200 bg-emerald-50/10' : 'border-gray-200'}`}
               >
                 {isUploading && !optimisticCertPreview ? (
                   <Loader2 className="w-8 h-8 text-[#004A74] animate-spin" />
                 ) : (optimisticCertPreview || item.certificateFileId) ? (
                   <div className="relative w-full h-full">
-                     {/* IMAGE PREVIEW - Fix: Accessing certificate properties directly */}
                      {(optimisticCertPreview || item.certificateFileId) && (
                         <img 
                           src={optimisticCertPreview || `https://lh3.googleusercontent.com/d/${item.certificateFileId}`} 
@@ -309,7 +313,6 @@ const ActivityDetail: React.FC = () => {
                         <CheckCircle2 className="w-10 h-10 text-emerald-600 mb-1" />
                         <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Document Secured</p>
                         <div className="flex gap-2 mt-2">
-                           {/* Fix: Accessing certificate properties directly */}
                            <button onClick={(e) => { e.stopPropagation(); window.open(`https://lh3.googleusercontent.com/d/${item.certificateFileId}`, '_blank'); }} className="p-2 bg-white rounded-lg shadow-md text-[#004A74] hover:bg-[#FED400] transition-all"><Eye size={14} /></button>
                            <button onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} className="p-2 bg-white rounded-lg shadow-md text-emerald-600 hover:bg-emerald-50 transition-all"><CloudUpload size={14} /></button>
                         </div>

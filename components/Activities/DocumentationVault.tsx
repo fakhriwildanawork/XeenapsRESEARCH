@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ActivityVaultItem, ActivityItem } from '../../types';
-import { fetchVaultContent, updateVaultContent, uploadVaultFile, deleteRemoteFile } from '../../services/ActivityService';
+import { fetchVaultContent, updateVaultContent, uploadVaultFile, deleteRemoteFile, saveActivity } from '../../services/ActivityService';
 import { 
   Plus, 
   Trash2, 
@@ -64,6 +64,7 @@ const DocumentationVault: React.FC = () => {
     const loadMetadata = async () => {
       if (!metadata && urlActivityId) {
         setIsLoading(true);
+        // Manual fetch to ActivityMain list for recovery if state is lost
         const res = await fetch(window.location.origin + `/activities?action=getActivities&limit=1000`);
         const json = await res.json();
         const found = json.data?.find((i: any) => i.id === urlActivityId);
@@ -83,13 +84,25 @@ const DocumentationVault: React.FC = () => {
       setIsLoading(false);
     };
     loadVault();
-  }, [metadata]);
+  }, [metadata?.vaultJsonId]);
 
   const handleSyncVault = async (newItems: ActivityVaultItem[]) => {
     if (!metadata || !urlActivityId) return;
+    
+    // 1. Sync JSON file to the Shard Node
     const result = await updateVaultContent(urlActivityId, metadata.vaultJsonId, newItems, metadata.storageNodeUrl);
-    if (result.success && result.newVaultId !== metadata.vaultJsonId) {
-       setMetadata({ ...metadata, vaultJsonId: result.newVaultId || '' });
+    
+    if (result.success) {
+      // 2. IMPORTANT: Update the Master Registry with the new Vault ID and Storage Node
+      const updatedMetadata: ActivityItem = { 
+        ...metadata, 
+        vaultJsonId: result.newVaultId || metadata.vaultJsonId,
+        storageNodeUrl: result.newNodeUrl || metadata.storageNodeUrl,
+        updatedAt: new Date().toISOString()
+      };
+      
+      setMetadata(updatedMetadata);
+      await saveActivity(updatedMetadata); // SYNC TO MAIN SPREADSHEET
     }
   };
 
