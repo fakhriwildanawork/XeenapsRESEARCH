@@ -3,6 +3,7 @@ import { ArrowPathIcon } from '@heroicons/react/24/outline';
 // @ts-ignore
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
+import { fetchUserProfile } from '../../services/ProfileService';
 
 interface HeaderProps {
   searchQuery: string;
@@ -15,6 +16,30 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
   const navigate = useNavigate();
   const [tutorialLink, setTutorialLink] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [userProfile, setUserProfile] = useState<{name: string, photo: string}>({
+    name: "Xeenaps User",
+    photo: ""
+  });
+
+  const loadProfile = async () => {
+    const profile = await fetchUserProfile();
+    if (profile) {
+      const formattedName = profile.fullName.split(',')[0].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      setUserProfile({
+        name: formattedName,
+        photo: profile.photoUrl
+      });
+    }
+  };
+
+  useEffect(() => {
+    loadProfile();
+    
+    // Listen to profile updates
+    const handleProfileUpdate = () => loadProfile();
+    window.addEventListener('xeenaps-profile-updated', handleProfileUpdate);
+    return () => window.removeEventListener('xeenaps-profile-updated', handleProfileUpdate);
+  }, []);
 
   // Mapping path to Tutorial ID from Spreadsheet
   const getTutorialId = (pathname: string): string => {
@@ -73,9 +98,6 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
     }
   };
 
-  const rawName = "Personal User";
-  const userName = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-  const userPhoto = ""; 
   const placeholderUrl = BRAND_ASSETS.USER_DEFAULT;
 
   return (
@@ -101,7 +123,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
           WELCOME,
         </span>
         <h1 className="text-xl md:text-3xl font-bold text-[#004A74] leading-tight">
-          {userName}!
+          {userProfile.name}!
         </h1>
       </div>
 
@@ -142,7 +164,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
           <div className="relative">
             <div className="w-10 h-10 md:w-11 md:h-11 rounded-full border-2 border-[#FED400] p-0.5 group-hover:border-[#004A74] transition-colors duration-300 overflow-hidden shadow-sm bg-white">
               <img 
-                src={userPhoto || placeholderUrl} 
+                src={userProfile.photo || placeholderUrl} 
                 alt="User Profile" 
                 className="w-full h-full object-cover rounded-full bg-gray-50 group-hover:scale-110 transition-transform duration-500"
               />

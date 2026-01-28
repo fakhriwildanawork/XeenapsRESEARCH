@@ -448,7 +448,7 @@ function doPost(e) {
       }
 
       // 2. SHARDING: Insight Data JSON
-      if (!item.insightJsonId) {
+      if (!item.insightJsonId && item.id !== 'PHOTO_PROFILE') {
         const insightFileName = `insight_${item.id}.json`;
         const insightContent = JSON.stringify({});
         if (storageTarget.isLocal) {
@@ -485,7 +485,6 @@ function doPost(e) {
           const resJson = JSON.parse(res.getContentText());
           if (resJson.status === 'success') {
             item.fileId = resJson.fileId;
-            if (mimeType.toLowerCase().includes('image/')) imageView = 'https://lh3.googleusercontent.com/d/' + resJson.fileId;
           }
         }
       }
@@ -495,8 +494,18 @@ function doPost(e) {
         if (ytid) item.youtubeId = 'https://www.youtube.com/embed/' + ytid;
       }
       
-      saveToSheet(CONFIG.SPREADSHEETS.LIBRARY, "Collections", item);
-      return createJsonResponse({ status: 'success' });
+      // Khusus untuk Library Item (Bukan Foto Profil)
+      if (item.id !== 'PHOTO_PROFILE') {
+        saveToSheet(CONFIG.SPREADSHEETS.LIBRARY, "Collections", item);
+      }
+      
+      return createJsonResponse({ 
+        status: 'success', 
+        fileId: item.fileId, 
+        nodeUrl: item.storageNodeUrl,
+        extractedJsonId: item.extractedJsonId,
+        insightJsonId: item.insightJsonId
+      });
     }
     
     if (action === 'deleteItem') {

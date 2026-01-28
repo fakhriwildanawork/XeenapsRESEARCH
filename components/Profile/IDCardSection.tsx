@@ -14,43 +14,51 @@ interface IDCardSectionProps {
 }
 
 const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhotoChange, onEditUniqueId }) => {
-  const [isUploading, setIsUploading] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    showXeenapsToast('info', 'Synchronizing photo with storage node...');
-    
+    // STEP 1: INSTANT PREVIEW (Optimistic UI)
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setPreviewUrl(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // STEP 2: BACKEND SYNC (Silent)
     const result = await uploadProfilePhoto(file);
     if (result) {
       onPhotoChange(result.photoUrl, result.fileId, result.nodeUrl);
-      await saveUserProfile({ 
-        ...profile, 
-        photoUrl: result.photoUrl, 
-        photoFileId: result.fileId, 
-        photoNodeUrl: result.nodeUrl 
-      });
-      showXeenapsToast('success', 'Profile photo updated');
+      showXeenapsToast('success', 'Profile photo synchronized');
+      setPreviewUrl(null); // Reset preview and let parent's URL take over
     } else {
       showXeenapsToast('error', 'Upload failed. Check storage quota.');
+      setPreviewUrl(null); // Rollback preview
     }
-    setIsUploading(false);
   };
 
   const handleDeletePhoto = async () => {
     if (!profile.photoFileId || !profile.photoNodeUrl) return;
     
-    setIsUploading(true);
-    const success = await deleteProfilePhoto(profile.photoFileId, profile.photoNodeUrl);
-    if (success) {
-      onPhotoChange("", "", "");
-      await saveUserProfile({ ...profile, photoUrl: "", photoFileId: "", photoNodeUrl: "" });
-      showXeenapsToast('success', 'Photo removed');
+    const confirm = await showXeenapsConfirm(
+      'DELETE PHOTO?', 
+      'This will permanently remove your profile image from the storage node.',
+      'DELETE'
+    );
+
+    if (confirm.isConfirmed) {
+      const success = await deleteProfilePhoto(profile.photoFileId, profile.photoNodeUrl);
+      if (success) {
+        onPhotoChange("", "", "");
+        showXeenapsToast('success', 'Photo removed');
+      }
     }
-    setIsUploading(false);
   };
 
   const handleUniqueIdRequest = async () => {
@@ -64,7 +72,7 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
     }
   };
 
-  const photoUrl = profile.photoUrl || BRAND_ASSETS.USER_DEFAULT;
+  const photoDisplay = previewUrl || profile.photoUrl || BRAND_ASSETS.USER_DEFAULT;
 
   return (
     <div className="bg-white rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden flex flex-col h-full animate-in slide-in-from-left duration-700 min-h-[650px]">
@@ -89,14 +97,7 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
             <div className="absolute inset-0 bg-[#FED400]/20 rounded-[3rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative w-56 h-72 rounded-[2.5rem] p-1.5 bg-white shadow-xl border border-gray-100 overflow-hidden group">
                <div className="w-full h-full rounded-[2.2rem] overflow-hidden bg-gray-50 border border-gray-100">
-                  {isUploading ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#004A74]/5">
-                       <Loader2 className="w-10 h-10 text-[#004A74] animate-spin mb-2" />
-                       <span className="text-[8px] font-black text-[#004A74] uppercase tracking-widest">Encrypting...</span>
-                    </div>
-                  ) : (
-                    <img src={photoUrl} className="w-full h-full object-cover transition-all duration-700" alt="Profile" />
-                  )}
+                  <img src={photoDisplay} className="w-full h-full object-cover transition-all duration-700" alt="Profile" />
                </div>
 
                {/* HOVER OVERLAY */}

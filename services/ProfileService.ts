@@ -51,9 +51,8 @@ export const uploadProfilePhoto = async (file: File): Promise<{ photoUrl: string
     });
     const result = await response.json();
     if (result.status === 'success') {
-      // Logic for retrieving LH3 link
-      const nodeUrl = result.nodeUrl || GAS_WEB_APP_URL;
       const fileId = result.fileId;
+      const nodeUrl = result.nodeUrl;
       return {
         photoUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
         fileId: fileId,

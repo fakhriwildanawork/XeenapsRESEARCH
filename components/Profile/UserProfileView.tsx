@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile, EducationEntry, CareerEntry } from '../../types';
-import { fetchUserProfile, fetchEducationHistory, fetchCareerHistory, saveUserProfile } from '../../services/ProfileService';
+import { fetchUserProfile, fetchEducationHistory, fetchCareerHistory, saveUserProfile, deleteProfilePhoto } from '../../services/ProfileService';
 import IDCardSection from './IDCardSection';
 import AcademicGrid from './AcademicGrid';
 import HistoryTimeline from './HistoryTimeline';
@@ -77,6 +77,10 @@ const UserProfileView: React.FC = () => {
     loadAllData();
   }, [loadAllData]);
 
+  const dispatchProfileUpdate = () => {
+    window.dispatchEvent(new CustomEvent('xeenaps-profile-updated'));
+  };
+
   // Unified Inline Update Handler
   const handleFieldUpdate = async (field: keyof UserProfile, value: string) => {
     if (!localProfile || !profile) return;
@@ -90,9 +94,39 @@ const UserProfileView: React.FC = () => {
     if (success) {
       setProfile(newProfile);
       showXeenapsToast('success', `${field.charAt(0).toUpperCase() + field.slice(1)} updated`);
+      dispatchProfileUpdate();
     } else {
       setLocalProfile(profile); // Rollback
       showXeenapsToast('error', 'Cloud sync failed');
+    }
+    setIsSyncing(false);
+  };
+
+  const handlePhotoUpdate = async (url: string, fileId: string, nodeUrl: string) => {
+    if (!localProfile) return;
+    
+    const oldFileId = localProfile.photoFileId;
+    const oldNodeUrl = localProfile.photoNodeUrl;
+
+    const updatedProfile = { 
+      ...localProfile, 
+      photoUrl: url, 
+      photoFileId: fileId, 
+      photoNodeUrl: nodeUrl 
+    };
+
+    setLocalProfile(updatedProfile);
+    setIsSyncing(true);
+
+    const success = await saveUserProfile(updatedProfile);
+    if (success) {
+      setProfile(updatedProfile);
+      dispatchProfileUpdate();
+
+      // PERMANENT DELETE OLD PHOTO (Only if exists and different)
+      if (oldFileId && oldFileId !== fileId && oldNodeUrl) {
+         await deleteProfilePhoto(oldFileId, oldNodeUrl);
+      }
     }
     setIsSyncing(false);
   };
@@ -135,11 +169,7 @@ const UserProfileView: React.FC = () => {
             <IDCardSection 
               profile={localProfile!} 
               onUpdate={handleFieldUpdate}
-              onPhotoChange={(url, id, node) => {
-                const updated = { ...localProfile!, photoUrl: url, photoFileId: id, photoNodeUrl: node };
-                setLocalProfile(updated);
-                setProfile(updated);
-              }}
+              onPhotoChange={handlePhotoUpdate}
               onEditUniqueId={() => setIsUniqueIdModalOpen(true)}
             />
           </div>
