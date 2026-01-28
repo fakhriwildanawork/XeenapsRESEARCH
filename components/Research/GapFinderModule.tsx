@@ -1,4 +1,3 @@
-
 import React from 'react';
 // @ts-ignore
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -8,6 +7,8 @@ import ResearchForm from './ResearchForm';
 import ResearchWorkArea from './ResearchWorkArea';
 import AllBrainstorming from './Brainstorming/AllBrainstorming';
 import BrainstormingDetail from './Brainstorming/BrainstormingDetail';
+import AllPublication from './Publication/AllPublication';
+import PublicationDetail from './Publication/PublicationDetail';
 
 interface GapFinderModuleProps {
   items: LibraryItem[];
@@ -24,6 +25,10 @@ const GapFinderModule: React.FC<GapFinderModuleProps> = ({ items }) => {
         {/* BRAINSTORMING ROUTES */}
         <Route path="/brainstorming" element={<AllBrainstorming />} />
         <Route path="/brainstorming/:id" element={<BrainstormingDetail libraryItems={items} />} />
+
+        {/* PUBLICATION ROUTES */}
+        <Route path="/publication" element={<AllPublication />} />
+        <Route path="/publication/:id" element={<PublicationDetail />} />
         
         <Route path="*" element={<Navigate to="/research" replace />} />
       </Routes>

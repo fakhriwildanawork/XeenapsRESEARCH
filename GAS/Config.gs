@@ -19,7 +19,8 @@ const CONFIG = {
     QUESTION_BANK: '14ZbesZJvLLr3d1rhTW_L4E_D6gqWj_e7AJIiLJ2b5OU',
     RESEARCH: '1XRmeIuj2vyXO9a0BFwODdkMNd_o7bmPIw9KHQOtFhoE',
     BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM',
-    LITERATURE_ARCHIVE: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE'
+    LITERATURE_ARCHIVE: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE',
+    PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g'
   },
   SCHEMAS: {
     LIBRARY: [
@@ -135,6 +136,34 @@ const CONFIG = {
       'label',
       'isFavorite',
       'createdAt'
+    ],
+    PUBLICATION: [
+      'id',
+      'title',
+      'authors', // JSON Array
+      'type',
+      'status',
+      'publisherName',
+      'indexing',
+      'quartile',
+      'doi',
+      'issn_isbn',
+      'volume',
+      'issue',
+      'pages',
+      'year',
+      'submissionDate',
+      'acceptanceDate',
+      'publicationDate',
+      'brainstormingId',
+      'libraryId',
+      'manuscriptLink',
+      'abstract',
+      'keywords', // JSON Array
+      'remarks',
+      'isFavorite',
+      'createdAt',
+      'updatedAt'
     ]
   }
 };

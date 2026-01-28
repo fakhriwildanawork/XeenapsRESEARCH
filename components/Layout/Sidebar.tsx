@@ -15,7 +15,8 @@ import {
   Sparkles,
   Zap,
   Target,
-  SearchCode
+  SearchCode,
+  Share2
 } from 'lucide-react';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
 
@@ -195,7 +196,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             </div>
           </button>
 
-          <div className={`overflow-hidden transition-all duration-500 ease-in-out space-y-1 mt-1 ${researchMenuOpen && isExpanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0 invisible'}`}>
+          <div className={`overflow-hidden transition-all duration-500 ease-in-out space-y-1 mt-1 ${researchMenuOpen && isExpanded ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0 invisible'}`}>
             <NavLink 
               to="/research"
               onClick={handleNavClick}
@@ -211,6 +212,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             >
               <Sparkles size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Brainstorming</span>
+            </NavLink>
+            <NavLink 
+              to="/research/publication"
+              onClick={handleNavClick}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/publication' ? 'text-[#004A74] bg-[#FED400]/10 font-bold' : 'text-gray-500 hover:text-[#004A74] hover:bg-[#FED400]/5'}`}
+            >
+              <Share2 size={14} className="mr-2 shrink-0" />
+              <span className="whitespace-nowrap">Publication</span>
             </NavLink>
             <div className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-gray-400 cursor-not-allowed text-xs md:text-sm font-medium">
               <Target size={14} className="mr-2 shrink-0 opacity-40" />

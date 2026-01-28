@@ -43,6 +43,24 @@ export const initializeBrainstormingDatabase = async (): Promise<{ status: strin
   }
 };
 
+/**
+ * NEW: Initialize Publication Database Structure
+ */
+export const initializePublicationDatabase = async (): Promise<{ status: string; message: string }> => {
+  try {
+    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify({ action: 'setupPublicationDatabase' }),
+    });
+    return await response.json();
+  } catch (error: any) {
+    return { status: 'error', message: error.toString() };
+  }
+};
+
 export const fetchLibrary = async (): Promise<LibraryItem[]> => {
   try {
     if (!GAS_WEB_APP_URL) return [];

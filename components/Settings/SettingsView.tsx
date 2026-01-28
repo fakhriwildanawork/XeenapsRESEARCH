@@ -9,18 +9,20 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { GAS_WEB_APP_URL } from '../../constants';
-import { initializeDatabase, initializeBrainstormingDatabase } from '../../services/gasService';
+import { initializeDatabase, initializeBrainstormingDatabase, initializePublicationDatabase } from '../../services/gasService';
 import { showXeenapsAlert } from '../../utils/swalUtils';
 
 const SettingsView: React.FC = () => {
   const isConfigured = !!GAS_WEB_APP_URL;
   const [isInitializing, setIsInitializing] = useState(false);
   const [isInitializingBrain, setIsInitializingBrain] = useState(false);
+  const [isInitializingPub, setIsInitializingPub] = useState(false);
 
   const SPREADSHEET_IDS = {
     LIBRARY: '1ROW4iyHN10DfDWaXL7O54mZi6Da9Xx70vU6oE-YW-I8',
     KEYS: '1Ji8XL2ceTprNa1dYvhfTnMDkWwzC937kpfyP19D7NvI',
-    BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM'
+    BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM',
+    PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g'
   };
 
   const openSheet = (id: string) => {
@@ -69,6 +71,27 @@ const SettingsView: React.FC = () => {
     }
   };
 
+  const handleInitPubDatabase = async () => {
+    setIsInitializingPub(true);
+    try {
+      const result = await initializePublicationDatabase();
+      if (result.status === 'success') {
+        showXeenapsAlert({
+          icon: 'success',
+          title: 'PUBLICATION READY',
+          text: 'The Publication registry sheet has been successfully initialized.',
+          confirmButtonText: 'GREAT'
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err: any) {
+      showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
+    } finally {
+      setIsInitializingPub(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
       <div className="glass p-8 rounded-[2rem] border-white/40 shadow-2xl">
@@ -83,38 +106,52 @@ const SettingsView: React.FC = () => {
         </div>
 
         {/* Database Auto-Setup Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="p-6 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
             <SparklesIcon className="absolute -right-10 -top-10 w-40 h-40 text-white/5 group-hover:rotate-12 transition-transform duration-1000" />
-            <h3 className="text-lg font-black mb-2 flex items-center gap-2 relative z-10">
+            <h3 className="text-sm font-black mb-2 flex items-center gap-2 relative z-10 uppercase tracking-widest">
               <TableCellsIcon className="w-5 h-5 text-[#FED400]" />
-              Master Library
+              Library
             </h3>
-            <p className="text-white/60 text-xs mb-6 relative z-10">Initialize Collections database for library indexing.</p>
             <button 
               onClick={handleInitDatabase}
               disabled={isInitializing || !isConfigured}
-              className="w-full py-3 bg-[#FED400] text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 relative z-10"
+              className="w-full py-3 bg-[#FED400] text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 relative z-10"
             >
               {isInitializing ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <SparklesIcon className="w-4 h-4" />}
-              {isInitializing ? 'Setup...' : 'Initialize Library'}
+              {isInitializing ? 'Setup...' : 'Initialize'}
             </button>
           </div>
 
           <div className="p-6 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
             <SparklesIcon className="absolute -right-10 -top-10 w-40 h-40 text-white/5 group-hover:rotate-12 transition-transform duration-1000" />
-            <h3 className="text-lg font-black mb-2 flex items-center gap-2 relative z-10">
+            <h3 className="text-sm font-black mb-2 flex items-center gap-2 relative z-10 uppercase tracking-widest">
               <TableCellsIcon className="w-5 h-5 text-[#FED400]" />
-              Brainstorming
+              Incubation
             </h3>
-            <p className="text-white/60 text-xs mb-6 relative z-10">Initialize incubation database for research ideas.</p>
             <button 
               onClick={handleInitBrainDatabase}
               disabled={isInitializingBrain || !isConfigured}
-              className="w-full py-3 bg-white text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 relative z-10"
+              className="w-full py-3 bg-white text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 relative z-10"
             >
               {isInitializingBrain ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <SparklesIcon className="w-4 h-4" />}
-              {isInitializingBrain ? 'Setup...' : 'Initialize Brainstorming'}
+              {isInitializingBrain ? 'Setup...' : 'Initialize'}
+            </button>
+          </div>
+
+          <div className="p-6 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
+            <SparklesIcon className="absolute -right-10 -top-10 w-40 h-40 text-white/5 group-hover:rotate-12 transition-transform duration-1000" />
+            <h3 className="text-sm font-black mb-2 flex items-center gap-2 relative z-10 uppercase tracking-widest">
+              <TableCellsIcon className="w-5 h-5 text-[#FED400]" />
+              Publication
+            </h3>
+            <button 
+              onClick={handleInitPubDatabase}
+              disabled={isInitializingPub || !isConfigured}
+              className="w-full py-3 bg-[#FED400] text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 relative z-10"
+            >
+              {isInitializingPub ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <SparklesIcon className="w-4 h-4" />}
+              {isInitializingPub ? 'Setup...' : 'Initialize'}
             </button>
           </div>
         </div>
@@ -184,6 +221,17 @@ const SettingsView: React.FC = () => {
               <div>
                 <h4 className="font-bold text-[#004A74] group-hover:text-white group-hover:scale-105 transition-all origin-left">Brainstorming Registry</h4>
                 <p className="text-sm text-gray-500 group-hover:text-white/70">Manage research incubation logs manually.</p>
+              </div>
+              <TableCellsIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
+            </button>
+
+            <button 
+              onClick={() => openSheet(SPREADSHEET_IDS.PUBLICATION)}
+              className="group flex items-center justify-between p-6 bg-white/40 hover:bg-[#004A74] rounded-2xl border border-white/60 transition-all duration-500 text-left shadow-sm"
+            >
+              <div>
+                <h4 className="font-bold text-[#004A74] group-hover:text-white group-hover:scale-105 transition-all origin-left">Publication Showcase</h4>
+                <p className="text-sm text-gray-500 group-hover:text-white/70">Access publication tracking and output showcase.</p>
               </div>
               <TableCellsIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
             </button>

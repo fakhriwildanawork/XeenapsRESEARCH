@@ -186,6 +186,47 @@ export interface BrainstormingItem {
   updatedAt: string;
 }
 
+// --- PUBLICATION TYPES ---
+
+export enum PublicationStatus {
+  DRAFT = 'Draft',
+  SUBMITTED = 'Submitted',
+  UNDER_REVIEW = 'Under Review',
+  REVISION = 'Revision',
+  ACCEPTED = 'Accepted',
+  PUBLISHED = 'Published',
+  REJECTED = 'Rejected'
+}
+
+export interface PublicationItem {
+  id: string;
+  title: string;
+  authors: string[];
+  type: string; // Journal, Conference, Book, etc.
+  status: PublicationStatus;
+  publisherName: string;
+  indexing: string;
+  quartile: string;
+  doi: string;
+  issn_isbn: string;
+  volume: string;
+  issue: string;
+  pages: string;
+  year: string;
+  submissionDate: string;
+  acceptanceDate: string;
+  publicationDate: string;
+  brainstormingId?: string;
+  libraryId?: string;
+  manuscriptLink: string;
+  abstract: string;
+  keywords: string[];
+  remarks: string;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // --- LITERATURE SEARCH TYPES ---
 
 export interface LiteratureArticle {

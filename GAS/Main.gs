@@ -34,6 +34,15 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: getPublication
+    if (action === 'getPublication') {
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "25");
+      const search = e.parameter.search || "";
+      const result = getPublicationFromRegistry(page, limit, search);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
     // NEW: searchGlobalArticles (Proxy for OpenAlex)
     if (action === 'searchGlobalArticles') {
       return createJsonResponse(handleGlobalArticleSearch(e.parameter));
@@ -158,7 +167,17 @@ function doPost(e) {
     if (action === 'setupDatabase') return createJsonResponse(setupDatabase());
     if (action === 'setupResearchDatabase') return createJsonResponse(setupResearchDatabase());
     if (action === 'setupBrainstormingDatabase') return createJsonResponse(setupBrainstormingDatabase());
+    if (action === 'setupPublicationDatabase') return createJsonResponse(setupPublicationDatabase());
     
+    // NEW ACTION: savePublication
+    if (action === 'savePublication') {
+      return createJsonResponse(savePublicationToRegistry(body.item));
+    }
+    // NEW ACTION: deletePublication
+    if (action === 'deletePublication') {
+      return createJsonResponse(deletePublicationFromRegistry(body.id));
+    }
+
     // NEW ACTION: saveArchivedArticle
     if (action === 'saveArchivedArticle') {
       return createJsonResponse(saveArchivedArticleToRegistry(body.item));
