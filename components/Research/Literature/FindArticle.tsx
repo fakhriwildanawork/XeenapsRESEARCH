@@ -75,7 +75,7 @@ const FindArticle: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-white animate-in fade-in duration-500">
+    <div className="flex flex-col h-full overflow-y-auto custom-scrollbar bg-white animate-in fade-in duration-500">
       {/* Header / Search Form */}
       <div className="px-6 md:px-10 py-8 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
         <div className="flex items-center justify-between mb-8">

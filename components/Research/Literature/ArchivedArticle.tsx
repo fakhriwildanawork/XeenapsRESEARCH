@@ -185,7 +185,7 @@ const ArchivedArticle: React.FC = () => {
   const effectiveViewMode = isMobile ? 'grid' : viewMode;
 
   return (
-    <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden">
+    <div className="flex flex-col h-full overflow-y-auto custom-scrollbar bg-white animate-in slide-in-from-right duration-500">
       {/* Detail Modal for Archived Items */}
       {detailItem && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-black/60 backdrop-blur-xl animate-in fade-in">
@@ -342,7 +342,7 @@ const ArchivedArticle: React.FC = () => {
       </StandardQuickAccessBar>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 pb-20">
+      <div className="flex-1 p-6 md:p-10 pb-20">
         {isLoading ? (
           effectiveViewMode === 'table' ? <TableSkeletonRows count={8} /> : <CardGridSkeleton count={6} />
         ) : serverItems.length === 0 ? (
