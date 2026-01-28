@@ -55,10 +55,15 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
     );
 
     if (confirm.isConfirmed) {
+      // INSTANT UI FEEDBACK (OPTIMISTIC)
+      onPhotoChange(BRAND_ASSETS.USER_DEFAULT, "", ""); 
+      setPreviewUrl(null);
+      
       const success = await deleteProfilePhoto(profile.photoFileId, profile.photoNodeUrl);
       if (success) {
-        onPhotoChange("", "", "");
         showXeenapsToast('success', 'Photo removed');
+      } else {
+        showXeenapsToast('error', 'Server removal failed, but display updated.');
       }
     }
   };
@@ -110,7 +115,7 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
                   >
                     <Camera size={24} />
                   </button>
-                  {profile.photoUrl && (
+                  {profile.photoUrl && profile.photoUrl !== BRAND_ASSETS.USER_DEFAULT && (
                     <button 
                       onClick={handleDeletePhoto}
                       className="p-4 bg-red-500 text-white rounded-2xl hover:scale-110 active:scale-95 transition-all shadow-xl"

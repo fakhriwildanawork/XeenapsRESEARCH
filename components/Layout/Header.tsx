@@ -11,36 +11,62 @@ interface HeaderProps {
   onRefresh?: () => Promise<void>;
 }
 
+// GLOBAL CACHE SINGLETON - Mencegah render ulang saat pindah modul
+let profileCache = {
+  name: "",
+  photo: "",
+  isLoaded: false
+};
+
 const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [tutorialLink, setTutorialLink] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(!profileCache.isLoaded);
+  
   const [userProfile, setUserProfile] = useState<{name: string, photo: string}>({
-    name: "Xeenaps User",
-    photo: BRAND_ASSETS.USER_DEFAULT
+    name: profileCache.name || "Xeenaps User",
+    photo: profileCache.photo || BRAND_ASSETS.USER_DEFAULT
   });
 
-  const loadProfile = async () => {
+  const loadProfile = async (forceRefresh = false) => {
+    if (profileCache.isLoaded && !forceRefresh) {
+      setIsInitialLoading(false);
+      return;
+    }
+
     const profile = await fetchUserProfile();
     if (profile) {
-      // KEEP CASE: dr. tetap dr., Dr. tetap Dr.
-      const displayName = profile.fullName.split(',')[0].trim();
-      setUserProfile({
-        name: displayName,
-        photo: profile.photoUrl || BRAND_ASSETS.USER_DEFAULT
-      });
+      const displayName = profile.fullName.split(',')[0].trim() || "Xeenaps User";
+      const displayPhoto = profile.photoUrl || BRAND_ASSETS.USER_DEFAULT;
+      
+      // Update Cache
+      profileCache = { name: displayName, photo: displayPhoto, isLoaded: true };
+      
+      setUserProfile({ name: displayName, photo: displayPhoto });
     }
+    setIsInitialLoading(false);
   };
 
   useEffect(() => {
     loadProfile();
     
-    // Listen to profile updates
-    const handleProfileUpdate = () => loadProfile();
-    // Listen to instant photo updates (Optimistic UI from IDCardSection)
+    // DATA-DRIVEN EVENT LISTENERS (INSTANT UPDATES WITHOUT FETCH)
+    const handleProfileUpdate = (e: any) => {
+      const { fullName, photoUrl } = e.detail || {};
+      const newName = fullName ? fullName.split(',')[0].trim() : "Xeenaps User";
+      const newPhoto = photoUrl || BRAND_ASSETS.USER_DEFAULT;
+      
+      // Update local state & cache instantly
+      profileCache = { ...profileCache, name: newName, photo: newPhoto };
+      setUserProfile({ name: newName, photo: newPhoto });
+    };
+
     const handleInstantPhoto = (e: any) => {
-      setUserProfile(prev => ({ ...prev, photo: e.detail }));
+      const newPhoto = e.detail || BRAND_ASSETS.USER_DEFAULT;
+      profileCache.photo = newPhoto;
+      setUserProfile(prev => ({ ...prev, photo: newPhoto }));
     };
 
     window.addEventListener('xeenaps-profile-updated', handleProfileUpdate);
@@ -103,8 +129,8 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
     setIsRefreshing(true);
     try {
       await onRefresh();
+      await loadProfile(true); // Force sync profile cache too
     } finally {
-      // Small delay to ensure the animation is visible
       setTimeout(() => setIsRefreshing(false), 1000);
     }
   };
@@ -115,8 +141,8 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
     <header className="sticky top-0 z-[60] w-full py-4 lg:py-6 bg-white/80 backdrop-blur-md flex items-center justify-between border-b border-gray-100/50 px-1">
       <style>{`
         @keyframes refresh-glow {
-          0% { color: #ef4444; } /* Red-500 */
-          50% { color: #fbbf24; } /* Yellow-400 */
+          0% { color: #ef4444; }
+          50% { color: #fbbf24; }
           100% { color: #ef4444; }
         }
         .refresh-loading {
@@ -129,17 +155,21 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
       `}</style>
 
       {/* Bagian Kiri: Welcome Message */}
-      <div className="flex flex-col">
+      <div className="flex flex-col min-w-0">
         <span className="text-[9px] md:text-[11px] uppercase font-normal tracking-[0.2em] text-[#004A74] opacity-90">
           WELCOME,
         </span>
-        <h1 className="text-xl md:text-3xl font-bold text-[#004A74] leading-tight">
-          {userProfile.name}!
-        </h1>
+        {isInitialLoading ? (
+          <div className="h-8 w-48 skeleton rounded-lg mt-1" />
+        ) : (
+          <h1 className="text-xl md:text-3xl font-bold text-[#004A74] leading-tight truncate pr-4">
+            {userProfile.name}!
+          </h1>
+        )}
       </div>
 
       {/* Bagian Kanan: Icons */}
-      <div className="flex items-center gap-1 md:gap-3">
+      <div className="flex items-center gap-1 md:gap-3 shrink-0">
         {/* Refresh Button */}
         <button 
           onClick={handleRefreshClick}
@@ -180,7 +210,6 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
                 className="w-full h-full object-cover rounded-full bg-gray-50 group-hover:scale-110 transition-transform duration-500"
               />
             </div>
-            {/* Notification Dot Overlay (Top Right of Photo) */}
             <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#FED400] rounded-full border-2 border-white shadow-sm scale-90"></span>
           </div>
         </button>

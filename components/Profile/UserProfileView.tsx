@@ -88,8 +88,9 @@ const UserProfileView: React.FC = () => {
     loadAllData();
   }, [loadAllData]);
 
-  const dispatchProfileUpdate = () => {
-    window.dispatchEvent(new CustomEvent('xeenaps-profile-updated'));
+  const dispatchProfileUpdate = (updatedProfile: UserProfile) => {
+    // Kirim payload lengkap agar Header tidak perlu fetch ulang
+    window.dispatchEvent(new CustomEvent('xeenaps-profile-updated', { detail: updatedProfile }));
   };
 
   // --- OPTIMISTIC HISTORY HANDLERS ---
@@ -178,14 +179,20 @@ const UserProfileView: React.FC = () => {
     setLocalProfile(newProfile);
     setIsSyncing(true);
     
+    // Update Header instantly for 'fullName' field
+    if (field === 'fullName') {
+      dispatchProfileUpdate(newProfile);
+    }
+    
     const success = await saveUserProfile(newProfile);
     if (success) {
       setProfile(newProfile);
       showXeenapsToast('success', `${field.charAt(0).toUpperCase() + field.slice(1)} updated`);
-      dispatchProfileUpdate();
+      dispatchProfileUpdate(newProfile);
     } else {
       setLocalProfile(profile); 
       showXeenapsToast('error', 'Cloud sync failed');
+      dispatchProfileUpdate(profile); // Rollback header
     }
     setIsSyncing(false);
   };
@@ -209,7 +216,7 @@ const UserProfileView: React.FC = () => {
     const success = await saveUserProfile(updatedProfile);
     if (success) {
       setProfile(updatedProfile);
-      dispatchProfileUpdate();
+      dispatchProfileUpdate(updatedProfile);
 
       if (oldFileId && oldFileId !== fileId && oldNodeUrl) {
          await deleteProfilePhoto(oldFileId, oldNodeUrl);
