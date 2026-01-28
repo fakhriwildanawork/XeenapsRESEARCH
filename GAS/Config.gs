@@ -170,8 +170,12 @@ const CONFIG = {
     ],
     PROFILE: [
       'fullName',
+      'degree',
       'photoUrl',
+      'photoFileId',
+      'photoNodeUrl',
       'bio',
+      'birthDate',
       'address',
       'email',
       'phone',

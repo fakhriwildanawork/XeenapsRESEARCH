@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile, EducationEntry, CareerEntry } from '../../types';
 import { fetchUserProfile, fetchEducationHistory, fetchCareerHistory, saveUserProfile } from '../../services/ProfileService';
 import IDCardSection from './IDCardSection';
@@ -6,16 +6,13 @@ import AcademicGrid from './AcademicGrid';
 import HistoryTimeline from './HistoryTimeline';
 import { EducationModal, CareerModal } from './ProfileModals';
 import { 
-  User, 
   GraduationCap, 
   Briefcase, 
   Plus, 
-  Loader2,
-  ShieldCheck,
-  Save
+  Loader2
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
-import { showXeenapsAlert, showXeenapsConfirm } from '../../utils/swalUtils';
+import { showXeenapsConfirm } from '../../utils/swalUtils';
 
 const UserProfileView: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -42,8 +39,12 @@ const UserProfileView: React.FC = () => {
       
       const defaultProfile: UserProfile = {
         fullName: "Xeenaps User",
+        degree: "",
         photoUrl: "",
-        bio: "Add your academic or professional bio here to personalize your PKM workspace.",
+        photoFileId: "",
+        photoNodeUrl: "",
+        bio: "Add your academic or professional bio here.",
+        birthDate: "",
         address: "Not set",
         email: "user@xeenaps.app",
         phone: "-",
@@ -109,7 +110,7 @@ const UserProfileView: React.FC = () => {
     const success = await saveUserProfile(newProfile);
     if (success) {
       setProfile(newProfile);
-      showXeenapsToast('success', `${field.charAt(0).toUpperCase() + field.slice(1)} synchronized`);
+      showXeenapsToast('success', `${field.charAt(0).toUpperCase() + field.slice(1)} updated`);
     } else {
       setLocalProfile(profile); // Rollback
       showXeenapsToast('error', 'Cloud sync failed');
@@ -127,37 +128,34 @@ const UserProfileView: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8fafc] animate-in fade-in duration-700 h-full">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-32">
+    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#fcfcfc] animate-in fade-in duration-700 h-full">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 pb-32">
         
-        {/* HEADER SECTION (HUD STYLE) */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-              <User size={32} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black text-[#004A74] uppercase tracking-tighter">My Identity</h2>
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Personal & Academic Portfolio</p>
-            </div>
+        {/* SYNC INDICATOR */}
+        {isSyncing && (
+          <div className="fixed top-24 right-10 z-[100] flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full animate-pulse border border-emerald-100 shadow-sm">
+             <Loader2 size={12} className="animate-spin" />
+             <span className="text-[8px] font-black uppercase tracking-widest">Saving Changes</span>
           </div>
-          {isSyncing && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full animate-pulse border border-emerald-100">
-               <Loader2 size={12} className="animate-spin" />
-               <span className="text-[8px] font-black uppercase tracking-widest">Syncing to Cloud</span>
-            </div>
-          )}
-        </div>
+        )}
 
-        {/* TOP GRID: ID Card & Info Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          <div className="lg:col-span-5 xl:col-span-4">
+        {/* TOP GRID: Identity visuals & Data Hub */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT: VISUAL IDENTITY */}
+          <div className="lg:col-span-4 xl:col-span-3">
             <IDCardSection 
               profile={localProfile!} 
               onUpdate={handleFieldUpdate}
+              onPhotoChange={(url, id, node) => {
+                const updated = { ...localProfile!, photoUrl: url, photoFileId: id, photoNodeUrl: node };
+                setLocalProfile(updated);
+                setProfile(updated);
+              }}
             />
           </div>
-          <div className="lg:col-span-7 xl:col-span-8 h-full">
+
+          {/* RIGHT: DATA HUB FORM */}
+          <div className="lg:col-span-8 xl:col-span-9">
             <AcademicGrid 
               profile={localProfile!} 
               onUpdate={handleFieldUpdate}
@@ -214,7 +212,7 @@ const UserProfileView: React.FC = () => {
 
         <footer className="pt-20 pb-10 opacity-20 text-center">
           <div className="w-10 h-0.5 bg-[#004A74] mx-auto mb-4 rounded-full" />
-          <p className="text-[8px] font-black text-[#004A74] uppercase tracking-[0.8em]">XEENAPS PROFILE INFRASTRUCTURE</p>
+          <p className="text-[8px] font-black text-[#004A74] uppercase tracking-[0.8em]">XEENAPS IDENTITY ECOSYSTEM</p>
         </footer>
       </div>
 

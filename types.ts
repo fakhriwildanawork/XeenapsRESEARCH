@@ -307,8 +307,12 @@ export interface NoveltySynthesis {
 
 export interface UserProfile {
   fullName: string;
+  degree: string;
   photoUrl: string;
+  photoFileId: string;
+  photoNodeUrl: string;
   bio: string;
+  birthDate: string;
   address: string;
   email: string;
   phone: string;
