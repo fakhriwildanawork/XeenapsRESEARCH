@@ -76,8 +76,8 @@ const FindArticle: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto custom-scrollbar bg-white animate-in fade-in duration-500">
-      {/* Header / Search Form */}
-      <div className="px-6 md:px-10 py-8 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+      {/* Header / Search Form - Fix: Removed sticky to allow scrolling with results */}
+      <div className="px-6 md:px-10 py-8 border-b border-gray-100 bg-white/80 backdrop-blur-md shrink-0">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">

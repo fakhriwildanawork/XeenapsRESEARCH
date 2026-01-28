@@ -96,7 +96,8 @@ const ArchivedArticle: React.FC = () => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [currentPage, appliedSearch, sortConfig, itemsPerPage, workflow]);
+    // Fix: Using workflow.execute as stable dependency instead of workflow object to prevent infinite loop
+  }, [currentPage, appliedSearch, sortConfig, itemsPerPage, workflow.execute]);
 
   useEffect(() => {
     loadData();
