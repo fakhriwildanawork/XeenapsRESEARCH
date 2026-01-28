@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { PublicationItem, PublicationStatus } from '../../../types';
-import { savePublication, fetchPublicationsPaginated } from '../../../services/PublicationService';
+import { savePublication, fetchPublicationsPaginated, deletePublication } from '../../../services/PublicationService';
 import { 
   ArrowLeft, 
-  Save, 
   ExternalLink, 
   BookOpen, 
   Target, 
@@ -17,10 +16,14 @@ import {
   Globe,
   Loader2,
   Tag,
-  // Fix: Added missing Share2 import to resolve the "Cannot find name 'Share2'" error
-  Share2
+  Share2,
+  Star,
+  Trash2,
+  Building,
+  Activity
 } from 'lucide-react';
 import { showXeenapsToast } from '../../../utils/toastUtils';
+import { showXeenapsDeleteConfirm } from '../../../utils/confirmUtils';
 import { FormField, FormDropdown } from '../../Common/FormComponents';
 
 const PublicationDetail: React.FC = () => {
@@ -55,6 +58,29 @@ const PublicationDetail: React.FC = () => {
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
   }, [item]);
 
+  const handleToggleFavorite = async () => {
+    if (!item) return;
+    const updated = { ...item, isFavorite: !item.isFavorite };
+    setItem(updated);
+    showXeenapsToast('success', updated.isFavorite ? 'Added to favorites' : 'Removed from favorites');
+  };
+
+  const handleDelete = async () => {
+    if (!item) return;
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (confirmed) {
+      setIsBusy(true);
+      const success = await deletePublication(item.id);
+      if (success) {
+        showXeenapsToast('success', 'Publication removed');
+        navigate('/research/publication');
+      } else {
+        setIsBusy(false);
+        showXeenapsToast('error', 'Failed to delete');
+      }
+    }
+  };
+
   if (!item) return <div className="p-10 text-center animate-pulse">Initializing Workspace...</div>;
 
   return (
@@ -72,10 +98,19 @@ const PublicationDetail: React.FC = () => {
          </div>
          <div className="flex items-center gap-3">
             <button 
-              onClick={() => handleSave()}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-[#004A74]/10"
+              onClick={handleToggleFavorite}
+              className="p-3 bg-white text-[#FED400] hover:bg-yellow-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100"
+              title="Toggle Favorite"
             >
-              <Save size={14} /> Synchronize
+              <Star size={20} className={item.isFavorite ? "fill-[#FED400]" : ""} />
+            </button>
+            <button 
+              onClick={handleDelete}
+              disabled={isBusy}
+              className="p-3 bg-white text-red-400 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100 disabled:opacity-50"
+              title="Delete Publication"
+            >
+              {isBusy ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
             </button>
          </div>
       </header>
@@ -130,14 +165,31 @@ const PublicationDetail: React.FC = () => {
                     </FormField>
                     <FormField label="Target/Publisher Name">
                        <input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-[#004A74]" 
-                         value={item.publisherName} onChange={(e) => setItem({...item, publisherName: e.target.value})} />
+                         value={item.publisherName || ''} onChange={(e) => setItem({...item, publisherName: e.target.value})} />
+                    </FormField>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-6">
+                    <FormField label="Research Domain">
+                       <FormDropdown 
+                         value={item.researchDomain || ''}
+                         options={[]}
+                         onChange={(v) => setItem({ ...item, researchDomain: v })}
+                         placeholder="e.g. Cardiology"
+                         allowCustom={true}
+                       />
+                    </FormField>
+                    <FormField label="Affiliation">
+                       <input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-[#004A74]" 
+                         placeholder="Institution name..."
+                         value={item.affiliation || ''} onChange={(e) => setItem({...item, affiliation: e.target.value})} />
                     </FormField>
                  </div>
 
                  <div className="grid grid-cols-2 gap-6">
                     <FormField label="Indexing (Scopus/WoS)">
                        <FormDropdown 
-                         value={item.indexing}
+                         value={item.indexing || ''}
                          options={['Scopus', 'Web of Science', 'Sinta', 'Google Scholar', 'Others']}
                          onChange={(v) => setItem({ ...item, indexing: v })}
                          placeholder="Indexing"
@@ -145,7 +197,7 @@ const PublicationDetail: React.FC = () => {
                     </FormField>
                     <FormField label="Quartile (Q1-Q4)">
                        <FormDropdown 
-                         value={item.quartile}
+                         value={item.quartile || ''}
                          options={['Q1', 'Q2', 'Q3', 'Q4', 'Non-Q']}
                          onChange={(v) => setItem({ ...item, quartile: v })}
                          placeholder="Rank"
@@ -153,13 +205,13 @@ const PublicationDetail: React.FC = () => {
                     </FormField>
                  </div>
 
-                 <FormField label="Author List (JSON Array)">
+                 <FormField label="Author List">
                     <FormDropdown 
                       isMulti
-                      multiValues={item.authors}
+                      multiValues={item.authors || []}
                       options={['Xeenaps User']}
-                      onAddMulti={(v) => setItem({...item, authors: [...item.authors, v]})}
-                      onRemoveMulti={(v) => setItem({...item, authors: item.authors.filter(a => a !== v)})}
+                      onAddMulti={(v) => setItem({...item, authors: [...(item.authors || []), v]})}
+                      onRemoveMulti={(v) => setItem({...item, authors: (item.authors || []).filter(a => a !== v)})}
                       placeholder="Add Authors..."
                       value="" onChange={() => {}}
                     />
@@ -170,7 +222,7 @@ const PublicationDetail: React.FC = () => {
                        <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#004A74]" />
                        <input className="w-full bg-gray-50 border-none pl-12 pr-4 py-3 rounded-xl text-xs font-bold text-blue-500 underline" 
                          placeholder="Paste Drive or Web link..."
-                         value={item.manuscriptLink} onChange={(e) => setItem({...item, manuscriptLink: e.target.value})} />
+                         value={item.manuscriptLink || ''} onChange={(e) => setItem({...item, manuscriptLink: e.target.value})} />
                     </div>
                  </FormField>
               </div>
@@ -185,33 +237,33 @@ const PublicationDetail: React.FC = () => {
                     <FormField label="DOI Number">
                        <input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-mono font-bold text-[#004A74]" 
                          placeholder="10.xxxx/xxx"
-                         value={item.doi} onChange={(e) => setItem({...item, doi: e.target.value})} />
+                         value={item.doi || ''} onChange={(e) => setItem({...item, doi: e.target.value})} />
                     </FormField>
                     <FormField label="ISSN / ISBN">
                        <input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-mono font-bold text-[#004A74]" 
-                         value={item.issn_isbn} onChange={(e) => setItem({...item, issn_isbn: e.target.value})} />
+                         value={item.issn_isbn || ''} onChange={(e) => setItem({...item, issn_isbn: e.target.value})} />
                     </FormField>
                  </div>
 
                  <div className="grid grid-cols-4 gap-4">
-                    <div className="col-span-1"><FormField label="Vol"><input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-center" value={item.volume} onChange={(e) => setItem({...item, volume: e.target.value})} /></FormField></div>
-                    <div className="col-span-1"><FormField label="Issue"><input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-center" value={item.issue} onChange={(e) => setItem({...item, issue: e.target.value})} /></FormField></div>
-                    <div className="col-span-1"><FormField label="Pages"><input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-center" value={item.pages} onChange={(e) => setItem({...item, pages: e.target.value})} /></FormField></div>
-                    <div className="col-span-1"><FormField label="Year"><input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-center" value={item.year} onChange={(e) => setItem({...item, year: e.target.value})} /></FormField></div>
+                    <div className="col-span-1"><FormField label="Vol"><input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-center" value={item.volume || ''} onChange={(e) => setItem({...item, volume: e.target.value})} /></FormField></div>
+                    <div className="col-span-1"><FormField label="Issue"><input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-center" value={item.issue || ''} onChange={(e) => setItem({...item, issue: e.target.value})} /></FormField></div>
+                    <div className="col-span-1"><FormField label="Pages"><input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-center" value={item.pages || ''} onChange={(e) => setItem({...item, pages: e.target.value})} /></FormField></div>
+                    <div className="col-span-1"><FormField label="Year"><input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-center" value={item.year || ''} onChange={(e) => setItem({...item, year: e.target.value})} /></FormField></div>
                  </div>
 
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField label="Submission">
                        <input type="date" className="w-full bg-gray-50 border-none px-3 py-3 rounded-xl text-[10px] font-bold uppercase tracking-tighter" 
-                         value={item.submissionDate} onChange={(e) => setItem({...item, submissionDate: e.target.value})} />
+                         value={item.submissionDate || ''} onChange={(e) => setItem({...item, submissionDate: e.target.value})} />
                     </FormField>
                     <FormField label="Acceptance">
                        <input type="date" className="w-full bg-gray-50 border-none px-3 py-3 rounded-xl text-[10px] font-bold uppercase tracking-tighter" 
-                         value={item.acceptanceDate} onChange={(e) => setItem({...item, acceptanceDate: e.target.value})} />
+                         value={item.acceptanceDate || ''} onChange={(e) => setItem({...item, acceptanceDate: e.target.value})} />
                     </FormField>
                     <FormField label="Published">
                        <input type="date" className="w-full bg-gray-50 border-none px-3 py-3 rounded-xl text-[10px] font-bold uppercase tracking-tighter" 
-                         value={item.publicationDate} onChange={(e) => setItem({...item, publicationDate: e.target.value})} />
+                         value={item.publicationDate || ''} onChange={(e) => setItem({...item, publicationDate: e.target.value})} />
                     </FormField>
                  </div>
               </div>
@@ -226,7 +278,7 @@ const PublicationDetail: React.FC = () => {
                  <textarea 
                    className="w-full bg-gray-50 p-6 border border-gray-100 rounded-3xl outline-none text-xs font-medium text-[#004A74] leading-relaxed transition-all focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 min-h-[200px]"
                    placeholder="Enter final abstract here..."
-                   value={item.abstract}
+                   value={item.abstract || ''}
                    onChange={(e) => setItem({ ...item, abstract: e.target.value })}
                  />
               </div>
@@ -237,10 +289,10 @@ const PublicationDetail: React.FC = () => {
                  </label>
                  <FormDropdown 
                     isMulti
-                    multiValues={item.keywords}
+                    multiValues={item.keywords || []}
                     options={[]}
-                    onAddMulti={(v) => setItem({...item, keywords: [...item.keywords, v]})}
-                    onRemoveMulti={(v) => setItem({...item, keywords: item.keywords.filter(k => k !== v)})}
+                    onAddMulti={(v) => setItem({...item, keywords: [...(item.keywords || []), v]})}
+                    onRemoveMulti={(v) => setItem({...item, keywords: (item.keywords || []).filter(k => k !== v)})}
                     placeholder="Add keywords..."
                     value="" onChange={() => {}}
                  />
@@ -253,7 +305,7 @@ const PublicationDetail: React.FC = () => {
                  <textarea 
                    className="w-full bg-[#FED400]/5 p-6 border border-[#FED400]/10 rounded-3xl outline-none text-xs font-bold text-[#004A74] leading-relaxed transition-all focus:bg-white focus:ring-4 focus:ring-[#FED400]/5 min-h-[150px]"
                    placeholder="Notes on review process, editor feedback, etc..."
-                   value={item.remarks}
+                   value={item.remarks || ''}
                    onChange={(e) => setItem({ ...item, remarks: e.target.value })}
                  />
               </div>

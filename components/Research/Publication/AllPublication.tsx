@@ -84,7 +84,7 @@ const AllPublication: React.FC = () => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [currentPage, appliedSearch, itemsPerPage, sortConfig]);
+  }, [currentPage, appliedSearch, itemsPerPage, sortConfig, workflow]);
 
   useEffect(() => {
     loadData();
@@ -114,6 +114,8 @@ const AllPublication: React.FC = () => {
         type: 'Journal',
         status: PublicationStatus.DRAFT,
         publisherName: '',
+        researchDomain: '',
+        affiliation: '',
         indexing: '',
         quartile: '',
         doi: '',
@@ -162,7 +164,24 @@ const AllPublication: React.FC = () => {
     else setSelectedIds(items.map(i => i.id));
   };
 
+  const handleBatchFavorite = async () => {
+    if (selectedIds.length === 0) return;
+    const selectedItems = items.filter(i => selectedIds.includes(i.id));
+    const anyUnfav = selectedItems.some(i => !i.isFavorite);
+    const newValue = anyUnfav; // if some unfavored, make all favored
+
+    await performUpdate(
+      items,
+      setItems,
+      selectedIds,
+      (i) => ({ ...i, isFavorite: newValue }),
+      async (updated) => await savePublication(updated)
+    );
+    showXeenapsToast('success', `Bulk ${newValue ? 'Favorite' : 'Unfavorite'} complete`);
+  };
+
   const handleBatchDelete = async () => {
+    if (selectedIds.length === 0) return;
     const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
     if (confirmed) {
       const idsToDelete = [...selectedIds];
@@ -177,6 +196,34 @@ const AllPublication: React.FC = () => {
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (confirmed) {
+      await performDelete(
+        items,
+        setItems,
+        [id],
+        async (articleId) => await deletePublication(articleId)
+      );
+      showXeenapsToast('success', 'Publication removed');
+      setSelectedIds(prev => prev.filter(i => i !== id));
+    }
+  };
+
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key) return <ArrowUpDown size={12} className="text-gray-300" />;
+    return sortConfig.dir === 'asc' ? <ChevronUp size={12} className="text-[#004A74]" /> : <ChevronDown size={12} className="text-[#004A74]" />;
+  };
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => ({
+      key,
+      dir: prev.key === key && prev.dir === 'desc' ? 'asc' : 'desc'
+    }));
+    setCurrentPage(1);
+  };
+
   const getStatusColor = (status: PublicationStatus) => {
     switch (status) {
       case PublicationStatus.PUBLISHED: return 'bg-green-500 text-white';
@@ -188,6 +235,11 @@ const AllPublication: React.FC = () => {
       default: return 'bg-gray-400 text-white';
     }
   };
+
+  const anyUnfavSelected = useMemo(() => {
+    const selected = items.filter(i => selectedIds.includes(i.id));
+    return selected.some(i => !i.isFavorite);
+  }, [selectedIds, items]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden p-1">
@@ -207,51 +259,54 @@ const AllPublication: React.FC = () => {
         <StandardQuickActionButton variant="danger" onClick={handleBatchDelete} title="Mass Delete">
           <Trash2 size={18} />
         </StandardQuickActionButton>
+        <StandardQuickActionButton variant="warning" onClick={handleBatchFavorite} title="Mass Favorite">
+          <Star size={18} className={anyUnfavSelected ? "text-gray-300" : "text-[#FED400] fill-[#FED400]"} />
+        </StandardQuickActionButton>
       </StandardQuickAccessBar>
 
       <div className="flex-1 mt-2 overflow-y-auto custom-scrollbar">
-        {isLoading ? (
-          isMobile ? <CardGridSkeleton count={8} /> : <div className="mt-4"><TableSkeletonRows count={10} /></div>
-        ) : items.length === 0 ? (
-          <div className="py-24 text-center flex flex-col items-center justify-center space-y-2 opacity-30">
-            <Share2 size={48} className="mb-4 text-[#004A74]" />
-            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Your Publication Gallery is Empty</p>
-          </div>
-        ) : isMobile ? (
-          <StandardGridContainer>
-            {items.map(item => (
-              <StandardItemCard 
-                key={item.id} 
-                isSelected={selectedIds.includes(item.id)}
-                onClick={() => navigate(`/research/publication/${item.id}`, { state: { item } })}
-              >
-                <div className="absolute top-4 right-4" onClick={e => handleToggleFavorite(e, item)}>
-                  <Star size={18} className={item.isFavorite ? "text-[#FED400] fill-[#FED400]" : "text-gray-200"} />
-                </div>
-                <div className="flex items-center gap-3 mb-4" onClick={e => e.stopPropagation()}>
-                   <button 
-                     onClick={() => toggleSelectItem(item.id)}
-                     className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}
-                   >
-                      {selectedIds.includes(item.id) && <Check size={12} strokeWidth={4} />}
-                   </button>
-                   <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-tight ${getStatusColor(item.status)}`}>
-                     {item.status}
-                   </span>
-                </div>
-                <h3 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2 mb-2">{item.title}</h3>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">{item.publisherName || 'No Publisher'}</p>
-                <div className="h-px bg-gray-50 mb-3" />
-                <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-2">
-                      <span className="text-[8px] font-black bg-gray-100 px-2 py-0.5 rounded-md text-gray-500 uppercase">{item.type}</span>
-                      {item.indexing && <span className="text-[8px] font-black bg-blue-50 px-2 py-0.5 rounded-md text-blue-600 uppercase">{item.indexing}</span>}
-                   </div>
-                   <span className="text-[9px] font-black text-[#004A74]">{item.year}</span>
-                </div>
-              </StandardItemCard>
-            ))}
-          </StandardGridContainer>
+        {isMobile ? (
+          isLoading ? <CardGridSkeleton count={8} /> : items.length === 0 ? (
+            <div className="py-24 text-center flex flex-col items-center justify-center space-y-2 opacity-30">
+              <Share2 size={48} className="mb-4 text-[#004A74]" />
+              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Your Publication Gallery is Empty</p>
+            </div>
+          ) : (
+            <StandardGridContainer>
+              {items.map(item => (
+                <StandardItemCard 
+                  key={item.id} 
+                  isSelected={selectedIds.includes(item.id)}
+                  onClick={() => navigate(`/research/publication/${item.id}`, { state: { item } })}
+                >
+                  <div className="absolute top-4 right-4" onClick={e => handleToggleFavorite(e, item)}>
+                    <Star size={18} className={item.isFavorite ? "text-[#FED400] fill-[#FED400]" : "text-gray-200"} />
+                  </div>
+                  <div className="flex items-center gap-3 mb-4" onClick={e => e.stopPropagation()}>
+                     <button 
+                       onClick={() => toggleSelectItem(item.id)}
+                       className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}
+                     >
+                        {selectedIds.includes(item.id) && <Check size={12} strokeWidth={4} />}
+                     </button>
+                     <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-tight ${getStatusColor(item.status)}`}>
+                       {item.status}
+                     </span>
+                  </div>
+                  <h3 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2 mb-2">{item.title}</h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">{item.publisherName || 'No Publisher'}</p>
+                  <div className="h-px bg-gray-50 mb-3" />
+                  <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-2">
+                        <span className="text-[8px] font-black bg-gray-100 px-2 py-0.5 rounded-md text-gray-500 uppercase">{item.type}</span>
+                        {item.indexing && <span className="text-[8px] font-black bg-blue-50 px-2 py-0.5 rounded-md text-blue-600 uppercase">{item.indexing}</span>}
+                     </div>
+                     <span className="text-[9px] font-black text-[#004A74]">{item.year}</span>
+                  </div>
+                </StandardItemCard>
+              ))}
+            </StandardGridContainer>
+          )
         ) : (
           <StandardTableContainer>
             <StandardTableWrapper>
@@ -263,50 +318,64 @@ const AllPublication: React.FC = () => {
                       checked={items.length > 0 && selectedIds.length === items.length} 
                     />
                   </th>
-                  <StandardTh width="150px">Status</StandardTh>
-                  <StandardTh width="350px">Title</StandardTh>
-                  <StandardTh width="200px">Publisher / Journal</StandardTh>
-                  <StandardTh width="120px">Index</StandardTh>
-                  <StandardTh width="100px">Year</StandardTh>
-                  <StandardTh width="100px" className="sticky right-0 bg-gray-50 z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">Action</StandardTh>
+                  <StandardTh width="150px" onClick={() => handleSort('status')} isActiveSort={sortConfig.key === 'status'}>Status {getSortIcon('status')}</StandardTh>
+                  <StandardTh width="350px" onClick={() => handleSort('title')} isActiveSort={sortConfig.key === 'title'}>Title {getSortIcon('title')}</StandardTh>
+                  <StandardTh width="200px" onClick={() => handleSort('publisherName')} isActiveSort={sortConfig.key === 'publisherName'}>Publisher / Journal {getSortIcon('publisherName')}</StandardTh>
+                  <StandardTh width="120px" onClick={() => handleSort('indexing')} isActiveSort={sortConfig.key === 'indexing'}>Index {getSortIcon('indexing')}</StandardTh>
+                  <StandardTh width="100px" onClick={() => handleSort('year')} isActiveSort={sortConfig.key === 'year'}>Year {getSortIcon('year')}</StandardTh>
+                  <StandardTh width="120px" className="sticky right-0 bg-gray-50 z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">Action</StandardTh>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {items.map(item => (
-                  <StandardTr key={item.id} className="cursor-pointer" onClick={() => navigate(`/research/publication/${item.id}`, { state: { item } })}>
-                    <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={e => e.stopPropagation()}>
-                       <StandardCheckbox checked={selectedIds.includes(item.id)} onChange={() => toggleSelectItem(item.id)} />
+                {isLoading ? (
+                  <TableSkeletonRows count={10} />
+                ) : items.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-24 text-center">
+                       <div className="flex flex-col items-center justify-center space-y-2 opacity-30">
+                          <Share2 size={48} className="mb-4 text-[#004A74]" />
+                          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No Publication Data</p>
+                       </div>
                     </td>
-                    <StandardTd>
-                       <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
-                          <button onClick={(e) => handleToggleFavorite(e, item)}>
-                             <Star size={16} className={item.isFavorite ? "text-[#FED400] fill-[#FED400]" : "text-gray-200"} />
-                          </button>
-                          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tight shadow-sm ${getStatusColor(item.status)}`}>
-                            {item.status}
-                          </span>
-                       </div>
-                    </StandardTd>
-                    <StandardTd>
-                       <ElegantTooltip text={item.title}>
-                          <span className="text-sm font-bold text-[#004A74] uppercase line-clamp-2">{item.title}</span>
-                       </ElegantTooltip>
-                    </StandardTd>
-                    <StandardTd>
-                       <span className="text-xs font-bold text-gray-500 uppercase">{item.publisherName || '-'}</span>
-                    </StandardTd>
-                    <StandardTd className="text-center">
-                       {item.indexing && <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase">{item.indexing}</span>}
-                    </StandardTd>
-                    <StandardTd className="text-xs font-mono font-bold text-gray-400 text-center">{item.year}</StandardTd>
-                    <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] text-center z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">
-                       <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
-                         <button onClick={() => navigate(`/research/publication/${item.id}`, { state: { item } })} className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg"><Eye size={16} /></button>
-                         {item.doi && <button onClick={() => window.open(`https://doi.org/${item.doi}`, '_blank')} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><ExternalLink size={16} /></button>}
-                       </div>
-                    </StandardTd>
-                  </StandardTr>
-                ))}
+                  </tr>
+                ) : (
+                  items.map(item => (
+                    <StandardTr key={item.id} className="cursor-pointer" onClick={() => navigate(`/research/publication/${item.id}`, { state: { item } })}>
+                      <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={e => e.stopPropagation()}>
+                         <StandardCheckbox checked={selectedIds.includes(item.id)} onChange={() => toggleSelectItem(item.id)} />
+                      </td>
+                      <StandardTd>
+                         <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                            <button onClick={(e) => handleToggleFavorite(e, item)}>
+                               <Star size={16} className={item.isFavorite ? "text-[#FED400] fill-[#FED400]" : "text-gray-200"} />
+                            </button>
+                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tight shadow-sm ${getStatusColor(item.status)}`}>
+                              {item.status}
+                            </span>
+                         </div>
+                      </StandardTd>
+                      <StandardTd>
+                         <ElegantTooltip text={item.title}>
+                            <span className="text-sm font-bold text-[#004A74] uppercase line-clamp-2">{item.title}</span>
+                         </ElegantTooltip>
+                      </StandardTd>
+                      <StandardTd>
+                         <span className="text-xs font-bold text-gray-500 uppercase">{item.publisherName || '-'}</span>
+                      </StandardTd>
+                      <StandardTd className="text-center">
+                         {item.indexing && <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase">{item.indexing}</span>}
+                      </StandardTd>
+                      <StandardTd className="text-xs font-mono font-bold text-gray-400 text-center">{item.year}</StandardTd>
+                      <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] text-center z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">
+                         <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                           <button onClick={() => navigate(`/research/publication/${item.id}`, { state: { item } })} className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg" title="Detail"><Eye size={18} /></button>
+                           {item.doi && <button onClick={() => window.open(`https://doi.org/${item.doi}`, '_blank')} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="External Link"><ExternalLink size={18} /></button>}
+                           <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Delete"><Trash2 size={18} /></button>
+                         </div>
+                      </StandardTd>
+                    </StandardTr>
+                  ))
+                )}
               </tbody>
             </StandardTableWrapper>
             <StandardTableFooter 

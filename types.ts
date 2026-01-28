@@ -205,6 +205,8 @@ export interface PublicationItem {
   type: string; // Journal, Conference, Book, etc.
   status: PublicationStatus;
   publisherName: string;
+  researchDomain: string;
+  affiliation: string;
   indexing: string;
   quartile: string;
   doi: string;

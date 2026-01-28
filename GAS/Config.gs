@@ -144,6 +144,8 @@ const CONFIG = {
       'type',
       'status',
       'publisherName',
+      'researchDomain',
+      'affiliation',
       'indexing',
       'quartile',
       'doi',

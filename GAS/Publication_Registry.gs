@@ -43,22 +43,38 @@ function getPublicationFromRegistry(page = 1, limit = 25, search = "", sortKey =
     }
     
     const sortIdx = headers.indexOf(sortKey);
-    if (sortIdx !== -1) {
-      filtered.sort((a, b) => {
+    const favIdx = headers.indexOf('isFavorite');
+    const createdIdx = headers.indexOf('createdAt');
+
+    // MULTI-LEVEL SORTING
+    // Default: isFavorite (TRUE first) -> CreatedAt (Newest first)
+    filtered.sort((a, b) => {
+      // 1. Sort by Favorite status
+      const favA = a[favIdx] === true || String(a[favIdx]).toLowerCase() === 'true';
+      const favB = b[favIdx] === true || String(b[favIdx]).toLowerCase() === 'true';
+      
+      if (favA !== favB) {
+        return favA ? -1 : 1;
+      }
+
+      // 2. Sort by sortKey (e.g. CreatedAt)
+      if (sortIdx !== -1) {
         let valA = a[sortIdx];
         let valB = b[sortIdx];
+        
         if (sortKey === 'createdAt' || sortKey === 'updatedAt') {
           const timeA = valA ? new Date(valA).getTime() : 0;
           const timeB = valB ? new Date(valB).getTime() : 0;
           return sortDir === 'asc' ? timeA - timeB : timeB - timeA;
         }
+        
         valA = String(valA).toLowerCase();
         valB = String(valB).toLowerCase();
         if (valA < valB) return sortDir === 'asc' ? -1 : 1;
         if (valA > valB) return sortDir === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
+      }
+      return 0;
+    });
     
     const totalCount = filtered.length;
     const start = (page - 1) * limit;
@@ -75,6 +91,9 @@ function getPublicationFromRegistry(page = 1, limit = 25, search = "", sortKey =
           } catch (e) { 
             val = []; 
           }
+        }
+        if (h === 'isFavorite') {
+           val = val === true || String(val).toLowerCase() === 'true';
         }
         obj[h] = val;
       });
