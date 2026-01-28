@@ -18,16 +18,17 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [userProfile, setUserProfile] = useState<{name: string, photo: string}>({
     name: "Xeenaps User",
-    photo: ""
+    photo: BRAND_ASSETS.USER_DEFAULT
   });
 
   const loadProfile = async () => {
     const profile = await fetchUserProfile();
     if (profile) {
-      const formattedName = profile.fullName.split(',')[0].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      // KEEP CASE: dr. tetap dr., Dr. tetap Dr.
+      const displayName = profile.fullName.split(',')[0].trim();
       setUserProfile({
-        name: formattedName,
-        photo: profile.photoUrl
+        name: displayName,
+        photo: profile.photoUrl || BRAND_ASSETS.USER_DEFAULT
       });
     }
   };
@@ -37,8 +38,18 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
     
     // Listen to profile updates
     const handleProfileUpdate = () => loadProfile();
+    // Listen to instant photo updates (Optimistic UI from IDCardSection)
+    const handleInstantPhoto = (e: any) => {
+      setUserProfile(prev => ({ ...prev, photo: e.detail }));
+    };
+
     window.addEventListener('xeenaps-profile-updated', handleProfileUpdate);
-    return () => window.removeEventListener('xeenaps-profile-updated', handleProfileUpdate);
+    window.addEventListener('xeenaps-instant-photo', handleInstantPhoto);
+    
+    return () => {
+      window.removeEventListener('xeenaps-profile-updated', handleProfileUpdate);
+      window.removeEventListener('xeenaps-instant-photo', handleInstantPhoto);
+    };
   }, []);
 
   // Mapping path to Tutorial ID from Spreadsheet

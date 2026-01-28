@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile, EducationEntry, CareerEntry } from '../../types';
-import { fetchUserProfile, fetchEducationHistory, fetchCareerHistory, saveUserProfile, deleteProfilePhoto } from '../../services/ProfileService';
+import { 
+  fetchUserProfile, 
+  fetchEducationHistory, 
+  fetchCareerHistory, 
+  saveUserProfile, 
+  deleteProfilePhoto,
+  saveEducationEntry,
+  saveCareerEntry,
+  deleteEducationEntry,
+  deleteCareerEntry
+} from '../../services/ProfileService';
 import IDCardSection from './IDCardSection';
 import AcademicGrid from './AcademicGrid';
 import HistoryTimeline from './HistoryTimeline';
@@ -17,6 +27,7 @@ import {
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsConfirm } from '../../utils/swalUtils';
+import { BRAND_ASSETS } from '../../assets';
 
 const UserProfileView: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -33,8 +44,8 @@ const UserProfileView: React.FC = () => {
   const [selectedEdu, setSelectedEdu] = useState<EducationEntry | undefined>();
   const [selectedCareer, setSelectedCareer] = useState<CareerEntry | undefined>();
 
-  const loadAllData = useCallback(async () => {
-    setIsLoading(true);
+  const loadAllData = useCallback(async (isInitial = true) => {
+    if (isInitial) setIsLoading(true);
     try {
       const [p, e, c] = await Promise.all([
         fetchUserProfile(),
@@ -81,7 +92,84 @@ const UserProfileView: React.FC = () => {
     window.dispatchEvent(new CustomEvent('xeenaps-profile-updated'));
   };
 
-  // Unified Inline Update Handler
+  // --- OPTIMISTIC HISTORY HANDLERS ---
+
+  const handleSaveEducation = async (data: EducationEntry) => {
+    const original = [...education];
+    const isEdit = education.some(item => item.id === data.id);
+    
+    // 1. Instant UI Update
+    setEducation(prev => isEdit 
+      ? prev.map(item => item.id === data.id ? data : item)
+      : [...prev, data]
+    );
+    setIsEduModalOpen(false);
+
+    // 2. Background Sync
+    setIsSyncing(true);
+    const success = await saveEducationEntry(data);
+    if (!success) {
+      setEducation(original);
+      showXeenapsToast('error', 'Cloud sync failed. History rolled back.');
+    } else {
+      showXeenapsToast('success', 'Education record synchronized');
+    }
+    setIsSyncing(false);
+  };
+
+  const handleDeleteEducation = async (id: string) => {
+    const original = [...education];
+    setEducation(prev => prev.filter(item => item.id !== id));
+    
+    setIsSyncing(true);
+    const success = await deleteEducationEntry(id);
+    if (!success) {
+      setEducation(original);
+      showXeenapsToast('error', 'Delete sync failed. Item restored.');
+    } else {
+      showXeenapsToast('success', 'Education record removed');
+    }
+    setIsSyncing(false);
+  };
+
+  const handleSaveCareer = async (data: CareerEntry) => {
+    const original = [...career];
+    const isEdit = career.some(item => item.id === data.id);
+    
+    setCareer(prev => isEdit 
+      ? prev.map(item => item.id === data.id ? data : item)
+      : [...prev, data]
+    );
+    setIsCareerModalOpen(false);
+
+    setIsSyncing(true);
+    const success = await saveCareerEntry(data);
+    if (!success) {
+      setCareer(original);
+      showXeenapsToast('error', 'Cloud sync failed. Career history restored.');
+    } else {
+      showXeenapsToast('success', 'Career journey synchronized');
+    }
+    setIsSyncing(false);
+  };
+
+  const handleDeleteCareer = async (id: string) => {
+    const original = [...career];
+    setCareer(prev => prev.filter(item => item.id !== id));
+    
+    setIsSyncing(true);
+    const success = await deleteCareerEntry(id);
+    if (!success) {
+      setCareer(original);
+      showXeenapsToast('error', 'Delete sync failed. Item restored.');
+    } else {
+      showXeenapsToast('success', 'Career record removed');
+    }
+    setIsSyncing(false);
+  };
+
+  // --- IDENTITY HANDLERS ---
+
   const handleFieldUpdate = async (field: keyof UserProfile, value: string) => {
     if (!localProfile || !profile) return;
     if (localProfile[field] === value) return;
@@ -96,7 +184,7 @@ const UserProfileView: React.FC = () => {
       showXeenapsToast('success', `${field.charAt(0).toUpperCase() + field.slice(1)} updated`);
       dispatchProfileUpdate();
     } else {
-      setLocalProfile(profile); // Rollback
+      setLocalProfile(profile); 
       showXeenapsToast('error', 'Cloud sync failed');
     }
     setIsSyncing(false);
@@ -123,7 +211,6 @@ const UserProfileView: React.FC = () => {
       setProfile(updatedProfile);
       dispatchProfileUpdate();
 
-      // PERMANENT DELETE OLD PHOTO (Only if exists and different)
       if (oldFileId && oldFileId !== fileId && oldNodeUrl) {
          await deleteProfilePhoto(oldFileId, oldNodeUrl);
       }
@@ -139,7 +226,7 @@ const UserProfileView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-10">
-        <Loader2 className="w-12 h-12 text-[#004A74] animate-spin mb-4" />
+        <img src={BRAND_ASSETS.LOGO_ICON} className="w-16 h-16 animate-spin mb-4" alt="Loading" />
         <p className="text-[10px] font-black text-[#004A74] uppercase tracking-[0.4em] animate-pulse">Syncing Identity</p>
       </div>
     );
@@ -159,7 +246,7 @@ const UserProfileView: React.FC = () => {
         {isSyncing && (
           <div className="fixed top-24 right-10 z-[100] flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full animate-pulse border border-emerald-100 shadow-sm">
              <Loader2 size={12} className="animate-spin" />
-             <span className="text-[8px] font-black uppercase tracking-widest">Saving Changes</span>
+             <span className="text-[8px] font-black uppercase tracking-widest">Background Syncing</span>
           </div>
         )}
 
@@ -220,7 +307,7 @@ const UserProfileView: React.FC = () => {
               type="education"
               items={education}
               onEdit={(item) => { setSelectedEdu(item as EducationEntry); setIsEduModalOpen(true); }}
-              onRefresh={loadAllData}
+              onDelete={handleDeleteEducation}
             />
           </div>
 
@@ -240,7 +327,7 @@ const UserProfileView: React.FC = () => {
               type="career"
               items={career}
               onEdit={(item) => { setSelectedCareer(item as CareerEntry); setIsCareerModalOpen(true); }}
-              onRefresh={loadAllData}
+              onDelete={handleDeleteCareer}
             />
           </div>
         </div>
@@ -255,7 +342,7 @@ const UserProfileView: React.FC = () => {
         <EducationModal 
           entry={selectedEdu} 
           onClose={() => setIsEduModalOpen(false)} 
-          onSuccess={loadAllData} 
+          onOptimisticSave={handleSaveEducation}
         />
       )}
 
@@ -263,7 +350,7 @@ const UserProfileView: React.FC = () => {
         <CareerModal 
           entry={selectedCareer} 
           onClose={() => setIsCareerModalOpen(false)} 
-          onSuccess={loadAllData} 
+          onOptimisticSave={handleSaveCareer}
         />
       )}
 

@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { EducationEntry, CareerEntry } from '../../types';
-import { saveEducationEntry, saveCareerEntry } from '../../services/ProfileService';
 import { X, Save, GraduationCap, Briefcase, Loader2, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { FormField, FormDropdown } from '../Common/FormComponents';
-import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsConfirm } from '../../utils/swalUtils';
 
 interface ModalProps {
   onClose: () => void;
-  onSuccess: () => void;
+  onOptimisticSave: (data: any) => void;
 }
 
 /**
@@ -56,23 +54,16 @@ const YearInput: React.FC<{
 /**
  * EDUCATION MODAL
  */
-export const EducationModal: React.FC<ModalProps & { entry?: EducationEntry }> = ({ entry, onClose, onSuccess }) => {
+export const EducationModal: React.FC<ModalProps & { entry?: EducationEntry }> = ({ entry, onClose, onOptimisticSave }) => {
   const [formData, setFormData] = useState<EducationEntry>(entry || {
     id: crypto.randomUUID(), level: 'Bachelor', institution: '', major: '', degree: '', startYear: '', endYear: ''
   });
-  const [isSaving, setIsSaving] = useState(false);
 
   const levels = ['Elementary School', 'Junior High School', 'Senior High School', 'Bachelor', 'Master', 'Doctoral', 'Professional'];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
-    if (await saveEducationEntry(formData)) {
-      showXeenapsToast('success', 'Education history synchronized');
-      onSuccess();
-      onClose();
-    }
-    setIsSaving(false);
+    onOptimisticSave(formData);
   };
 
   return (
@@ -96,7 +87,7 @@ export const EducationModal: React.FC<ModalProps & { entry?: EducationEntry }> =
              <FormField label="Start Year"><YearInput required value={formData.startYear} onChange={v => setFormData({...formData, startYear: v})} /></FormField>
              <FormField label="End Year"><YearInput allowPresent value={formData.endYear} onChange={v => setFormData({...formData, endYear: v})} /></FormField>
           </div>
-          <div className="pt-6"><button type="submit" disabled={isSaving} className="w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2">{isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />} Sync Record</button></div>
+          <div className="pt-6"><button type="submit" className="w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2"><Save size={20} /> Sync Record</button></div>
         </form>
       </div>
     </div>
@@ -106,23 +97,16 @@ export const EducationModal: React.FC<ModalProps & { entry?: EducationEntry }> =
 /**
  * CAREER MODAL
  */
-export const CareerModal: React.FC<ModalProps & { entry?: CareerEntry }> = ({ entry, onClose, onSuccess }) => {
+export const CareerModal: React.FC<ModalProps & { entry?: CareerEntry }> = ({ entry, onClose, onOptimisticSave }) => {
   const [formData, setFormData] = useState<CareerEntry>(entry || {
     id: crypto.randomUUID(), company: '', position: '', type: 'Full-time', startDate: '', endDate: '', location: '', description: ''
   });
-  const [isSaving, setIsSaving] = useState(false);
 
   const types = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship', 'Project'];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
-    if (await saveCareerEntry(formData)) {
-      showXeenapsToast('success', 'Career trajectory updated');
-      onSuccess();
-      onClose();
-    }
-    setIsSaving(false);
+    onOptimisticSave(formData);
   };
 
   return (
@@ -147,7 +131,7 @@ export const CareerModal: React.FC<ModalProps & { entry?: CareerEntry }> = ({ en
              <FormField label="End Year"><YearInput allowPresent value={formData.endDate} onChange={v => setFormData({...formData, endDate: v})} /></FormField>
           </div>
           <FormField label="Description / Achievements"><textarea className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl min-h-[100px]" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></FormField>
-          <div className="pt-6"><button type="submit" disabled={isSaving} className="w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2">{isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />} Sync Career</button></div>
+          <div className="pt-6"><button type="submit" className="w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2"><Save size={20} /> Sync Career</button></div>
         </form>
       </div>
     </div>

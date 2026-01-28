@@ -5,33 +5,25 @@ import {
   Building2, 
   Calendar, 
   Trash2, 
-  Edit3, 
   ChevronRight,
-  MoreVertical,
   Briefcase
 } from 'lucide-react';
-import { deleteEducationEntry, deleteCareerEntry } from '../../services/ProfileService';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
-import { showXeenapsToast } from '../../utils/toastUtils';
 
 interface HistoryTimelineProps {
   type: 'education' | 'career';
   items: (EducationEntry | CareerEntry)[];
   onEdit: (item: EducationEntry | CareerEntry) => void;
-  onRefresh: () => void;
+  onDelete: (id: string) => void;
 }
 
-const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ type, items, onEdit, onRefresh }) => {
+const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ type, items, onEdit, onDelete }) => {
   
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteClick = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      const success = type === 'education' ? await deleteEducationEntry(id) : await deleteCareerEntry(id);
-      if (success) {
-        showXeenapsToast('success', 'Entry removed');
-        onRefresh();
-      }
+      onDelete(id);
     }
   };
 
@@ -74,7 +66,7 @@ const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ type, items, onEdit, 
             >
                {/* Hover Actions */}
                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all">
-                  <button onClick={(e) => handleDelete(e, item.id)} className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">
+                  <button onClick={(e) => handleDeleteClick(e, item.id)} className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">
                     <Trash2 size={14} />
                   </button>
                </div>

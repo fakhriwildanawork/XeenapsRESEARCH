@@ -14,7 +14,6 @@ interface IDCardSectionProps {
 }
 
 const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhotoChange, onEditUniqueId }) => {
-  const [isPreviewing, setIsPreviewing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -26,7 +25,10 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target?.result) {
-        setPreviewUrl(event.target.result as string);
+        const url = event.target.result as string;
+        setPreviewUrl(url);
+        // DISPATCH EVENT UNTUK HEADER
+        window.dispatchEvent(new CustomEvent('xeenaps-instant-photo', { detail: url }));
       }
     };
     reader.readAsDataURL(file);
