@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 // @ts-ignore
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
 
 interface HeaderProps {
@@ -13,6 +12,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [tutorialLink, setTutorialLink] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -134,14 +134,17 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
           </button>
         )}
         
-        {/* User Photo with overlay notification dot placeholder */}
-        <button className="flex items-center focus:outline-none p-1 relative">
+        {/* User Photo - Clickable to navigate to Profile */}
+        <button 
+          onClick={() => navigate('/profile')}
+          className="flex items-center focus:outline-none p-1 relative group"
+        >
           <div className="relative">
-            <div className="w-10 h-10 md:w-11 md:h-11 rounded-full border-2 border-[#FED400] p-0.5 hover:border-[#004A74] transition-colors duration-300 overflow-hidden shadow-sm bg-white">
+            <div className="w-10 h-10 md:w-11 md:h-11 rounded-full border-2 border-[#FED400] p-0.5 group-hover:border-[#004A74] transition-colors duration-300 overflow-hidden shadow-sm bg-white">
               <img 
                 src={userPhoto || placeholderUrl} 
                 alt="User Profile" 
-                className="w-full h-full object-cover rounded-full bg-gray-50"
+                className="w-full h-full object-cover rounded-full bg-gray-50 group-hover:scale-110 transition-transform duration-500"
               />
             </div>
             {/* Notification Dot Overlay (Top Right of Photo) */}

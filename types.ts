@@ -303,6 +303,42 @@ export interface NoveltySynthesis {
   futureDirections: string[];
 }
 
+// --- PROFILE TYPES ---
+
+export interface UserProfile {
+  fullName: string;
+  photoUrl: string;
+  bio: string;
+  address: string;
+  email: string;
+  phone: string;
+  sintaId: string;
+  scopusId: string;
+  wosId: string;
+  googleScholarId: string;
+}
+
+export interface EducationEntry {
+  id: string;
+  level: string; // Flexible string (Dropdown + manual)
+  institution: string;
+  major: string;
+  degree: string;
+  startYear: string;
+  endYear: string;
+}
+
+export interface CareerEntry {
+  id: string;
+  company: string;
+  position: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  description: string;
+}
+
 export interface GASResponse<T> {
   status: 'success' | 'error';
   data?: T;

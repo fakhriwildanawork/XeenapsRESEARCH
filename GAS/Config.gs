@@ -20,7 +20,8 @@ const CONFIG = {
     RESEARCH: '1XRmeIuj2vyXO9a0BFwODdkMNd_o7bmPIw9KHQOtFhoE',
     BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM',
     LITERATURE_ARCHIVE: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE',
-    PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g'
+    PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g',
+    PROFILE: '1Tf9iW9qP8_8X_8vH_8V8H8v_8H8V8H8v_8H8V8H8v8' // Placeholder ID - User will update this
   },
   SCHEMAS: {
     LIBRARY: [
@@ -166,6 +167,37 @@ const CONFIG = {
       'isFavorite',
       'createdAt',
       'updatedAt'
+    ],
+    PROFILE: [
+      'fullName',
+      'photoUrl',
+      'bio',
+      'address',
+      'email',
+      'phone',
+      'sintaId',
+      'scopusId',
+      'wosId',
+      'googleScholarId'
+    ],
+    EDUCATION: [
+      'id',
+      'level',
+      'institution',
+      'major',
+      'degree',
+      'startYear',
+      'endYear'
+    ],
+    CAREER: [
+      'id',
+      'company',
+      'position',
+      'type',
+      'startDate',
+      'endDate',
+      'location',
+      'description'
     ]
   }
 };

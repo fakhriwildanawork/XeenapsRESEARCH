@@ -34,6 +34,21 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: Profile Retrieval
+    if (action === 'getProfile') {
+      return createJsonResponse({ status: 'success', data: getProfileFromRegistry() });
+    }
+
+    // NEW: Education History Retrieval
+    if (action === 'getEducation') {
+      return createJsonResponse({ status: 'success', data: getEducationFromRegistry() });
+    }
+
+    // NEW: Career History Retrieval
+    if (action === 'getCareer') {
+      return createJsonResponse({ status: 'success', data: getCareerFromRegistry() });
+    }
+
     // NEW: getPublication
     if (action === 'getPublication') {
       const page = parseInt(e.parameter.page || "1");
@@ -168,7 +183,31 @@ function doPost(e) {
     if (action === 'setupResearchDatabase') return createJsonResponse(setupResearchDatabase());
     if (action === 'setupBrainstormingDatabase') return createJsonResponse(setupBrainstormingDatabase());
     if (action === 'setupPublicationDatabase') return createJsonResponse(setupPublicationDatabase());
+    if (action === 'setupProfileDatabase') return createJsonResponse(setupProfileDatabase());
     
+    // NEW ACTION: saveProfile
+    if (action === 'saveProfile') {
+      return createJsonResponse(saveProfileToRegistry(body.item));
+    }
+
+    // NEW ACTION: saveEducation
+    if (action === 'saveEducation') {
+      return createJsonResponse(saveEducationToRegistry(body.item));
+    }
+    // NEW ACTION: deleteEducation
+    if (action === 'deleteEducation') {
+      return createJsonResponse(deleteEducationFromRegistry(body.id));
+    }
+
+    // NEW ACTION: saveCareer
+    if (action === 'saveCareer') {
+      return createJsonResponse(saveCareerToRegistry(body.item));
+    }
+    // NEW ACTION: deleteCareer
+    if (action === 'deleteCareer') {
+      return createJsonResponse(deleteCareerFromRegistry(body.id));
+    }
+
     // NEW ACTION: savePublication
     if (action === 'savePublication') {
       return createJsonResponse(savePublicationToRegistry(body.item));
