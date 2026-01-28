@@ -59,7 +59,7 @@ const AcademicGrid: React.FC<AcademicGridProps> = ({ profile, onUpdate }) => {
                 <input 
                   type="date"
                   className="w-full bg-gray-50 border border-gray-100 px-5 py-4 rounded-2xl text-xs font-bold text-[#004A74] outline-none focus:bg-white focus:border-[#FED400] transition-all"
-                  defaultValue={profile.birthDate}
+                  defaultValue={profile.birthDate ? profile.birthDate.substring(0, 10) : ""}
                   onBlur={(e) => onUpdate('birthDate', e.target.value)}
                 />
              </div>
