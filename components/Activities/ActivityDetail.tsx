@@ -1,14 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ActivityItem, ActivityType, ActivityLevel, ActivityRole } from '../../types';
-import { fetchActivitiesPaginated, saveActivity, deleteActivity, uploadVaultFile } from '../../services/ActivityService';
+import { fetchActivitiesPaginated, saveActivity, deleteActivity, uploadVaultFile, deleteRemoteFile } from '../../services/ActivityService';
 import { 
   Trash2, 
   Star,
   FolderOpen,
-  // Fix: CloudArrowUp is not in lucide-react, using CloudUpload instead. Added Loader2 import.
   CloudUpload,
   Loader2,
   Bold,
@@ -17,7 +16,9 @@ import {
   MapPin,
   FileCheck,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Link as LinkIcon,
+  Eye
 } from 'lucide-react';
 import { 
   FormPageContainer, 
@@ -27,8 +28,7 @@ import {
   FormDropdown 
 } from '../Common/FormComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
-import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
-import { showXeenapsConfirm } from '../../utils/swalUtils';
+import { showXeenapsConfirm } from '../../utils/confirmUtils';
 
 /**
  * Rich Text Summary Editor (Identical to LibraryForm AbstractEditor)
@@ -89,15 +89,25 @@ const SummaryEditor: React.FC<{
 const ActivityDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [item, setItem] = useState<ActivityItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [optimisticCertPreview, setOptimisticCertPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const load = async () => {
+      // INSTANT LOADING IF PASSED FROM VAULT OR MAIN
+      const stateItem = (location.state as any)?.item;
+      if (stateItem && stateItem.id === id) {
+        setItem(stateItem);
+        setIsLoading(false);
+        return;
+      }
+
       const res = await fetchActivitiesPaginated(1, 1000);
       const found = res.items.find(i => i.id === id);
       if (found) setItem(found);
@@ -105,7 +115,7 @@ const ActivityDetail: React.FC = () => {
       setIsLoading(false);
     };
     load();
-  }, [id, navigate]);
+  }, [id, location.state, navigate]);
 
   // Background Auto-save Logic
   const handleFieldChange = (field: keyof ActivityItem, val: any) => {
@@ -137,14 +147,36 @@ const ActivityDetail: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file || !item) return;
 
+    // 1. OPTIMISTIC INSTANT PREVIEW
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setOptimisticCertPreview(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+
     setIsUploading(true);
+    // Fix: removed unnecessary 'as any' casts as properties now exist in ActivityItem interface
+    const oldFileId = item.certificateFileId;
+    const oldNodeUrl = item.certificateNodeUrl;
+
     const result = await uploadVaultFile(file);
     if (result) {
-      handleFieldChange('certificateFileId' as any, result.fileId);
-      handleFieldChange('certificateNodeUrl' as any, result.nodeUrl);
-      showXeenapsToast('success', 'Certificate uploaded');
+      // Fix: removed unnecessary 'as any' casts as properties now exist in ActivityItem interface
+      handleFieldChange('certificateFileId', result.fileId);
+      handleFieldChange('certificateNodeUrl', result.nodeUrl);
+      
+      // 2. PERMANENT DELETION OF OLD CERTIFICATE
+      if (oldFileId && oldNodeUrl) {
+        await deleteRemoteFile(oldFileId, oldNodeUrl);
+      }
+      
+      showXeenapsToast('success', 'Certificate Secured');
+      setOptimisticCertPreview(null);
     } else {
       showXeenapsToast('error', 'Upload failed');
+      setOptimisticCertPreview(null);
     }
     setIsUploading(false);
   };
@@ -168,7 +200,7 @@ const ActivityDetail: React.FC = () => {
               <Star size={18} className={item.isFavorite ? "fill-[#FED400]" : ""} />
             </button>
             <button 
-              onClick={() => navigate(`/activities/${item.id}/vault`)}
+              onClick={() => navigate(`/activities/${item.id}/vault`, { state: { item } })}
               className="p-2.5 bg-white border border-gray-100 text-[#004A74] hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-90"
               title="Documentation Gallery"
             >
@@ -198,6 +230,18 @@ const ActivityDetail: React.FC = () => {
                 onChange={(e) => handleFieldChange('eventName', e.target.value)}
                 rows={2}
               />
+            </FormField>
+
+            {/* EVENT LINK - FULLWIDTH AS REQUESTED */}
+            <FormField label="Event Link">
+               <div className="relative group">
+                  <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#004A74]" />
+                  <input className="w-full pl-11 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-bold text-blue-500 underline outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/10 transition-all" 
+                    placeholder="https://event-link.com/..."
+                    value={item.link} 
+                    onChange={(e) => handleFieldChange('link', e.target.value)} 
+                  />
+               </div>
             </FormField>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-4">
@@ -244,31 +288,42 @@ const ActivityDetail: React.FC = () => {
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Primary Certificate File</label>
               <div 
-                onClick={() => fileInputRef.current?.click()}
-                className={`relative group w-full h-32 bg-gray-50 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-white hover:border-[#004A74]/30 ${(item as any).certificateFileId ? 'border-emerald-200 bg-emerald-50/20' : 'border-gray-200'}`}
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+                // Fix: Accessing certificate properties directly after interface update
+                className={`relative group w-full h-40 bg-gray-50 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden hover:bg-white hover:border-[#004A74]/30 ${item.certificateFileId || optimisticCertPreview ? 'border-emerald-200 bg-emerald-50/10' : 'border-gray-200'}`}
               >
-                {isUploading ? (
+                {isUploading && !optimisticCertPreview ? (
                   <Loader2 className="w-8 h-8 text-[#004A74] animate-spin" />
-                ) : (item as any).certificateFileId ? (
-                  <>
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2" />
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Document Secured</p>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); window.open(`https://lh3.googleusercontent.com/d/${(item as any).certificateFileId}`, '_blank'); }}
-                      className="mt-1 text-[8px] font-bold text-blue-500 underline"
-                    >
-                      View Certificate
-                    </button>
-                  </>
+                ) : (optimisticCertPreview || item.certificateFileId) ? (
+                  <div className="relative w-full h-full">
+                     {/* IMAGE PREVIEW - Fix: Accessing certificate properties directly */}
+                     {(optimisticCertPreview || item.certificateFileId) && (
+                        <img 
+                          src={optimisticCertPreview || `https://lh3.googleusercontent.com/d/${item.certificateFileId}`} 
+                          className="w-full h-full object-cover opacity-80" 
+                          alt="Certificate"
+                          onError={(e) => { (e.target as any).style.display = 'none'; }}
+                        />
+                     )}
+                     <div className="absolute inset-0 bg-white/40 flex flex-col items-center justify-center backdrop-blur-[2px]">
+                        <CheckCircle2 className="w-10 h-10 text-emerald-600 mb-1" />
+                        <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Document Secured</p>
+                        <div className="flex gap-2 mt-2">
+                           {/* Fix: Accessing certificate properties directly */}
+                           <button onClick={(e) => { e.stopPropagation(); window.open(`https://lh3.googleusercontent.com/d/${item.certificateFileId}`, '_blank'); }} className="p-2 bg-white rounded-lg shadow-md text-[#004A74] hover:bg-[#FED400] transition-all"><Eye size={14} /></button>
+                           <button onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} className="p-2 bg-white rounded-lg shadow-md text-emerald-600 hover:bg-emerald-50 transition-all"><CloudUpload size={14} /></button>
+                        </div>
+                     </div>
+                     {isUploading && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#004A74] animate-pulse" />}
+                  </div>
                 ) : (
                   <>
-                    {/* Fix: Replaced CloudArrowUp with CloudUpload */}
                     <CloudUpload className="w-8 h-8 text-gray-300 group-hover:text-[#004A74] transition-colors" />
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Upload Certificate</p>
                   </>
                 )}
               </div>
-              <input type="file" ref={fileInputRef} onChange={handleCertificateUpload} className="hidden" />
+              <input type="file" ref={fileInputRef} onChange={handleCertificateUpload} className="hidden" accept="image/*,application/pdf" />
             </div>
 
             {/* Right: Technical Info */}

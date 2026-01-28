@@ -18,7 +18,8 @@ import {
   ClipboardCheck,
   Check,
   LayoutGrid,
-  List as ListIcon
+  List as ListIcon,
+  X as XIcon
 } from 'lucide-react';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { 
@@ -60,6 +61,10 @@ const ActivityDashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -77,14 +82,14 @@ const ActivityDashboard: React.FC = () => {
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
-        const result = await fetchActivitiesPaginated(currentPage, itemsPerPage, appliedSearch, signal);
+        const result = await fetchActivitiesPaginated(currentPage, itemsPerPage, appliedSearch, startDate, endDate, signal);
         setItems(result.items);
         setTotalCount(result.totalCount);
       },
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [currentPage, appliedSearch, itemsPerPage]);
+  }, [currentPage, appliedSearch, startDate, endDate, itemsPerPage]);
 
   useEffect(() => {
     loadData();
@@ -163,6 +168,28 @@ const ActivityDashboard: React.FC = () => {
     }
   };
 
+  const handleBatchFavorite = async () => {
+    if (selectedIds.length === 0) return;
+    const selectedItems = items.filter(i => selectedIds.includes(i.id));
+    const anyUnfav = selectedItems.some(i => !i.isFavorite);
+    const newValue = anyUnfav;
+
+    await performUpdate(
+      items,
+      setItems,
+      selectedIds,
+      (i) => ({ ...i, isFavorite: newValue }),
+      async (updated) => await saveActivity(updated)
+    );
+    showXeenapsToast('success', `Bulk update complete`);
+  };
+
+  const handleApplyDateFilter = () => {
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate);
+    setCurrentPage(1);
+  };
+
   const filteredItems = useMemo(() => {
     return items.filter(item => activeFilter === 'All' || item.type === activeFilter);
   }, [items, activeFilter]);
@@ -181,19 +208,39 @@ const ActivityDashboard: React.FC = () => {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0">
-        <SmartSearchBox 
-          value={localSearch} 
-          onChange={setLocalSearch} 
-          onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }} 
-          phrases={["Search event name...", "Search organizer...", "Search certificates..."]}
-        />
+        <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
+          <SmartSearchBox 
+            value={localSearch} 
+            onChange={setLocalSearch} 
+            onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }} 
+            phrases={["Search event name...", "Search organizer...", "Search certificates..."]}
+          />
+
+          <div className="flex flex-col items-stretch md:flex-row md:items-center gap-2 bg-gray-50/50 p-1 rounded-2xl border border-gray-100">
+            <div className="flex items-center gap-2 px-3 py-2 md:py-0">
+              <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">From</span>
+              <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempStartDate} onChange={(e) => setTempStartDate(e.target.value)} />
+            </div>
+            <div className="hidden md:block w-px h-4 bg-gray-200" />
+            <div className="flex items-center gap-2 px-3 py-2 md:py-0">
+              <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">Until</span>
+              <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempEndDate} onChange={(e) => setTempEndDate(e.target.value)} />
+            </div>
+            {(tempStartDate || tempEndDate) && (
+              <button onClick={handleApplyDateFilter} className="w-full md:w-auto px-4 py-2 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003859] transition-all shadow-md md:ml-1">Apply Range</button>
+            )}
+            {(startDate || endDate) && (
+              <button onClick={() => { setTempStartDate(''); setTempEndDate(''); setStartDate(''); setEndDate(''); setCurrentPage(1); }} className="p-2 hover:bg-gray-200 rounded-lg transition-all flex justify-center text-red-400"><XIcon size={16} /></button>
+            )}
+          </div>
+        </div>
         <StandardPrimaryButton onClick={handleNewActivity} icon={<Plus size={20} />}>
           Register Activity
         </StandardPrimaryButton>
       </div>
 
       <div className="flex items-center justify-between mb-6 shrink-0">
-        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2 no-scrollbar flex-1">
           {activityTypes.map(type => (
             <StandardFilterButton 
               key={type} 
@@ -207,9 +254,13 @@ const ActivityDashboard: React.FC = () => {
       </div>
 
       <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>
-        <StandardQuickActionButton variant="danger" onClick={handleBatchDelete}>
+        <StandardQuickActionButton variant="danger" onClick={handleBatchDelete} title="Delete Selected">
           <Trash2 size={18} />
         </StandardQuickActionButton>
+        <StandardQuickActionButton variant="warning" onClick={handleBatchFavorite} title="Favorite Selected">
+           <Star size={18} fill={selectedIds.length > 0 && items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite) ? "none" : "currentColor"} />
+        </StandardQuickActionButton>
+        <button onClick={() => setSelectedIds([])} className="text-[9px] font-black uppercase tracking-widest text-[#004A74]/50 hover:text-[#004A74] px-2">Clear</button>
       </StandardQuickAccessBar>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -231,16 +282,20 @@ const ActivityDashboard: React.FC = () => {
                   selectedIds.includes(item.id) ? 'ring-4 ring-[#004A74]/10 border-[#004A74]' : ''
                 }`}
               >
-                <div className="absolute top-6 right-6 flex items-center gap-2 z-10" onClick={e => e.stopPropagation()}>
-                   <button onClick={(e) => handleToggleFavorite(e, item)} className="p-1 hover:scale-125 transition-transform">
-                      <Star size={20} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
-                   </button>
-                   <button onClick={() => toggleSelect(item.id)} className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}>
-                      {selectedIds.includes(item.id) && <Check size={12} strokeWidth={4} />}
+                {/* CHECKBOX ON TOP LEFT AS REQUESTED */}
+                <div className="absolute top-6 left-6 z-10" onClick={e => e.stopPropagation()}>
+                   <button onClick={() => toggleSelect(item.id)} className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white/80 backdrop-blur-sm border-gray-200 hover:border-[#004A74]'}`}>
+                      {selectedIds.includes(item.id) && <Check size={14} strokeWidth={4} />}
                    </button>
                 </div>
 
-                <div className="mb-4 flex flex-wrap gap-1.5">
+                <div className="absolute top-6 right-6 z-10" onClick={e => e.stopPropagation()}>
+                   <button onClick={(e) => handleToggleFavorite(e, item)} className="p-1.5 hover:scale-125 transition-transform bg-white/50 backdrop-blur-sm rounded-lg">
+                      <Star size={20} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
+                   </button>
+                </div>
+
+                <div className="mb-4 mt-8 flex flex-wrap gap-1.5">
                    <span className="px-3 py-1 bg-[#004A74]/5 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">{item.type}</span>
                    {item.level && <span className="px-3 py-1 bg-[#FED400]/10 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">{item.level}</span>}
                 </div>

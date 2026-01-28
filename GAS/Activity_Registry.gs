@@ -29,9 +29,9 @@ function setupActivitiesDatabase() {
 }
 
 /**
- * Fetch activities with pagination and search
+ * Fetch activities with pagination, search, and date range
  */
-function getActivitiesFromRegistry(page = 1, limit = 25, search = "") {
+function getActivitiesFromRegistry(page = 1, limit = 25, search = "", startDate = "", endDate = "") {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.ACTIVITIES);
     const sheet = ss.getSheetByName("Activities");
@@ -54,21 +54,38 @@ function getActivitiesFromRegistry(page = 1, limit = 25, search = "") {
 
     // 1. FILTERING
     let filtered = rawData.filter(row => {
-      if (!searchLower) return true;
-      return String(row[nameIdx] || "").toLowerCase().includes(searchLower) ||
-             String(row[orgIdx] || "").toLowerCase().includes(searchLower) ||
-             String(row[descIdx] || "").toLowerCase().includes(searchLower);
+      // Search Filter
+      if (searchLower) {
+        const matchesSearch = String(row[nameIdx] || "").toLowerCase().includes(searchLower) ||
+                              String(row[orgIdx] || "").toLowerCase().includes(searchLower) ||
+                              String(row[descIdx] || "").toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+
+      // Date Range Filter
+      if (startDate || endDate) {
+        const activityDate = new Date(row[startIdx]);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (activityDate < start) return false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (activityDate > end) return false;
+        }
+      }
+
+      return true;
     });
 
     // 2. MULTI-LEVEL SORTING
-    // Priority: isFavorite DESC, then startDate DESC
     filtered.sort((a, b) => {
-      // Fav Check
       const favA = a[favIdx] === true || String(a[favIdx]).toLowerCase() === 'true';
       const favB = b[favIdx] === true || String(b[favIdx]).toLowerCase() === 'true';
       if (favA !== favB) return favA ? -1 : 1;
 
-      // Date Check
       const dateA = a[startIdx] ? new Date(a[startIdx]).getTime() : 0;
       const dateB = b[startIdx] ? new Date(b[startIdx]).getTime() : 0;
       return dateB - dateA;
@@ -136,7 +153,7 @@ function saveActivityToRegistry(item) {
 }
 
 /**
- * Delete Activity and clean up Vault Shards cross-nodes
+ * Delete Activity and clean up Vault Shards + Certificate cross-nodes
  */
 function deleteActivityFromRegistry(id) {
   try {
@@ -149,19 +166,36 @@ function deleteActivityFromRegistry(id) {
     const idIdx = headers.indexOf('id');
     const vaultIdx = headers.indexOf('vaultJsonId');
     const nodeIdx = headers.indexOf('storageNodeUrl');
+    const certFileIdx = headers.indexOf('certificateFileId');
+    const certNodeIdx = headers.indexOf('certificateNodeUrl');
 
     for (let i = 1; i < data.length; i++) {
       if (data[i][idIdx] === id) {
         const vaultId = data[i][vaultIdx];
         const vaultFileNode = data[i][nodeIdx];
+        const certId = data[i][certFileIdx];
+        const certNode = data[i][certNodeIdx];
 
-        // LOGIC: Cross-Node Cleanup
+        const myUrl = ScriptApp.getService().getUrl();
+
+        // 1. DELETE CERTIFICATE FILE
+        if (certId) {
+          const isCertLocal = !certNode || certNode === "" || certNode === myUrl;
+          if (isCertLocal) permanentlyDeleteFile(certId);
+          else {
+            UrlFetchApp.fetch(certNode, {
+              method: 'post',
+              contentType: 'application/json',
+              payload: JSON.stringify({ action: 'deleteRemoteFiles', fileIds: [certId] }),
+              muteHttpExceptions: true
+            });
+          }
+        }
+
+        // 2. VAULT CLEANUP
         if (vaultId) {
           try {
-            // Get Vault JSON content
-            const myUrl = ScriptApp.getService().getUrl();
             const isLocalIndex = !vaultFileNode || vaultFileNode === "" || vaultFileNode === myUrl;
-            
             let vaultContentRaw = "";
             if (isLocalIndex) {
               vaultContentRaw = DriveApp.getFileById(vaultId).getBlob().getDataAsString();
@@ -171,8 +205,6 @@ function deleteActivityFromRegistry(id) {
             }
 
             const vaultItems = JSON.parse(vaultContentRaw);
-            
-            // Group File IDs by their specific node URLs
             const nodeGroups = {};
             vaultItems.forEach(item => {
               if (item.type === 'FILE' && item.fileId && item.nodeUrl) {
@@ -181,12 +213,9 @@ function deleteActivityFromRegistry(id) {
               }
             });
 
-            // Iterate through groups and trigger batch deletion on each node
             Object.keys(nodeGroups).forEach(targetNode => {
               const fileIds = nodeGroups[targetNode];
-              const isTargetLocal = targetNode === myUrl || targetNode === "";
-              
-              if (isTargetLocal) {
+              if (targetNode === myUrl || targetNode === "") {
                 fileIds.forEach(fid => permanentlyDeleteFile(fid));
               } else {
                 UrlFetchApp.fetch(targetNode, {
@@ -198,7 +227,6 @@ function deleteActivityFromRegistry(id) {
               }
             });
 
-            // Finally delete the index JSON itself
             if (isLocalIndex) permanentlyDeleteFile(vaultId);
             else {
               UrlFetchApp.fetch(vaultFileNode, {
@@ -208,9 +236,8 @@ function deleteActivityFromRegistry(id) {
                 muteHttpExceptions: true
               });
             }
-
           } catch (vaultErr) {
-            console.warn("Advanced cross-node vault cleanup failed: " + vaultErr.toString());
+            console.warn("Vault cleanup error: " + vaultErr.toString());
           }
         }
 

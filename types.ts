@@ -190,6 +190,9 @@ export interface ActivityItem {
   isFavorite: boolean;
   vaultJsonId: string;
   storageNodeUrl: string;
+  // Fix: Added missing certificate properties to resolve type errors in ActivityDetail.tsx
+  certificateFileId?: string;
+  certificateNodeUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

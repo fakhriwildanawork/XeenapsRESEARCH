@@ -11,11 +11,13 @@ export const fetchActivitiesPaginated = async (
   page: number = 1,
   limit: number = 25,
   search: string = "",
+  startDate: string = "",
+  endDate: string = "",
   signal?: AbortSignal
 ): Promise<{ items: ActivityItem[], totalCount: number }> => {
   if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
   try {
-    const url = `${GAS_WEB_APP_URL}?action=getActivities&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`;
+    const url = `${GAS_WEB_APP_URL}?action=getActivities&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&startDate=${startDate}&endDate=${endDate}`;
     const res = await fetch(url, { signal });
     const result = await res.json();
     return { 
@@ -47,6 +49,22 @@ export const deleteActivity = async (id: string): Promise<boolean> => {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'deleteActivity', id })
+    });
+    const result = await res.json();
+    return result.status === 'success';
+  } catch (e) {
+    return false;
+  }
+};
+
+/**
+ * Helper to permanently delete a file from a specific storage node
+ */
+export const deleteRemoteFile = async (fileId: string, nodeUrl: string): Promise<boolean> => {
+  try {
+    const res = await fetch(nodeUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteRemoteFiles', fileIds: [fileId] })
     });
     const result = await res.json();
     return result.status === 'success';
