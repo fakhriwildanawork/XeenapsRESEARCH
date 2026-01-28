@@ -44,20 +44,16 @@ function getPublicationFromRegistry(page = 1, limit = 25, search = "", sortKey =
     
     const sortIdx = headers.indexOf(sortKey);
     const favIdx = headers.indexOf('isFavorite');
-    const createdIdx = headers.indexOf('createdAt');
 
-    // MULTI-LEVEL SORTING
-    // Default: isFavorite (TRUE first) -> CreatedAt (Newest first)
+    // MULTI-LEVEL SORTING (SERVER SIDE)
     filtered.sort((a, b) => {
-      // 1. Sort by Favorite status
+      // 1. Prioritize isFavorite (TRUE comes first)
       const favA = a[favIdx] === true || String(a[favIdx]).toLowerCase() === 'true';
       const favB = b[favIdx] === true || String(b[favIdx]).toLowerCase() === 'true';
       
-      if (favA !== favB) {
-        return favA ? -1 : 1;
-      }
+      if (favA !== favB) return favA ? -1 : 1;
 
-      // 2. Sort by sortKey (e.g. CreatedAt)
+      // 2. Secondary: Primary Sort Key (Date or others)
       if (sortIdx !== -1) {
         let valA = a[sortIdx];
         let valB = b[sortIdx];

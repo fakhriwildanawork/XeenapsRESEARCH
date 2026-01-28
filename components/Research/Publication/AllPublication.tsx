@@ -11,7 +11,6 @@ import {
   ChevronUp,
   ChevronDown,
   ArrowUpDown,
-  Settings2,
   BookOpen,
   Share2,
   ExternalLink
@@ -56,7 +55,6 @@ const AllPublication: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'createdAt', dir: 'desc' });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  const [showSortMenu, setShowSortMenu] = useState(false);
 
   const itemsPerPage = isMobile ? 12 : 20;
 
@@ -67,6 +65,7 @@ const AllPublication: React.FC = () => {
   }, []);
 
   const loadData = useCallback(() => {
+    // BUG FIX: Panggil workflow.execute tanpa menyertakan workflow objek itu sendiri di dependency
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
@@ -84,7 +83,7 @@ const AllPublication: React.FC = () => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [currentPage, appliedSearch, itemsPerPage, sortConfig, workflow]);
+  }, [currentPage, appliedSearch, itemsPerPage, sortConfig.key, sortConfig.dir]);
 
   useEffect(() => {
     loadData();
@@ -204,7 +203,7 @@ const AllPublication: React.FC = () => {
         items,
         setItems,
         [id],
-        async (articleId) => await deletePublication(articleId)
+        async (pubId) => await deletePublication(pubId)
       );
       showXeenapsToast('success', 'Publication removed');
       setSelectedIds(prev => prev.filter(i => i !== id));

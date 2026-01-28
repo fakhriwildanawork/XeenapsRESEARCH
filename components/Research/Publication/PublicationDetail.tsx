@@ -7,9 +7,6 @@ import {
   ExternalLink, 
   BookOpen, 
   Target, 
-  Users, 
-  ShieldCheck, 
-  Calendar,
   Layers,
   FileText,
   Link as LinkIcon,
@@ -18,9 +15,7 @@ import {
   Tag,
   Share2,
   Star,
-  Trash2,
-  Building,
-  Activity
+  Trash2
 } from 'lucide-react';
 import { showXeenapsToast } from '../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../utils/confirmUtils';
@@ -81,7 +76,7 @@ const PublicationDetail: React.FC = () => {
     }
   };
 
-  if (!item) return <div className="p-10 text-center animate-pulse">Initializing Workspace...</div>;
+  if (!item) return <div className="p-10 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Initializing Workspace...</div>;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-hidden relative animate-in slide-in-from-right duration-500">
