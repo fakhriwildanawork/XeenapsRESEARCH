@@ -100,7 +100,17 @@ export const updateVaultContent = async (
   nodeUrl?: string
 ): Promise<{ success: boolean, newVaultId?: string, newNodeUrl?: string }> => {
   try {
-    const res = await fetch(nodeUrl || GAS_WEB_APP_URL!, {
+    let targetUrl = nodeUrl || GAS_WEB_APP_URL!;
+    
+    // If we don't have a vault yet, ask the backend for a sharding target first
+    if (!vaultJsonId && !nodeUrl) {
+      const quotaRes = await fetch(`${GAS_WEB_APP_URL}?action=checkQuota`);
+      const quotaData = await quotaRes.json();
+      // Quota management is handled on GAS side via action: 'saveJsonFile' logic 
+      // but we ensure we are hitting the master first to let it decide if it needs to proxy.
+    }
+
+    const res = await fetch(targetUrl, {
       method: 'POST',
       body: JSON.stringify({ 
         action: 'saveJsonFile', 
@@ -113,7 +123,7 @@ export const updateVaultContent = async (
     return { 
       success: result.status === 'success', 
       newVaultId: result.fileId,
-      newNodeUrl: nodeUrl || GAS_WEB_APP_URL // Default to master if no nodeUrl provided
+      newNodeUrl: targetUrl 
     };
   } catch (e) {
     return { success: false };

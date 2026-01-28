@@ -18,7 +18,8 @@ import {
   Zap,
   CheckCircle2,
   Link as LinkIcon,
-  Eye
+  Eye,
+  RefreshCcw
 } from 'lucide-react';
 import { 
   FormPageContainer, 
@@ -187,8 +188,38 @@ const ActivityDetail: React.FC = () => {
     setIsUploading(false);
   };
 
+  const handleClearCertificate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!item || !item.certificateFileId) return;
+
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (!confirmed) return;
+
+    const oldFileId = item.certificateFileId;
+    const oldNodeUrl = item.certificateNodeUrl;
+
+    // Optimistic clear
+    const updatedItem = {
+      ...item,
+      certificateFileId: '',
+      certificateNodeUrl: '',
+      updatedAt: new Date().toISOString()
+    };
+    setItem(updatedItem);
+    setOptimisticCertPreview(null);
+    await saveActivity(updatedItem);
+
+    if (oldFileId && oldNodeUrl) {
+      await deleteRemoteFile(oldFileId, oldNodeUrl);
+    }
+    showXeenapsToast('success', 'Certificate cleared');
+  };
+
   if (isLoading) return <div className="p-20 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Loading Portfolio...</div>;
   if (!item) return null;
+
+  const hasCertificate = !!(item.certificateFileId || optimisticCertPreview);
+  const certificateUrl = optimisticCertPreview || (item.certificateFileId ? `https://lh3.googleusercontent.com/d/${item.certificateFileId}` : null);
 
   return (
     <FormPageContainer>
@@ -288,42 +319,67 @@ const ActivityDetail: React.FC = () => {
             </div>
           </section>
 
-          {/* 2. CREDENTIAL BLOCK */}
+          {/* 2. CREDENTIAL BLOCK - A4 LANDSCAPE RATIO */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-10 border-t border-gray-50 pt-10">
-            {/* Left: Certificate Upload */}
+            {/* Left: Certificate Upload (Rasio 1.414 : 1) */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Primary Certificate File</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Primary Certificate File (A4 Landscape)</label>
               <div 
                 onClick={() => !isUploading && fileInputRef.current?.click()}
-                className={`relative group w-full h-40 bg-gray-50 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden hover:bg-white hover:border-[#004A74]/30 ${item.certificateFileId || optimisticCertPreview ? 'border-emerald-200 bg-emerald-50/10' : 'border-gray-200'}`}
+                className={`relative group w-full aspect-[1.414/1] bg-gray-50 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden hover:bg-white hover:border-[#004A74]/30 ${hasCertificate ? 'border-[#004A74]/20' : 'border-gray-200'}`}
               >
                 {isUploading && !optimisticCertPreview ? (
-                  <Loader2 className="w-8 h-8 text-[#004A74] animate-spin" />
-                ) : (optimisticCertPreview || item.certificateFileId) ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-10 h-10 text-[#004A74] animate-spin" />
+                    <p className="text-[10px] font-black text-[#004A74] uppercase tracking-widest">Securing Document...</p>
+                  </div>
+                ) : hasCertificate ? (
                   <div className="relative w-full h-full">
-                     {(optimisticCertPreview || item.certificateFileId) && (
-                        <img 
-                          src={optimisticCertPreview || `https://lh3.googleusercontent.com/d/${item.certificateFileId}`} 
-                          className="w-full h-full object-cover opacity-80" 
-                          alt="Certificate"
-                          onError={(e) => { (e.target as any).style.display = 'none'; }}
-                        />
-                     )}
-                     <div className="absolute inset-0 bg-white/40 flex flex-col items-center justify-center backdrop-blur-[2px]">
-                        <CheckCircle2 className="w-10 h-10 text-emerald-600 mb-1" />
-                        <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Document Secured</p>
-                        <div className="flex gap-2 mt-2">
-                           <button onClick={(e) => { e.stopPropagation(); window.open(`https://lh3.googleusercontent.com/d/${item.certificateFileId}`, '_blank'); }} className="p-2 bg-white rounded-lg shadow-md text-[#004A74] hover:bg-[#FED400] transition-all"><Eye size={14} /></button>
-                           <button onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} className="p-2 bg-white rounded-lg shadow-md text-emerald-600 hover:bg-emerald-50 transition-all"><CloudUpload size={14} /></button>
+                     {/* INSTANT SHARP PREVIEW */}
+                     <img 
+                       src={certificateUrl!} 
+                       className="w-full h-full object-cover" 
+                       alt="Certificate"
+                       onClick={(e) => { e.stopPropagation(); window.open(certificateUrl!, '_blank'); }}
+                     />
+                     
+                     {/* HOVER OVERLAY: THIN WHITE BLUR */}
+                     <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px] pointer-events-none" />
+                     
+                     {/* CONTROLS IN TOP RIGHT */}
+                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                          className="p-2.5 bg-white/90 text-[#004A74] hover:bg-[#FED400] rounded-xl shadow-lg transition-all active:scale-90"
+                          title="Reload / Upload New"
+                        >
+                          <RefreshCcw size={16} strokeWidth={3} />
+                        </button>
+                        <button 
+                          onClick={handleClearCertificate}
+                          className="p-2.5 bg-white/90 text-red-500 hover:bg-red-500 hover:text-white rounded-xl shadow-lg transition-all active:scale-90"
+                          title="Delete Certificate"
+                        >
+                          <Trash2 size={16} strokeWidth={3} />
+                        </button>
+                     </div>
+
+                     {/* CLICK TO VIEW ICON OVERLAY */}
+                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none transition-all">
+                        <div className="bg-black/60 p-4 rounded-full text-white shadow-2xl">
+                           <Eye size={32} />
                         </div>
                      </div>
-                     {isUploading && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#004A74] animate-pulse" />}
+
+                     {isUploading && <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#FED400] animate-pulse" />}
                   </div>
                 ) : (
-                  <>
-                    <CloudUpload className="w-8 h-8 text-gray-300 group-hover:text-[#004A74] transition-colors" />
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Upload Certificate</p>
-                  </>
+                  <div className="flex flex-col items-center group-hover:scale-105 transition-transform">
+                    <div className="w-16 h-16 bg-gray-100 rounded-3xl flex items-center justify-center text-gray-300 group-hover:text-[#004A74] group-hover:bg-blue-50 transition-all mb-4">
+                       <CloudUpload size={32} />
+                    </div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-[#004A74] transition-colors">Upload Certificate</p>
+                  </div>
                 )}
               </div>
               <input type="file" ref={fileInputRef} onChange={handleCertificateUpload} className="hidden" accept="image/*,application/pdf" />
