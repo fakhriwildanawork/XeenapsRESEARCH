@@ -133,7 +133,7 @@ const CONFIG = {
       'id', 'title', 'authors', 'type', 'status', 'publisherName', 'researchDomain', 'affiliation', 'indexing', 'quartile', 'doi', 'issn_isbn', 'volume', 'issue', 'pages', 'year', 'submissionDate', 'acceptanceDate', 'publicationDate', 'brainstormingId', 'libraryId', 'manuscriptLink', 'abstract', 'keywords', 'remarks', 'isFavorite', 'createdAt', 'updatedAt'
     ],
     ACTIVITIES: [
-      'id', 'type', 'eventName', 'organizer', 'location', 'level', 'startDate', 'endDate', 'role', 'description', 'notes', 'certificateNumber', 'credit', 'link', 'isFavorite', 'vaultJsonId', 'storageNodeUrl', 'createdAt', 'updatedAt'
+      'id', 'type', 'eventName', 'organizer', 'location', 'level', 'startDate', 'endDate', 'role', 'description', 'notes', 'certificateNumber', 'credit', 'link', 'isFavorite', 'vaultJsonId', 'storageNodeUrl', 'createdAt', 'updatedAt', 'certificateFileId', 'certificateNodeUrl'
     ],
     PROFILE: [
       'fullName', 'photoUrl', 'photoFileId', 'photoNodeUrl', 'birthDate', 'address', 'email', 'phone', 'sintaId', 'scopusId', 'wosId', 'googleScholarId', 'jobTitle', 'affiliation', 'uniqueAppId', 'socialMedia'
