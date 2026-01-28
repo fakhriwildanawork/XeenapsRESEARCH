@@ -37,7 +37,6 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
     const result = await uploadProfilePhoto(file);
     if (result) {
       onPhotoChange(result.photoUrl, result.fileId, result.nodeUrl);
-      showXeenapsToast('success', 'Profile photo synchronized');
       setPreviewUrl(null); // Reset preview and let parent's URL take over
     } else {
       showXeenapsToast('error', 'Upload failed. Check storage quota.');
@@ -60,9 +59,7 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
       setPreviewUrl(null);
       
       const success = await deleteProfilePhoto(profile.photoFileId, profile.photoNodeUrl);
-      if (success) {
-        showXeenapsToast('success', 'Photo removed');
-      } else {
+      if (!success) {
         showXeenapsToast('error', 'Server removal failed, but display updated.');
       }
     }

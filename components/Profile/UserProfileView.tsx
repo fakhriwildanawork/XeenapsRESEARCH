@@ -106,14 +106,12 @@ const UserProfileView: React.FC = () => {
     );
     setIsEduModalOpen(false);
 
-    // 2. Background Sync
+    // 2. Background Sync (Silent)
     setIsSyncing(true);
     const success = await saveEducationEntry(data);
     if (!success) {
       setEducation(original);
       showXeenapsToast('error', 'Cloud sync failed. History rolled back.');
-    } else {
-      showXeenapsToast('success', 'Education record synchronized');
     }
     setIsSyncing(false);
   };
@@ -127,8 +125,6 @@ const UserProfileView: React.FC = () => {
     if (!success) {
       setEducation(original);
       showXeenapsToast('error', 'Delete sync failed. Item restored.');
-    } else {
-      showXeenapsToast('success', 'Education record removed');
     }
     setIsSyncing(false);
   };
@@ -148,8 +144,6 @@ const UserProfileView: React.FC = () => {
     if (!success) {
       setCareer(original);
       showXeenapsToast('error', 'Cloud sync failed. Career history restored.');
-    } else {
-      showXeenapsToast('success', 'Career journey synchronized');
     }
     setIsSyncing(false);
   };
@@ -163,8 +157,6 @@ const UserProfileView: React.FC = () => {
     if (!success) {
       setCareer(original);
       showXeenapsToast('error', 'Delete sync failed. Item restored.');
-    } else {
-      showXeenapsToast('success', 'Career record removed');
     }
     setIsSyncing(false);
   };
@@ -188,7 +180,6 @@ const UserProfileView: React.FC = () => {
     const success = await saveUserProfile(newProfile);
     if (success) {
       setProfile(newProfile);
-      showXeenapsToast('success', `${field.charAt(0).toUpperCase() + field.slice(1)} updated`);
       dispatchProfileUpdate(newProfile);
     } else {
       setLocalProfile(profile); 
@@ -251,13 +242,6 @@ const UserProfileView: React.FC = () => {
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#fcfcfc] animate-in fade-in duration-700 h-full">
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-32">
         
-        {isSyncing && (
-          <div className="fixed top-24 right-10 z-[100] flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full animate-pulse border border-emerald-100 shadow-sm">
-             <Loader2 size={12} className="animate-spin" />
-             <span className="text-[8px] font-black uppercase tracking-widest">Background Syncing</span>
-          </div>
-        )}
-
         {/* BLOK ATAS: 50% 50% SPLIT */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           <div className="h-full">
