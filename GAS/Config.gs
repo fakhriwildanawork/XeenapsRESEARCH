@@ -1,3 +1,4 @@
+
 /**
  * XEENAPS PKM - GLOBAL CONFIGURATION
  */
@@ -21,6 +22,7 @@ const CONFIG = {
     BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM',
     LITERATURE_ARCHIVE: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE',
     PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g',
+    ACTIVITIES: '1IQ8dzXKfVuAtSnXsU5Wx2JGa5Wkmw_R38HbvH1tXTRU',
     PROFILE: '1Tf9iW9qP8_8X_8vH_8V8H8v_8H8V8H8v_8H8V8H8v8' // Placeholder ID - User will update this
   },
   SCHEMAS: {
@@ -122,88 +124,25 @@ const CONFIG = {
       'proposedAbstract',
       'externalRefs', // JSON Array (New)
       'internalRefs', // JSON Array (New)
-      'isFavorite',
-      'isUsed',
-      'createdAt',
-      'updatedAt'
+      'isFavorite', 'isUsed', 'createdAt', 'updatedAt'
     ],
     ARCHIVED_ARTICLES: [
-      'id',
-      'title',
-      'citationHarvard',
-      'doi',
-      'url',
-      'info',
-      'label',
-      'isFavorite',
-      'createdAt'
+      'id', 'title', 'citationHarvard', 'doi', 'url', 'info', 'label', 'isFavorite', 'createdAt'
     ],
     PUBLICATION: [
-      'id',
-      'title',
-      'authors', // JSON Array
-      'type',
-      'status',
-      'publisherName',
-      'researchDomain',
-      'affiliation',
-      'indexing',
-      'quartile',
-      'doi',
-      'issn_isbn',
-      'volume',
-      'issue',
-      'pages',
-      'year',
-      'submissionDate',
-      'acceptanceDate',
-      'publicationDate',
-      'brainstormingId',
-      'libraryId',
-      'manuscriptLink',
-      'abstract',
-      'keywords', // JSON Array
-      'remarks',
-      'isFavorite',
-      'createdAt',
-      'updatedAt'
+      'id', 'title', 'authors', 'type', 'status', 'publisherName', 'researchDomain', 'affiliation', 'indexing', 'quartile', 'doi', 'issn_isbn', 'volume', 'issue', 'pages', 'year', 'submissionDate', 'acceptanceDate', 'publicationDate', 'brainstormingId', 'libraryId', 'manuscriptLink', 'abstract', 'keywords', 'remarks', 'isFavorite', 'createdAt', 'updatedAt'
+    ],
+    ACTIVITIES: [
+      'id', 'type', 'eventName', 'organizer', 'location', 'level', 'startDate', 'endDate', 'role', 'description', 'notes', 'certificateNumber', 'credit', 'link', 'isFavorite', 'vaultJsonId', 'storageNodeUrl', 'createdAt', 'updatedAt'
     ],
     PROFILE: [
-      'fullName',
-      'photoUrl',
-      'photoFileId',
-      'photoNodeUrl',
-      'birthDate',
-      'address',
-      'email',
-      'phone',
-      'sintaId',
-      'scopusId',
-      'wosId',
-      'googleScholarId',
-      'jobTitle',
-      'affiliation',
-      'uniqueAppId',
-      'socialMedia'
+      'fullName', 'photoUrl', 'photoFileId', 'photoNodeUrl', 'birthDate', 'address', 'email', 'phone', 'sintaId', 'scopusId', 'wosId', 'googleScholarId', 'jobTitle', 'affiliation', 'uniqueAppId', 'socialMedia'
     ],
     EDUCATION: [
-      'id',
-      'level',
-      'institution',
-      'major',
-      'degree',
-      'startYear',
-      'endYear'
+      'id', 'level', 'institution', 'major', 'degree', 'startYear', 'endYear'
     ],
     CAREER: [
-      'id',
-      'company',
-      'position',
-      'type',
-      'startDate',
-      'endDate',
-      'location',
-      'description'
+      'id', 'company', 'position', 'type', 'startDate', 'endDate', 'location', 'description'
     ]
   }
 };

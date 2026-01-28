@@ -1,3 +1,4 @@
+
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -31,6 +32,15 @@ function doGet(e) {
       const sortDir = e.parameter.sortDir || "desc";
       
       const result = getPaginatedItems(CONFIG.SPREADSHEETS.LIBRARY, "Collections", page, limit, search, type, path, sortKey, sortDir);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
+    // NEW: getActivities
+    if (action === 'getActivities') {
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "25");
+      const search = e.parameter.search || "";
+      const result = getActivitiesFromRegistry(page, limit, search);
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
@@ -184,6 +194,7 @@ function doPost(e) {
     if (action === 'setupBrainstormingDatabase') return createJsonResponse(setupBrainstormingDatabase());
     if (action === 'setupPublicationDatabase') return createJsonResponse(setupPublicationDatabase());
     if (action === 'setupProfileDatabase') return createJsonResponse(setupProfileDatabase());
+    if (action === 'setupActivitiesDatabase') return createJsonResponse(setupActivitiesDatabase());
     
     // NEW ACTION: saveProfile
     if (action === 'saveProfile') {
@@ -215,6 +226,15 @@ function doPost(e) {
     // NEW ACTION: deletePublication
     if (action === 'deletePublication') {
       return createJsonResponse(deletePublicationFromRegistry(body.id));
+    }
+
+    // NEW ACTION: saveActivity
+    if (action === 'saveActivity') {
+      return createJsonResponse(saveActivityToRegistry(body.item));
+    }
+    // NEW ACTION: deleteActivity
+    if (action === 'deleteActivity') {
+      return createJsonResponse(deleteActivityFromRegistry(body.id));
     }
 
     // NEW ACTION: saveArchivedArticle
@@ -355,6 +375,37 @@ function doPost(e) {
       }
 
       return createJsonResponse({ status: 'success', translatedText: translatedText });
+    }
+
+    // NEW ACTION: vaultFileUpload (Dynamic Sharding for Activity Vault)
+    if (action === 'vaultFileUpload') {
+      const threshold = CONFIG.STORAGE.THRESHOLD;
+      const target = getViableStorageTarget(threshold);
+      if (!target) return createJsonResponse({ status: 'error', message: 'Storage critical threshold reached.' });
+
+      let fileId;
+      if (target.isLocal) {
+        const folder = DriveApp.getFolderById(target.folderId);
+        const blob = Utilities.newBlob(Utilities.base64Decode(body.fileData), body.mimeType, body.fileName);
+        fileId = folder.createFile(blob).getId();
+      } else {
+        const res = UrlFetchApp.fetch(target.url, {
+          method: 'post',
+          contentType: 'application/json',
+          payload: JSON.stringify({ 
+            action: 'saveFileDirect', 
+            fileName: body.fileName, 
+            mimeType: body.mimeType, 
+            fileData: body.fileData, 
+            folderId: target.folderId 
+          }),
+          muteHttpExceptions: true
+        });
+        const resJson = JSON.parse(res.getContentText());
+        if (resJson.status === 'success') fileId = resJson.fileId;
+        else throw new Error(resJson.message);
+      }
+      return createJsonResponse({ status: 'success', fileId: fileId, nodeUrl: target.url });
     }
 
     // ACTION: checkQuota (POST support for Master-Slave communication)

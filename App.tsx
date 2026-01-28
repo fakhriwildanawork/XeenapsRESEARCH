@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -15,6 +16,8 @@ import SettingsView from './components/Settings/SettingsView';
 import UserProfileView from './components/Profile/UserProfileView';
 import FindArticle from './components/Research/Literature/FindArticle';
 import ArchivedArticle from './components/Research/Literature/ArchivedArticle';
+// Placeholder for the upcoming Activities module to prevent build break
+const ActivityMain = React.lazy(() => import('./components/Activities/ActivityMain'));
 import { BRAND_ASSETS } from './assets';
 import { GlobalAppLoader } from './components/Common/LoadingComponents';
 
@@ -82,27 +85,32 @@ const App: React.FC = () => {
           />
 
           <div className="mt-4 lg:mt-6 flex-1 pb-10 overflow-hidden relative bg-white">
-            <Routes>
-              <Route path="/" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
-              <Route path="/favorite" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
-              <Route path="/bookmark" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
-              
-              <Route path="/find-article" element={<FindArticle />} />
-              <Route path="/archived-articles" element={<ArchivedArticle />} />
+            <React.Suspense fallback={<GlobalAppLoader />}>
+              <Routes>
+                <Route path="/" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
+                <Route path="/favorite" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
+                <Route path="/bookmark" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
+                
+                <Route path="/find-article" element={<FindArticle />} />
+                <Route path="/archived-articles" element={<ArchivedArticle />} />
 
-              {/* RESEARCH SUB-ROUTES */}
-              <Route path="/research/*" element={<GapFinderModule items={items} />} />
-              
-              <Route path="/presentations" element={<AllPresentation items={items} />} />
-              <Route path="/questions" element={<AllQuestion items={items} />} />
-              
-              <Route path="/add" element={isLoading ? <GlobalAppLoader /> : <LibraryForm onComplete={loadData} items={items} />} />
-              <Route path="/edit/:id" element={isLoading ? <GlobalAppLoader /> : <LibraryEditForm onComplete={loadData} items={items} />} />
-              <Route path="/settings" element={isLoading ? <GlobalAppLoader /> : <SettingsView />} />
-              <Route path="/profile" element={isLoading ? <GlobalAppLoader /> : <UserProfileView />} />
-              
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                {/* RESEARCH SUB-ROUTES */}
+                <Route path="/research/*" element={<GapFinderModule items={items} />} />
+                
+                <Route path="/presentations" element={<AllPresentation items={items} />} />
+                <Route path="/questions" element={<AllQuestion items={items} />} />
+                
+                {/* ACTIVITIES ROUTE */}
+                <Route path="/activities/*" element={<ActivityMain />} />
+                
+                <Route path="/add" element={isLoading ? <GlobalAppLoader /> : <LibraryForm onComplete={loadData} items={items} />} />
+                <Route path="/edit/:id" element={isLoading ? <GlobalAppLoader /> : <LibraryEditForm onComplete={loadData} items={items} />} />
+                <Route path="/settings" element={isLoading ? <GlobalAppLoader /> : <SettingsView />} />
+                <Route path="/profile" element={isLoading ? <GlobalAppLoader /> : <UserProfileView />} />
+                
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </React.Suspense>
           </div>
         </main>
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { NavLink, useLocation } from 'react-router-dom';
@@ -16,7 +17,8 @@ import {
   Zap,
   Target,
   SearchCode,
-  Share2
+  Share2,
+  ClipboardCheck
 } from 'lucide-react';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
 
@@ -39,6 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
     // Research is handled separately as a dropdown below
     { name: 'Presentations', path: '/presentations', icon: Presentation },
     { name: 'Question Bank', path: '/questions', icon: GraduationCap },
+    { name: 'Activities', path: '/activities', icon: ClipboardCheck },
     { name: 'Profile', path: '/profile', icon: User },
   ];
 
@@ -230,7 +233,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         </div>
 
         {/* Last static items including Profile */}
-        {navItems.slice(4).map((item) => {
+        {navItems.slice(4, 7).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink
@@ -296,6 +299,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             </button>
           </div>
         </div>
+
+        {/* Profile (Always Last) */}
+        <NavLink
+          key="Profile"
+          to="/profile"
+          onClick={handleNavClick}
+          className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
+            location.pathname === '/profile' 
+              ? 'bg-[#FED400] text-[#004A74] shadow-md' 
+              : 'text-gray-500 hover:bg-[#FED400]/5 hover:text-[#004A74]'
+          }`}
+        >
+          <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
+            <User size={18} strokeWidth={location.pathname === '/profile' ? 2.5 : 2} className="lg:w-5 lg:h-5" />
+          </div>
+          <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
+            <span className="text-xs md:text-sm font-semibold whitespace-nowrap">Profile</span>
+          </div>
+        </NavLink>
       </nav>
 
       {/* Bottom Area */}

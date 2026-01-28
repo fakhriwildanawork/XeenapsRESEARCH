@@ -1,3 +1,4 @@
+
 export enum SourceType {
   LINK = 'LINK',
   FILE = 'FILE',
@@ -130,6 +131,65 @@ export interface LibraryItem {
   storageNodeUrl?: string;
   isFavorite?: boolean;
   isBookmarked?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- ACTIVITIES TYPES ---
+
+export enum ActivityType {
+  SEMINAR = 'Seminar',
+  WORKSHOP = 'Workshop',
+  TRAINING = 'Training',
+  AWARD = 'Award',
+  CERTIFICATION = 'Certification',
+  PROJECT = 'Project',
+  OTHER = 'Other'
+}
+
+export enum ActivityLevel {
+  INTERNATIONAL = 'International',
+  NATIONAL = 'National',
+  REGIONAL = 'Regional',
+  LOCAL = 'Local',
+  INSTITUTIONAL = 'Institutional'
+}
+
+export enum ActivityRole {
+  PARTICIPANT = 'Participant',
+  SPEAKER = 'Speaker',
+  MODERATOR = 'Moderator',
+  COMMITTEE = 'Committee',
+  AWARDEE = 'Awardee'
+}
+
+export interface ActivityVaultItem {
+  type: 'FILE' | 'LINK';
+  fileId?: string;
+  url?: string;
+  label: string;
+  mimeType?: string;
+  nodeUrl?: string; // New field for per-item sharding
+}
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  eventName: string;
+  organizer: string;
+  location: string;
+  level: ActivityLevel;
+  startDate: string;
+  endDate: string;
+  role: ActivityRole;
+  description: string;
+  notes: string;
+  certificateNumber: string;
+  credit: string;
+  link: string;
+  isFavorite: boolean;
+  vaultJsonId: string;
+  storageNodeUrl: string;
   createdAt: string;
   updatedAt: string;
 }
