@@ -401,6 +401,9 @@ function doPost(e) {
     
     if (action === 'saveItem') {
       const item = body.item;
+      // SYSTEM ASSET GUARD: Avoid sharding/AI for internal assets
+      const isSystemAsset = (String(item.id).toUpperCase() === 'PHOTO_PROFILE');
+      
       const extractedText = body.extractedText || "";
       const isFileUpload = (body.file && body.file.fileData);
       
@@ -427,8 +430,8 @@ function doPost(e) {
 
       item.storageNodeUrl = storageTarget.url;
 
-      // 1. SHARDING: Extracted Content JSON
-      if (extractedText) {
+      // 1. SHARDING: Extracted Content JSON - SKIP IF SYSTEM ASSET
+      if (extractedText && !isSystemAsset) {
         const jsonFileName = `extracted_${item.id}.json`;
         const jsonContent = JSON.stringify({ id: item.id, fullText: extractedText });
         if (storageTarget.isLocal) {
@@ -447,8 +450,8 @@ function doPost(e) {
         }
       }
 
-      // 2. SHARDING: Insight Data JSON
-      if (!item.insightJsonId && item.id !== 'PHOTO_PROFILE') {
+      // 2. SHARDING: Insight Data JSON - SKIP IF SYSTEM ASSET
+      if (!item.insightJsonId && !isSystemAsset) {
         const insightFileName = `insight_${item.id}.json`;
         const insightContent = JSON.stringify({});
         if (storageTarget.isLocal) {
@@ -495,7 +498,7 @@ function doPost(e) {
       }
       
       // Khusus untuk Library Item (Bukan Foto Profil)
-      if (item.id !== 'PHOTO_PROFILE') {
+      if (!isSystemAsset) {
         saveToSheet(CONFIG.SPREADSHEETS.LIBRARY, "Collections", item);
       }
       

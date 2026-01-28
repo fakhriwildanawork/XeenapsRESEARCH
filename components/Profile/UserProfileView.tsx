@@ -192,6 +192,7 @@ const UserProfileView: React.FC = () => {
   const handlePhotoUpdate = async (url: string, fileId: string, nodeUrl: string) => {
     if (!localProfile) return;
     
+    // CAPTURE OLD METADATA BEFORE UPDATING STATE
     const oldFileId = localProfile.photoFileId;
     const oldNodeUrl = localProfile.photoNodeUrl;
 
@@ -210,6 +211,7 @@ const UserProfileView: React.FC = () => {
       setProfile(updatedProfile);
       dispatchProfileUpdate(updatedProfile);
 
+      // PERFORM CLEANUP ONLY IF PREVIOUS FILE EXISTS AND IS DIFFERENT
       if (oldFileId && oldFileId !== fileId && oldNodeUrl) {
          await deleteProfilePhoto(oldFileId, oldNodeUrl);
       }
