@@ -54,9 +54,13 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
     
     // DATA-DRIVEN EVENT LISTENERS (INSTANT UPDATES WITHOUT FETCH)
     const handleProfileUpdate = (e: any) => {
-      const { fullName, photoUrl } = e.detail || {};
-      const newName = fullName ? fullName.split(',')[0].trim() : "Xeenaps User";
-      const newPhoto = photoUrl || BRAND_ASSETS.USER_DEFAULT;
+      // Ensure we extract from fullName property in detail
+      const profileData = e.detail;
+      if (!profileData) return;
+
+      const newFullName = profileData.fullName || "";
+      const newName = newFullName ? newFullName.split(',')[0].trim() : "Xeenaps User";
+      const newPhoto = profileData.photoUrl || BRAND_ASSETS.USER_DEFAULT;
       
       // Update local state & cache instantly
       profileCache = { ...profileCache, name: newName, photo: newPhoto };

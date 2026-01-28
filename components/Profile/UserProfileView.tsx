@@ -177,12 +177,13 @@ const UserProfileView: React.FC = () => {
 
     const newProfile = { ...localProfile, [field]: value };
     setLocalProfile(newProfile);
-    setIsSyncing(true);
     
-    // Update Header instantly for 'fullName' field
+    // Update Header instantly for 'fullName' field (OPTIMISTIC)
     if (field === 'fullName') {
       dispatchProfileUpdate(newProfile);
     }
+
+    setIsSyncing(true);
     
     const success = await saveUserProfile(newProfile);
     if (success) {
@@ -232,7 +233,7 @@ const UserProfileView: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-10">
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-10 bg-white z-[100]">
         <img src={BRAND_ASSETS.LOGO_ICON} className="w-16 h-16 animate-spin mb-4" alt="Loading" />
         <p className="text-[10px] font-black text-[#004A74] uppercase tracking-[0.4em] animate-pulse">Syncing Identity</p>
       </div>
