@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { EducationEntry, CareerEntry } from '../../types';
 import { 
   School, 
@@ -27,11 +27,24 @@ const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ type, items, onEdit, 
     }
   };
 
-  // Sort items by year descending
+  // MULTI-LEVEL CHRONOLOGICAL SORTING
+  // Primary: Start Year (Newest First)
+  // Secondary: End Year (Newest First, 'Present' as highest)
   const sortedItems = [...items].sort((a, b) => {
-    const yearA = type === 'education' ? (a as EducationEntry).startYear : (a as CareerEntry).startDate;
-    const yearB = type === 'education' ? (b as EducationEntry).startYear : (b as CareerEntry).startDate;
-    return String(yearB).localeCompare(String(yearA));
+    const startA = type === 'education' ? (a as EducationEntry).startYear : (a as CareerEntry).startDate;
+    const startB = type === 'education' ? (b as EducationEntry).startYear : (b as CareerEntry).startDate;
+    
+    // 1. Compare Start Years (Primary)
+    if (startA !== startB) {
+      return String(startB).localeCompare(String(startA));
+    }
+
+    // 2. Compare End Years if Start Years are identical (Secondary)
+    const endA = type === 'education' ? (a as EducationEntry).endYear : (a as CareerEntry).endDate;
+    const endB = type === 'education' ? (b as EducationEntry).endYear : (b as CareerEntry).endDate;
+    
+    const getSortVal = (v: string) => v === 'Present' ? '9999' : (v || '0000');
+    return String(getSortVal(endB)).localeCompare(String(getSortVal(endA)));
   });
 
   if (items.length === 0) {
