@@ -13,7 +13,8 @@ import {
   ArrowUpDown,
   BookOpen,
   Share2,
-  ExternalLink
+  ExternalLink,
+  Settings2 as AdjustmentsHorizontalIcon
 } from 'lucide-react';
 import { SmartSearchBox } from '../../Common/SearchComponents';
 import { 
@@ -55,6 +56,7 @@ const AllPublication: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'createdAt', dir: 'desc' });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   const itemsPerPage = isMobile ? 12 : 20;
 
@@ -252,6 +254,41 @@ const AllPublication: React.FC = () => {
         <StandardPrimaryButton onClick={handleNewPublication} icon={<Plus size={20} />}>
           Register Publication
         </StandardPrimaryButton>
+      </div>
+
+      {/* MOBILE SORT & SELECT ALL BAR */}
+      <div className="lg:hidden flex items-center justify-start gap-4 px-1 py-1 shrink-0 mb-4">
+        <div className="relative">
+          <button 
+            onClick={() => setShowSortMenu(!showSortMenu)} 
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${showSortMenu ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-100 text-[#004A74] shadow-sm'}`}
+          >
+            <AdjustmentsHorizontalIcon size={16} />
+            <span className="text-[10px] font-black uppercase tracking-widest">Sort</span>
+          </button>
+          {showSortMenu && (
+            <div className="absolute left-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[60] p-2 animate-in fade-in zoom-in-95">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-3 py-2 border-b border-gray-50 mb-1">Sort By</p>
+              {['status', 'title', 'publisherName', 'indexing', 'year'].map((k) => (
+                <button 
+                  key={k} 
+                  onClick={() => { handleSort(k); setShowSortMenu(false); }} 
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${sortConfig.key === k ? 'bg-[#004A74]/10 text-[#004A74]' : 'text-gray-500 hover:bg-gray-50'}`}
+                >
+                  <span className="capitalize">{k === 'publisherName' ? 'Publisher' : k}</span>
+                  {sortConfig.key === k && (sortConfig.dir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="w-px h-4 bg-gray-200" />
+        <button 
+          onClick={toggleSelectAll} 
+          className={`text-[10px] font-black uppercase tracking-widest transition-all ${selectedIds.length === items.length && items.length > 0 ? 'text-red-500' : 'text-[#004A74]'}`}
+        >
+          {selectedIds.length === items.length && items.length > 0 ? 'Deselect All' : 'Select All'}
+        </button>
       </div>
 
       <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>

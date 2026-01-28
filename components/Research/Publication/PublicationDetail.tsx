@@ -28,6 +28,7 @@ const PublicationDetail: React.FC = () => {
   const [item, setItem] = useState<PublicationItem | null>(() => (location.state as any)?.item || null);
   const [isBusy, setIsBusy] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -52,6 +53,14 @@ const PublicationDetail: React.FC = () => {
     saveTimeoutRef.current = setTimeout(() => handleSave(), 1500);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
   }, [item]);
+
+  // Auto-resize title textarea
+  useEffect(() => {
+    if (titleRef.current) {
+      titleRef.current.style.height = 'auto';
+      titleRef.current.style.height = titleRef.current.scrollHeight + 'px';
+    }
+  }, [item?.title]);
 
   const handleToggleFavorite = async () => {
     if (!item) return;
@@ -80,32 +89,32 @@ const PublicationDetail: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-hidden relative animate-in slide-in-from-right duration-500">
-      {/* HUD Header */}
-      <header className="px-6 md:px-10 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100 flex flex-col md:flex-row items-center md:justify-between gap-4 shrink-0 z-[90]">
-         <div className="flex items-center gap-4 w-full md:w-auto">
-            <button onClick={() => navigate('/research/publication')} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90">
+      {/* HUD Header - Optimized for mobile: Always in row */}
+      <header className="px-4 md:px-10 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100 flex flex-row items-center justify-between gap-2 md:gap-4 shrink-0 z-[90]">
+         <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+            <button onClick={() => navigate('/research/publication')} className="p-2 md:p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90 shrink-0">
                <ArrowLeft size={18} />
             </button>
-            <div className="min-w-0 flex-1">
-               <h2 className="text-lg md:text-xl font-black text-[#004A74] uppercase tracking-tighter truncate max-w-md">Publication Workspace</h2>
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Output Management & Tracker</p>
+            <div className="min-w-0">
+               <h2 className="text-sm md:text-xl font-black text-[#004A74] uppercase tracking-tighter truncate">Publication Workspace</h2>
+               <p className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1 truncate">Output Management & Tracker</p>
             </div>
          </div>
-         <div className="flex items-center gap-3">
+         <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
             <button 
               onClick={handleToggleFavorite}
-              className="p-3 bg-white text-[#FED400] hover:bg-yellow-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100"
+              className="p-2 md:p-3 bg-white text-[#FED400] hover:bg-yellow-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100"
               title="Toggle Favorite"
             >
-              <Star size={20} className={item.isFavorite ? "fill-[#FED400]" : ""} />
+              <Star size={18} className={item.isFavorite ? "fill-[#FED400]" : ""} />
             </button>
             <button 
               onClick={handleDelete}
               disabled={isBusy}
-              className="p-3 bg-white text-red-400 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100 disabled:opacity-50"
+              className="p-2 md:p-3 bg-white text-red-400 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100 disabled:opacity-50"
               title="Delete Publication"
             >
-              {isBusy ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
+              {isBusy ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
             </button>
          </div>
       </header>
@@ -121,11 +130,12 @@ const PublicationDetail: React.FC = () => {
                        <FileText size={14} /> Full Manuscript Title
                     </label>
                     <textarea 
-                      className="w-full bg-transparent border-none outline-none text-2xl md:text-3xl font-black text-[#004A74] uppercase tracking-tighter leading-tight placeholder:text-gray-100 resize-none"
+                      ref={titleRef}
+                      className="w-full bg-transparent border-none outline-none text-xl md:text-3xl font-black text-[#004A74] uppercase tracking-tighter leading-tight placeholder:text-gray-100 resize-none overflow-hidden"
                       value={item.title}
                       placeholder="ENTER TITLE..."
                       onChange={(e) => setItem({ ...item, title: e.target.value })}
-                      rows={2}
+                      rows={1}
                     />
                  </div>
                  <div className="shrink-0 space-y-4">
@@ -271,7 +281,7 @@ const PublicationDetail: React.FC = () => {
                     <BookOpen size={14} /> Abstract Content
                  </label>
                  <textarea 
-                   className="w-full bg-gray-50 p-6 border border-gray-100 rounded-3xl outline-none text-xs font-medium text-[#004A74] leading-relaxed transition-all focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 min-h-[200px]"
+                   className="w-full bg-gray-50 p-6 border border-gray-100 rounded-3xl outline-none text-sm font-medium text-[#004A74] leading-relaxed transition-all focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 min-h-[200px]"
                    placeholder="Enter final abstract here..."
                    value={item.abstract || ''}
                    onChange={(e) => setItem({ ...item, abstract: e.target.value })}
