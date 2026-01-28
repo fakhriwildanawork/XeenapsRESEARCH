@@ -28,7 +28,7 @@ import {
   FormDropdown 
 } from '../Common/FormComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
-import { showXeenapsConfirm } from '../../utils/confirmUtils';
+import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 
 /**
  * Rich Text Summary Editor (Identical to LibraryForm AbstractEditor)
