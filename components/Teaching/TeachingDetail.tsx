@@ -74,15 +74,23 @@ const TeachingDetail: React.FC = () => {
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // HTML Input Sanitizers
+  const sanitizeDate = (val: string) => val ? val.substring(0, 10) : '';
+  const sanitizeTime = (val: string) => {
+    if (!val) return '';
+    if (val.includes('T')) return val.split('T')[1].substring(0, 5);
+    return val.substring(0, 5);
+  };
+
   useEffect(() => {
     const load = async () => {
       const stateItem = (location.state as any)?.item;
       if (stateItem && stateItem.id === sessionId) {
         setItem({
           ...stateItem,
-          presentationId: stateItem.presentationId || [],
-          questionBankId: stateItem.questionBankId || [],
-          attachmentLink: stateItem.attachmentLink || []
+          presentationId: Array.isArray(stateItem.presentationId) ? stateItem.presentationId : [],
+          questionBankId: Array.isArray(stateItem.questionBankId) ? stateItem.questionBankId : [],
+          attachmentLink: Array.isArray(stateItem.attachmentLink) ? stateItem.attachmentLink : []
         });
         setIsLoading(false);
         return;
@@ -92,9 +100,9 @@ const TeachingDetail: React.FC = () => {
       if (found) {
         setItem({
           ...found,
-          presentationId: found.presentationId || [],
-          questionBankId: found.questionBankId || [],
-          attachmentLink: found.attachmentLink || []
+          presentationId: Array.isArray(found.presentationId) ? found.presentationId : [],
+          questionBankId: Array.isArray(found.questionBankId) ? found.questionBankId : [],
+          attachmentLink: Array.isArray(found.attachmentLink) ? found.attachmentLink : []
         });
       } else navigate('/teaching');
       setIsLoading(false);
@@ -108,28 +116,28 @@ const TeachingDetail: React.FC = () => {
       if (!item) return;
       
       // Resolve Library Titles
-      if (item.referenceLinks.length > 0) {
+      if (Array.isArray(item.referenceLinks) && item.referenceLinks.length > 0) {
         const res = await fetchLibraryPaginated(1, 1000);
         const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
         setResolvedData(prev => ({ ...prev, library: mapping }));
       }
       
       // Resolve PPT Titles
-      if (item.presentationId.length > 0) {
+      if (Array.isArray(item.presentationId) && item.presentationId.length > 0) {
         const res = await fetchPresentationsPaginated(1, 1000);
         const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
         setResolvedData(prev => ({ ...prev, presentations: mapping }));
       }
       
       // Resolve Question Texts
-      if (item.questionBankId.length > 0) {
+      if (Array.isArray(item.questionBankId) && item.questionBankId.length > 0) {
         const res = await fetchAllQuestionsPaginated(1, 1000);
         const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
         setResolvedData(prev => ({ ...prev, questions: mapping }));
       }
     };
     resolve();
-  }, [item?.referenceLinks.length, item?.presentationId.length, item?.questionBankId.length]);
+  }, [item?.referenceLinks?.length, item?.presentationId?.length, item?.questionBankId?.length]);
 
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
@@ -183,16 +191,19 @@ const TeachingDetail: React.FC = () => {
   const handleResourceSelect = (id: string) => {
     if (!item) return;
     if (pickerType === 'LIBRARY') {
-      if (!item.referenceLinks.includes(id)) {
-        handleFieldChange('referenceLinks', [...item.referenceLinks, id]);
+      const current = Array.isArray(item.referenceLinks) ? item.referenceLinks : [];
+      if (!current.includes(id)) {
+        handleFieldChange('referenceLinks', [...current, id]);
       }
     } else if (pickerType === 'PRESENTATION') {
-      if (!item.presentationId.includes(id)) {
-        handleFieldChange('presentationId', [...item.presentationId, id]);
+      const current = Array.isArray(item.presentationId) ? item.presentationId : [];
+      if (!current.includes(id)) {
+        handleFieldChange('presentationId', [...current, id]);
       }
     } else if (pickerType === 'QUESTION') {
-      if (!item.questionBankId.includes(id)) {
-        handleFieldChange('questionBankId', [...item.questionBankId, id]);
+      const current = Array.isArray(item.questionBankId) ? item.questionBankId : [];
+      if (!current.includes(id)) {
+        handleFieldChange('questionBankId', [...current, id]);
       }
     }
     setIsPickerOpen(false);
@@ -241,13 +252,13 @@ const TeachingDetail: React.FC = () => {
 
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormField label="Session Date" required>
-                    <input type="date" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.teachingDate} onChange={e => handleFieldChange('teachingDate', e.target.value)} />
+                    <input type="date" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeDate(item.teachingDate)} onChange={e => handleFieldChange('teachingDate', e.target.value)} />
                   </FormField>
                   <FormField label="Start Time" required>
-                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.startTime} onChange={e => handleFieldChange('startTime', e.target.value)} />
+                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeTime(item.startTime)} onChange={e => handleFieldChange('startTime', e.target.value)} />
                   </FormField>
                   <FormField label="End Time" required>
-                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.endTime} onChange={e => handleFieldChange('endTime', e.target.value)} />
+                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeTime(item.endTime)} onChange={e => handleFieldChange('endTime', e.target.value)} />
                   </FormField>
                </div>
 
@@ -345,7 +356,7 @@ const TeachingDetail: React.FC = () => {
                            <button onClick={() => openPicker('LIBRARY')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
-                           {item.referenceLinks.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Library Items</p> : 
+                           {(!Array.isArray(item.referenceLinks) || item.referenceLinks.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Library Items</p> : 
                              item.referenceLinks.map(id => {
                                const lib = resolvedData.library[id];
                                return (
@@ -371,7 +382,7 @@ const TeachingDetail: React.FC = () => {
                            <button onClick={() => openPicker('PRESENTATION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
-                           {item.presentationId.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Slides Attached</p> : 
+                           {(!Array.isArray(item.presentationId) || item.presentationId.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Slides Attached</p> : 
                              item.presentationId.map(id => {
                                const ppt = resolvedData.presentations[id];
                                return (
@@ -397,7 +408,7 @@ const TeachingDetail: React.FC = () => {
                            <button onClick={() => openPicker('QUESTION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
-                           {item.questionBankId.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Question Bank</p> : 
+                           {(!Array.isArray(item.questionBankId) || item.questionBankId.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Question Bank</p> : 
                              item.questionBankId.map(id => {
                                const q = resolvedData.questions[id];
                                return (
@@ -423,7 +434,7 @@ const TeachingDetail: React.FC = () => {
                            <button onClick={handleAddExternalLink} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
-                           {item.attachmentLink.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No External Links</p> : 
+                           {(!Array.isArray(item.attachmentLink) || item.attachmentLink.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No External Links</p> : 
                              item.attachmentLink.map((link, idx) => (
                                <div key={idx} className="flex items-center justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
                                   <a href={link.url} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-600 truncate hover:underline flex items-center gap-1 flex-1">
@@ -453,8 +464,8 @@ const TeachingDetail: React.FC = () => {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Actual Start Time"><input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.actualStartTime} onChange={e => handleFieldChange('actualStartTime', e.target.value)} /></FormField>
-                  <FormField label="Actual End Time"><input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.actualEndTime} onChange={e => handleFieldChange('actualEndTime', e.target.value)} /></FormField>
+                  <FormField label="Actual Start Time"><input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeTime(item.actualStartTime)} onChange={e => handleFieldChange('actualStartTime', e.target.value)} /></FormField>
+                  <FormField label="Actual End Time"><input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeTime(item.actualEndTime)} onChange={e => handleFieldChange('actualEndTime', e.target.value)} /></FormField>
                </div>
 
                <FormField label="Attendance List (Link/ID)">

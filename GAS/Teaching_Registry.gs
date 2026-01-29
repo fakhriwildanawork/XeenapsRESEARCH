@@ -77,7 +77,7 @@ function getTeachingFromRegistry(page = 1, limit = 25, search = "", academicYear
     const paginated = filtered.slice(startRow, startRow + limit);
 
     // 4. MAPPING
-    const jsonFields = ['referenceLinks'];
+    const jsonFields = ['referenceLinks', 'presentationId', 'questionBankId', 'attachmentLink'];
     const items = paginated.map(row => {
       let obj = {};
       headers.forEach((h, i) => {

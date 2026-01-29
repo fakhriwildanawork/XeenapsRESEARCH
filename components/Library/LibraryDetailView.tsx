@@ -540,7 +540,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
     if (state?.returnToTeaching) {
       // SMART REDIRECTION TO TEACHING: Back to the specific session and Substance tab
       navigate(`/teaching/${state.returnToTeaching}`, { 
-        state: { activeTab: state.returnTab || 'substance' }, 
+        state: { activeTab: state.activeTab || 'substance' }, 
         replace: true 
       });
     } else if (state?.returnToPPT) {
