@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { QuestionItem, TeachingItem, BloomsLevel } from '../../types';
+import { QuestionItem, TeachingItem, BloomsLevel, LibraryItem } from '../../types';
 import { fetchAllQuestionsPaginated } from '../../services/QuestionService';
 import { fetchTeachingPaginated } from '../../services/TeachingService';
+import { fetchLibrary } from '../../services/gasService';
 import { 
   ArrowLeftIcon, 
   AcademicCapIcon, 
@@ -35,6 +36,7 @@ const AttachedQuestion: React.FC = () => {
 
   const [teaching, setTeaching] = useState<TeachingItem | null>((location.state as any)?.item || null);
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
+  const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [activeBloomFilter, setActiveBloomFilter] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
   const [activeSimulation, setActiveSimulation] = useState<'CBT' | 'FLASHCARD' | null>(null);
@@ -55,13 +57,17 @@ const AttachedQuestion: React.FC = () => {
           setTeaching(session);
         }
 
+        // 2. Fetch Library Items to resolve root sources
+        const libs = await fetchLibrary();
+        setLibraryItems(libs);
+
         if (!session || !Array.isArray(session.questionBankId) || session.questionBankId.length === 0) {
           setQuestions([]);
           setIsLoading(false);
           return;
         }
 
-        // 2. Fetch All Questions to filter (Simplest way to get full objects)
+        // 3. Fetch All Questions to filter (Simplest way to get full objects)
         const qRes = await fetchAllQuestionsPaginated(1, 1000, "", "", "", "All", "createdAt", "desc", signal);
         const attachedIds = session.questionBankId.map(q => q.id);
         const filtered = qRes.items.filter(q => attachedIds.includes(q.id));
@@ -105,11 +111,16 @@ const AttachedQuestion: React.FC = () => {
       {selectedQuestionDetail && (
         <QuestionDetailView 
           question={selectedQuestionDetail}
-          collection={({ title: teaching?.courseTitle } as any)}
+          collection={libraryItems.find(li => li.id === selectedQuestionDetail.collectionId) || ({ title: teaching?.courseTitle } as any)}
           onClose={() => setSelectedQuestionDetail(null)}
           onViewSource={() => {
+            const sourceLibItem = libraryItems.find(li => li.id === selectedQuestionDetail.collectionId);
+            if (sourceLibItem) {
+              navigate('/', { state: { openItem: sourceLibItem } });
+            } else {
+              navigate(`/teaching/${sessionId}`);
+            }
             setSelectedQuestionDetail(null);
-            navigate(`/teaching/${sessionId}`);
           }}
         />
       )}

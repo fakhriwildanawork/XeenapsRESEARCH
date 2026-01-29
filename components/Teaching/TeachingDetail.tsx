@@ -332,9 +332,20 @@ const TeachingDetail: React.FC = () => {
                      <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><GraduationCap size={12} /> Questions</span>
-                           <button onClick={() => openPicker('QUESTION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
+                           <div className="flex items-center gap-1.5">
+                              {Array.isArray(item.questionBankId) && item.questionBankId.length > 0 && (
+                                 <button 
+                                   onClick={() => navigate(`/teaching/${item.id}/questions`, { state: { item } })}
+                                   className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"
+                                   title="Open Attached Question Bank"
+                                 >
+                                    <Eye size={14} />
+                                 </button>
+                              )}
+                              <button onClick={() => openPicker('QUESTION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
+                           </div>
                         </div>
-                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[160px] pr-1 custom-scrollbar">
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.questionBankId) || item.questionBankId.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Questions Bank</p> : 
                              item.questionBankId.map(q => (
                                <div key={q.id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
@@ -346,14 +357,6 @@ const TeachingDetail: React.FC = () => {
                              ))
                            }
                         </div>
-                        {Array.isArray(item.questionBankId) && item.questionBankId.length > 0 && (
-                          <button 
-                            onClick={() => navigate(`/teaching/${item.id}/questions`, { state: { item } })}
-                            className="mt-3 w-full py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[8px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
-                          >
-                             <Eye size={12} strokeWidth={3} /> Open Attached Question Bank
-                          </button>
-                        )}
                      </div>
 
                      {/* External Links */}
