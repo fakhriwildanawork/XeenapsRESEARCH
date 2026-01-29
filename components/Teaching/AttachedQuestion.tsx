@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -119,7 +118,8 @@ const AttachedQuestion: React.FC = () => {
               // ENHANCED: Pass return flag and teaching state to ensure back button works properly
               navigate('/', { state: { openItem: sourceLibItem, returnToAttachedQuestion: sessionId, teachingItem: teaching } });
             } else {
-              navigate(`/teaching/${sessionId}`);
+              // Redirection Fix: Ensure return state is passed
+              navigate(`/teaching/${sessionId}`, { state: { activeTab: 'substance', item: teaching } });
             }
             setSelectedQuestionDetail(null);
           }}
@@ -130,7 +130,8 @@ const AttachedQuestion: React.FC = () => {
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 bg-white shrink-0 sticky top-0 z-40">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate(`/teaching/${sessionId}`)} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm">
+            {/* Redirection Fix: Ensure return state is passed to substance tab */}
+            <button onClick={() => navigate(`/teaching/${sessionId}`, { state: { activeTab: 'substance', item: teaching } })} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm">
               <ArrowLeftIcon className="w-[18px] h-[18px]" />
             </button>
             <div className="min-w-0">

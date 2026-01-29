@@ -61,21 +61,31 @@ const TeachingDetail: React.FC = () => {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
-   * SMART TIME SANITIZER
-   * Fixes the "1899-12-30" Google Sheets epoch bug and extracts only HH:mm
+   * SMART TIME SANITIZER - DEEP EDITION
+   * Fixes the "1899-12-30" Google Sheets epoch bug and ensures HH:mm format.
    */
   const sanitizeTime = (val: any) => {
     if (!val || val === "-") return '';
     const str = String(val);
-    // If it's a full ISO string (contains T), get the time part after T
+    
+    // Pattern detection: if it contains 'T', extract only the HH:mm part after 'T'
     if (str.includes('T')) {
       return str.split('T')[1].substring(0, 5);
     }
-    // Fallback: just take first 5 chars if it looks like HH:mm:ss
-    return str.substring(0, 5);
+    
+    // Fallback: If it's already HH:mm or HH:mm:ss, just take first 5
+    const match = str.match(/(\d{2}:\d{2})/);
+    return match ? match[1] : str.substring(0, 5);
   };
 
-  const sanitizeDate = (val: string) => val ? val.substring(0, 10) : '';
+  /**
+   * DATE SANITIZER - Ensures YYYY-MM-DD for HTML input
+   */
+  const sanitizeDate = (val: any) => {
+    if (!val) return '';
+    const str = String(val);
+    return str.substring(0, 10);
+  };
 
   const calculateDuration = (start?: string, end?: string) => {
     const s = sanitizeTime(start);
@@ -99,31 +109,45 @@ const TeachingDetail: React.FC = () => {
     return `${pct.toFixed(1)}%`;
   };
 
+  /**
+   * AUTO-SCROLL TO TOP ON TAB SWITCH
+   */
+  useEffect(() => {
+    const container = document.querySelector('.custom-scrollbar');
+    if (container) {
+      container.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     const load = async () => {
       const stateItem = (location.state as any)?.item;
+      let rawFound = null;
+
       if (stateItem && stateItem.id === sessionId) {
-        setItem({
-          ...stateItem,
-          referenceLinks: Array.isArray(stateItem.referenceLinks) ? stateItem.referenceLinks : [],
-          presentationId: Array.isArray(stateItem.presentationId) ? stateItem.presentationId : [],
-          questionBankId: Array.isArray(stateItem.questionBankId) ? stateItem.questionBankId : [],
-          attachmentLink: Array.isArray(stateItem.attachmentLink) ? stateItem.attachmentLink : []
-        });
-        setIsLoading(false);
-        return;
+        rawFound = stateItem;
+      } else {
+        const res = await fetchTeachingPaginated(1, 1000);
+        rawFound = res.items.find(i => i.id === sessionId);
       }
-      const res = await fetchTeachingPaginated(1, 1000);
-      const found = res.items.find(i => i.id === sessionId);
-      if (found) {
+
+      if (rawFound) {
+        // APPLY DEEP CLEANING ON LOAD
         setItem({
-          ...found,
-          referenceLinks: Array.isArray(found.referenceLinks) ? found.referenceLinks : [],
-          presentationId: Array.isArray(found.presentationId) ? found.presentationId : [],
-          questionBankId: Array.isArray(found.questionBankId) ? found.questionBankId : [],
-          attachmentLink: Array.isArray(found.attachmentLink) ? found.attachmentLink : []
+          ...rawFound,
+          teachingDate: sanitizeDate(rawFound.teachingDate),
+          startTime: sanitizeTime(rawFound.startTime),
+          endTime: sanitizeTime(rawFound.endTime),
+          actualStartTime: sanitizeTime(rawFound.actualStartTime),
+          actualEndTime: sanitizeTime(rawFound.actualEndTime),
+          referenceLinks: Array.isArray(rawFound.referenceLinks) ? rawFound.referenceLinks : [],
+          presentationId: Array.isArray(rawFound.presentationId) ? rawFound.presentationId : [],
+          questionBankId: Array.isArray(rawFound.questionBankId) ? rawFound.questionBankId : [],
+          attachmentLink: Array.isArray(rawFound.attachmentLink) ? rawFound.attachmentLink : []
         });
-      } else navigate('/teaching');
+      } else {
+        navigate('/teaching');
+      }
       setIsLoading(false);
     };
     load();
@@ -131,7 +155,16 @@ const TeachingDetail: React.FC = () => {
 
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
-    const updated = { ...item, [field]: val, updatedAt: new Date().toISOString() };
+    
+    // APPLY DEEP CLEANING ON CHANGE BEFORE STATE & SYNC
+    let cleanVal = val;
+    if (['startTime', 'endTime', 'actualStartTime', 'actualEndTime'].includes(field)) {
+      cleanVal = sanitizeTime(val);
+    } else if (field === 'teachingDate') {
+      cleanVal = sanitizeDate(val);
+    }
+
+    const updated = { ...item, [field]: cleanVal, updatedAt: new Date().toISOString() };
     setItem(updated);
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -188,12 +221,7 @@ const TeachingDetail: React.FC = () => {
     } else if (pickerType === 'PRESENTATION') {
       const current = item.presentationId || [];
       if (!current.some(p => p.id === data.id)) {
-        // ENHANCED: Save gSlidesId to allow direct opening later
-        handleFieldChange('presentationId', [...current, { 
-          id: data.id, 
-          title: data.title, 
-          gSlidesId: data.gSlidesId 
-        }]);
+        handleFieldChange('presentationId', [...current, { id: data.id, title: data.title, gSlidesId: data.gSlidesId }]);
       }
     } else if (pickerType === 'QUESTION') {
       const current = item.questionBankId || [];
@@ -250,13 +278,13 @@ const TeachingDetail: React.FC = () => {
 
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormField label="Session Date" required>
-                    <input type="date" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeDate(item.teachingDate)} onChange={e => handleFieldChange('teachingDate', e.target.value)} />
+                    <input type="date" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.teachingDate} onChange={e => handleFieldChange('teachingDate', e.target.value)} />
                   </FormField>
                   <FormField label="Start Time" required>
-                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeTime(item.startTime)} onChange={e => handleFieldChange('startTime', e.target.value)} />
+                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.startTime} onChange={e => handleFieldChange('startTime', e.target.value)} />
                   </FormField>
                   <FormField label="End Time" required>
-                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeTime(item.endTime)} onChange={e => handleFieldChange('endTime', e.target.value)} />
+                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.endTime} onChange={e => handleFieldChange('endTime', e.target.value)} />
                   </FormField>
                </div>
 
@@ -324,7 +352,7 @@ const TeachingDetail: React.FC = () => {
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                      {/* Library */}
-                     <div className="bg-white border border-gray-200 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><BookOpen size={12} /> Library</span>
                            <button onClick={() => openPicker('LIBRARY')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
@@ -345,7 +373,7 @@ const TeachingDetail: React.FC = () => {
                      </div>
 
                      {/* Slides */}
-                     <div className="bg-white border border-gray-200 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><Presentation size={12} /> Slides</span>
                            <button onClick={() => openPicker('PRESENTATION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
@@ -358,11 +386,9 @@ const TeachingDetail: React.FC = () => {
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                                      <button 
                                        onClick={() => {
-                                         // DIRECT OPENING LOGIC
                                          if ((ppt as any).gSlidesId) {
                                             window.open(`https://docs.google.com/presentation/d/${(ppt as any).gSlidesId}/edit`, '_blank');
                                          } else {
-                                            // Fallback to gallery if ID missing
                                             navigate('/presentations', { state: { reopenPPT: { id: ppt.id, title: ppt.title } } });
                                          }
                                        }} 
@@ -418,7 +444,7 @@ const TeachingDetail: React.FC = () => {
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.attachmentLink) || item.attachmentLink.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No External Links</p> : 
                              item.attachmentLink.map((link, idx) => (
-                               <div key={idx} className="flex items-center justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-200 hover:border-[#004A74]/20 transition-all shadow-sm">
+                               <div key={idx} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-200 hover:border-[#004A74]/20 transition-all shadow-sm">
                                   <a href={link.url} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-600 truncate hover:underline flex items-center gap-1 flex-1">
                                     {link.label} <ExternalLink size={8} />
                                   </a>
@@ -438,10 +464,10 @@ const TeachingDetail: React.FC = () => {
                {/* a. Row: Time & Status */}
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <FormField label="Actual Start Time">
-                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeTime(item.actualStartTime)} onChange={e => handleFieldChange('actualStartTime', e.target.value)} />
+                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.actualStartTime} onChange={e => handleFieldChange('actualStartTime', e.target.value)} />
                   </FormField>
                   <FormField label="Actual End Time">
-                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={sanitizeTime(item.actualEndTime)} onChange={e => handleFieldChange('actualEndTime', e.target.value)} />
+                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.actualEndTime} onChange={e => handleFieldChange('actualEndTime', e.target.value)} />
                   </FormField>
                   <FormField label="Duration (Calculated)">
                     <div className="w-full px-5 py-3 bg-white border border-gray-100 rounded-xl font-black text-[#004A74] flex items-center gap-2">
