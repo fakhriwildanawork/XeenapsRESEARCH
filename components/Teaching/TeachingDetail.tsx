@@ -61,32 +61,46 @@ const TeachingDetail: React.FC = () => {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
-   * SMART TIME SANITIZER - DEEP ATOMIC EDITION
-   * Fixes the "1899-12-30" Google Sheets epoch bug and ensures strict HH:mm format for HTML inputs.
+   * BULLETPROOF TIME SANITIZER - ATOMIC EDITION
+   * Strictly extracts HH:mm. Handles 1899 epoch noise and ISO timezone shifts.
    */
   const sanitizeTime = (val: any) => {
     if (!val || val === "-") return '';
-    const str = String(val);
-    
-    // Attempt to extract HH:mm using regex (ignores date and timezone noise)
-    const match = str.match(/(\d{2}:\d{2})/);
-    if (match) return match[1];
-    
-    // Fallback split if regex fails but ISO 'T' is present
-    if (str.includes('T')) {
-      return str.split('T')[1].substring(0, 5);
+    const str = String(val).trim();
+    // Hunt for HH:mm or H:mm patterns (ignores date/offset noise)
+    const match = str.match(/(\d{1,2}:\d{2})/);
+    if (match) {
+      const parts = match[1].split(':');
+      // Always pad to HH:mm for HTML5 compatibility
+      return `${parts[0].padStart(2, '0')}:${parts[1]}`;
     }
-    
-    return str.substring(0, 5);
+    return '';
   };
 
   /**
-   * DATE SANITIZER - Ensures strict YYYY-MM-DD for HTML input
+   * BULLETPROOF DATE SANITIZER - REGISTRY EDITION
+   * Converts various spreadsheet/ISO formats to strict YYYY-MM-DD.
    */
   const sanitizeDate = (val: any) => {
     if (!val || val === "-") return '';
-    const str = String(val);
-    return str.substring(0, 10);
+    const str = String(val).trim();
+    
+    // 1. Check strict YYYY-MM-DD first
+    if (str.match(/^\d{4}-\d{2}-\d{2}/)) return str.substring(0, 10);
+    
+    // 2. Check DD/MM/YYYY or D/M/YYYY (Common Spreadsheet display values)
+    const dmyMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+    if (dmyMatch) {
+      return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+    }
+
+    // 3. Fallback to native parsing
+    try {
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    } catch(e) {}
+    
+    return '';
   };
 
   const calculateDuration = (start?: string, end?: string) => {
@@ -112,10 +126,9 @@ const TeachingDetail: React.FC = () => {
   };
 
   /**
-   * AUTO-SCROLL TO TOP ON TAB SWITCH (Requirement 2)
+   * AUTO-SCROLL TO TOP ON TAB SWITCH
    */
   useEffect(() => {
-    // We target the main content area by its class
     const container = document.querySelector('.custom-scrollbar');
     if (container) {
       container.scrollTo({ top: 0, behavior: 'smooth' });
@@ -135,7 +148,7 @@ const TeachingDetail: React.FC = () => {
       }
 
       if (rawFound) {
-        // APPLY ATOMIC CLEANING ON LOAD (Requirement 3)
+        // APPLY DEEP ATOMIC SANITIZATION ON INITIAL LOAD
         setItem({
           ...rawFound,
           teachingDate: sanitizeDate(rawFound.teachingDate),
@@ -159,7 +172,7 @@ const TeachingDetail: React.FC = () => {
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
     
-    // APPLY ATOMIC CLEANING ON CHANGE BEFORE STATE & SYNC (Requirement 3)
+    // APPLY REAL-TIME SANITIZATION BEFORE STATE STORAGE
     let cleanVal = val;
     if (['startTime', 'endTime', 'actualStartTime', 'actualEndTime'].includes(field)) {
       cleanVal = sanitizeTime(val);

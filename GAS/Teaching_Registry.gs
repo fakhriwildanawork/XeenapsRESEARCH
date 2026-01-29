@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - TEACHING REGISTRY MODULE
  * Pure Data Management for Academic Teaching Logs
@@ -34,7 +33,9 @@ function getTeachingFromRegistry(page = 1, limit = 25, search = "", academicYear
     const sheet = ss.getSheetByName("TeachingLogs");
     if (!sheet) return { items: [], totalCount: 0 };
 
-    const allValues = sheet.getDataRange().getValues();
+    // CORE FIX: Use getDisplayValues() instead of getValues()
+    // This prevents Sheets from turning "10:00" into a JS Date object that shifts timezone on serialization.
+    const allValues = sheet.getDataRange().getDisplayValues();
     if (allValues.length <= 1) return { items: [], totalCount: 0 };
 
     const headers = allValues[0];
