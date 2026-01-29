@@ -1,4 +1,3 @@
-
 export enum SourceType {
   LINK = 'LINK',
   FILE = 'FILE',
@@ -231,6 +230,7 @@ export enum AssignmentType {
 }
 
 export enum SessionStatus {
+  PLANNED = 'Planned',
   COMPLETED = 'Completed',
   CANCELLED = 'Cancelled',
   RESCHEDULED = 'Rescheduled',

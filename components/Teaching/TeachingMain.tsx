@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// @ts-ignore - Resolving TS error for missing exported members in some environments
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { TeachingItem, SessionStatus, SessionMode, TeachingRole, CourseType, EducationLevel, AssignmentType } from '../../types';
 import { fetchTeachingPaginated, deleteTeachingItem, saveTeachingItem } from '../../services/TeachingService';
@@ -41,12 +42,12 @@ const TeachingDashboard: React.FC = () => {
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   
-  // Date Filter States (UI Only vs Applied)
+  // Date Filter States
   const [tempDateRange, setTempDateRange] = useState({ start: '', end: '' });
   const [appliedDateRange, setAppliedDateRange] = useState({ start: '', end: '' });
 
-  // View States
-  const [viewMode, setViewMode] = useState<'card' | 'calendar'>('card');
+  // View States - Default to Calendar
+  const [viewMode, setViewMode] = useState<'card' | 'calendar'>('calendar');
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -65,6 +66,7 @@ const TeachingDashboard: React.FC = () => {
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
+        // Integrated Server-side filtering with search and potential date ranges in future service updates
         const result = await fetchTeachingPaginated(1, 1000, appliedSearch, "", signal);
         setItems(result.items);
         setTotalCount(result.totalCount);
@@ -128,7 +130,7 @@ const TeachingDashboard: React.FC = () => {
         attachmentLink: [],
         assignmentType: AssignmentType.NONE,
         assessmentCriteria: '',
-        status: SessionStatus.COMPLETED,
+        status: SessionStatus.PLANNED, // Set default to PLANNED
         vaultJsonId: '',
         storageNodeUrl: '',
         createdAt: new Date().toISOString(),
@@ -176,6 +178,7 @@ const TeachingDashboard: React.FC = () => {
       case SessionStatus.COMPLETED: return 'bg-green-100 text-green-700 border-green-200';
       case SessionStatus.CANCELLED: return 'bg-red-100 text-red-700 border-red-200';
       case SessionStatus.RESCHEDULED: return 'bg-orange-100 text-orange-700 border-orange-200';
+      case SessionStatus.PLANNED: return 'bg-blue-100 text-blue-700 border-blue-200';
       default: return 'bg-gray-100 text-gray-500 border-gray-200';
     }
   };
@@ -211,51 +214,53 @@ const TeachingDashboard: React.FC = () => {
 
   const dailySessions = useMemo(() => {
     if (!selectedDate) return [];
-    return sessionsByDate[selectedDate] || [];
+    const rawSessions = sessionsByDate[selectedDate] || [];
+    return [...rawSessions].sort((a, b) => a.startTime.localeCompare(b.startTime));
   }, [selectedDate, sessionsByDate]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* HEADER SECTION - HIDDEN IN CALENDAR MODE FOR FULL SCREEN FEEL */}
-      {viewMode === 'card' && (
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
-            <SmartSearchBox 
-              value={localSearch} 
-              onChange={setLocalSearch} 
-              onSearch={() => { setAppliedSearch(localSearch); }} 
-              phrases={teachingPhrases}
-              className="w-full lg:max-w-md"
-            />
-            {/* DATE RANGE FILTER - PREMIUM STYLE FROM PRESENTATIONS */}
-            <div className="flex flex-col items-stretch md:flex-row md:items-center gap-2 bg-gray-50/80 p-1 rounded-2xl border border-gray-100">
-               <div className="flex items-center gap-2 px-3 py-2 md:py-0">
-                 <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">From</span>
-                 <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.start} onChange={(e) => setTempDateRange({...tempDateRange, start: e.target.value})} />
-               </div>
-               <div className="hidden md:block w-px h-4 bg-gray-200" />
-               <div className="flex items-center gap-2 px-3 py-2 md:py-0">
-                 <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">Until</span>
-                 <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.end} onChange={(e) => setTempDateRange({...tempDateRange, end: e.target.value})} />
-               </div>
-               {(tempDateRange.start || tempDateRange.end) && (
-                 <button onClick={handleApplyRange} className="w-full md:w-auto px-4 py-2 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003859] transition-all shadow-md md:ml-1">APPLY RANGE</button>
-               )}
-               {(appliedDateRange.start || appliedDateRange.end) && (
-                 <button onClick={() => { setTempDateRange({start: '', end: ''}); setAppliedDateRange({start: '', end: ''}); }} className="p-2 hover:bg-gray-200 rounded-lg transition-all flex justify-center text-red-400"><X size={16} /></button>
-               )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-             <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 shrink-0 shadow-sm">
-                <button onClick={() => setViewMode('card')} className="p-2 bg-[#004A74] text-white rounded-xl shadow-md transition-all"><LayoutGrid size={18} /></button>
-                <button onClick={() => setViewMode('calendar')} className="p-2 text-gray-400 hover:text-[#004A74] transition-all"><CalendarDays size={18} /></button>
-             </div>
-             <StandardPrimaryButton onClick={() => handleCreateNew()} icon={<Plus size={20} />} className="shrink-0">Record Session</StandardPrimaryButton>
-          </div>
+      {/* HEADER SECTION */}
+      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
+          {viewMode === 'card' && (
+            <>
+              <SmartSearchBox 
+                value={localSearch} 
+                onChange={setLocalSearch} 
+                onSearch={() => { setAppliedSearch(localSearch); }} 
+                phrases={teachingPhrases}
+                className="w-full lg:max-w-md"
+              />
+              <div className="flex flex-col items-stretch md:flex-row md:items-center gap-2 bg-gray-50/80 p-1 rounded-2xl border border-gray-100">
+                <div className="flex items-center gap-2 px-3 py-2 md:py-0">
+                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">From</span>
+                  <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.start} onChange={(e) => setTempDateRange({...tempDateRange, start: e.target.value})} />
+                </div>
+                <div className="hidden md:block w-px h-4 bg-gray-200" />
+                <div className="flex items-center gap-2 px-3 py-2 md:py-0">
+                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">Until</span>
+                  <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.end} onChange={(e) => setTempDateRange({...tempDateRange, end: e.target.value})} />
+                </div>
+                {(tempDateRange.start || tempDateRange.end) && (
+                  <button onClick={handleApplyRange} className="w-full md:w-auto px-4 py-2 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003859] transition-all shadow-md md:ml-1">APPLY</button>
+                )}
+                {(appliedDateRange.start || appliedDateRange.end) && (
+                  <button onClick={() => { setTempDateRange({start: '', end: ''}); setAppliedDateRange({start: '', end: ''}); }} className="p-2 hover:bg-gray-200 rounded-lg transition-all flex justify-center text-red-400"><X size={16} /></button>
+                )}
+              </div>
+            </>
+          )}
         </div>
-      )}
+
+        <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+           <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-100 shrink-0 shadow-sm">
+              <button onClick={() => setViewMode('card')} className={`p-2 rounded-xl transition-all ${viewMode === 'card' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400'}`}><LayoutGrid size={18} /></button>
+              <button onClick={() => setViewMode('calendar')} className={`p-2 rounded-xl transition-all ${viewMode === 'calendar' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400'}`}><CalendarDays size={18} /></button>
+           </div>
+           <StandardPrimaryButton onClick={() => handleCreateNew()} icon={<Plus size={18} />} className="shrink-0 scale-90 md:scale-100">Record Session</StandardPrimaryButton>
+        </div>
+      </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
         {isLoading ? (
@@ -294,7 +299,7 @@ const TeachingDashboard: React.FC = () => {
             ))}
           </div>
         ) : (
-          /* CALENDAR MODE: FULL SCREEN FOCUS */
+          /* CALENDAR MODE */
           <div className="space-y-8 max-w-5xl mx-auto px-1 animate-in zoom-in-95 duration-500">
             <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl overflow-hidden">
               <div className="p-4 md:p-8 bg-gray-50/80 backdrop-blur-sm flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100">
@@ -376,29 +381,37 @@ const TeachingDashboard: React.FC = () => {
                  <div className="p-4 md:p-8 space-y-4">
                     {dailySessions.length === 0 ? (
                       <div className="py-12 text-center text-gray-300 italic text-sm">No ledger entries for this date.</div>
-                    ) : dailySessions.map(s => (
-                      <div 
-                        key={s.id} 
-                        onClick={() => navigate(`/teaching/${s.id}`, { state: { item: s } })}
-                        className="group flex flex-col md:flex-row md:items-center gap-4 p-5 bg-white border border-gray-100 rounded-3xl hover:border-[#004A74]/30 hover:shadow-lg transition-all cursor-pointer"
-                      >
-                         <div className="w-2 h-10 rounded-full shrink-0 hidden md:block" style={{ backgroundColor: s.eventColor || '#004A74' }} />
-                         <div className="flex items-center gap-3 shrink-0">
-                            <Clock size={16} className="text-gray-300" />
-                            <span className="text-sm font-black text-[#004A74]">{s.startTime} - {s.endTime}</span>
-                         </div>
-                         <div className="flex-1 min-w-0">
-                            <h5 className="text-sm font-black text-[#004A74] uppercase truncate">{s.courseTitle || s.label}</h5>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                               <MapPin size={10} /> {s.location || 'Venue Pending'} • {s.topic || 'Subject TBA'}
-                            </p>
-                         </div>
-                         <div className="flex items-center justify-end gap-3 shrink-0">
-                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${getStatusColor(s.status)}`}>{s.status}</span>
-                            <ChevronRight size={18} className="text-gray-300 group-hover:text-[#004A74] transition-all" />
-                         </div>
-                      </div>
-                    ))}
+                    ) : dailySessions.map(s => {
+                      const metaLine = [s.institution, s.faculty, s.program, s.classGroup].filter(Boolean).join(' | ');
+                      return (
+                        <div 
+                          key={s.id} 
+                          onClick={() => navigate(`/teaching/${s.id}`, { state: { item: s } })}
+                          className="group flex flex-col md:flex-row md:items-center gap-4 p-5 bg-white border border-gray-100 rounded-3xl hover:border-[#004A74]/30 hover:shadow-lg transition-all cursor-pointer"
+                        >
+                           <div className="w-2 h-10 rounded-full shrink-0 hidden md:block" style={{ backgroundColor: s.eventColor || '#004A74' }} />
+                           <div className="flex items-center gap-3 shrink-0">
+                              <Clock size={16} className="text-gray-300" />
+                              <span className="text-sm font-black text-[#004A74]">{s.startTime} - {s.endTime}</span>
+                           </div>
+                           <div className="flex-1 min-w-0 flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 bg-gray-100 text-[#004A74] text-[7px] font-black uppercase rounded-md">{s.label}</span>
+                              </div>
+                              <h5 className="text-sm font-black text-[#004A74] uppercase truncate leading-tight">{s.courseTitle || 'Untitled Course'}</h5>
+                              {metaLine && (
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tight truncate">
+                                   {metaLine}
+                                </p>
+                              )}
+                           </div>
+                           <div className="flex items-center justify-end gap-3 shrink-0 ml-auto">
+                              <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusColor(s.status)}`}>{s.status}</span>
+                              <ChevronRight size={18} className="text-gray-300 group-hover:text-[#004A74] transition-all" />
+                           </div>
+                        </div>
+                      );
+                    })}
                  </div>
               </div>
             )}

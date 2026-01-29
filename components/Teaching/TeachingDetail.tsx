@@ -256,9 +256,18 @@ const TeachingDetail: React.FC = () => {
     { id: 'report', label: 'Report', icon: ClipboardCheck }
   ] as const;
 
+  const getStatusColorClass = (status: SessionStatus) => {
+    switch (status) {
+      case SessionStatus.COMPLETED: return 'bg-green-100 text-green-700 border-green-200';
+      case SessionStatus.CANCELLED: return 'bg-red-100 text-red-700 border-red-200';
+      case SessionStatus.RESCHEDULED: return 'bg-orange-100 text-orange-700 border-orange-200';
+      case SessionStatus.PLANNED: return 'bg-blue-100 text-blue-700 border-blue-200';
+      default: return 'bg-gray-100 text-gray-500 border-gray-200';
+    }
+  };
+
   return (
     <FormPageContainer>
-      {/* UNIFIED ONE-LINE HEADER - OPTIMIZED FOR ALL SCREENS */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-3 md:px-8 py-3 md:py-4 border-b border-gray-100 flex items-center justify-between gap-2 md:gap-4 shrink-0">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
           <button 
@@ -273,7 +282,6 @@ const TeachingDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* NAVIGATION TABS - ICON ONLY ON NARROW SCREENS */}
         <div className="flex bg-gray-100 p-1 rounded-2xl gap-0.5 md:gap-1">
           {tabs.map(tab => (
             <button 
@@ -287,7 +295,6 @@ const TeachingDetail: React.FC = () => {
           ))}
         </div>
 
-        {/* ACTION BUTTONS */}
         <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
            <button 
               onClick={() => navigate(`/teaching/${item.id}/vault`, { state: { item } })}
@@ -413,7 +420,6 @@ const TeachingDetail: React.FC = () => {
                      <Zap size={14} className="text-[#FED400] fill-[#FED400]" /> Integrated Resource Attachments
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                     {/* Library */}
                      <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><BookOpen size={12} /> Library</span>
@@ -434,7 +440,6 @@ const TeachingDetail: React.FC = () => {
                         </div>
                      </div>
 
-                     {/* Slides */}
                      <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><Presentation size={12} /> Slides</span>
@@ -466,7 +471,6 @@ const TeachingDetail: React.FC = () => {
                         </div>
                      </div>
 
-                     {/* Question Bank */}
                      <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><GraduationCap size={12} /> Questions</span>
@@ -497,7 +501,6 @@ const TeachingDetail: React.FC = () => {
                         </div>
                      </div>
 
-                     {/* External Links */}
                      <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><LinkIcon size={12} /> External</span>
@@ -523,7 +526,6 @@ const TeachingDetail: React.FC = () => {
 
           {activeTab === 'report' && (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-               {/* a. Row: Time & Status */}
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <FormField label="Actual Start Time">
                     <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.actualStartTime} onChange={e => handleFieldChange('actualStartTime', e.target.value)} />
@@ -541,7 +543,6 @@ const TeachingDetail: React.FC = () => {
                   </FormField>
                </div>
 
-               {/* b. Row: Attendance */}
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                   <FormField label="Actual Student Attendance">
                     <input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.totalStudentsPresent} onChange={e => handleFieldChange('totalStudentsPresent', parseInt(e.target.value) || 0)} />
@@ -559,18 +560,15 @@ const TeachingDetail: React.FC = () => {
                   </FormField>
                </div>
 
-               {/* c. Row: Assignment */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
                   <FormField label="Assignment Plan"><FormDropdown value={item.assignmentType} options={Object.values(AssignmentType)} onChange={v => handleFieldChange('assignmentType', v as AssignmentType)} placeholder="Assignment" /></FormField>
                   <FormField label="Assessment Criteria"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold" value={item.assessmentCriteria} onChange={e => handleFieldChange('assessmentCriteria', e.target.value)} placeholder="e.g. rubrics, accuracy..." /></FormField>
                </div>
 
-               {/* d. Obstacles */}
                <FormField label="Obstacles & Problems (BKD Requirement)">
                  <textarea className="w-full px-6 py-4 bg-red-50/30 border border-red-100 rounded-[2rem] text-xs font-medium min-h-[100px] leading-relaxed" value={item.problems} onChange={e => handleFieldChange('problems', e.target.value)} placeholder="Describe constraints (Projector fail, Connection, etc.)..." />
                </FormField>
 
-               {/* e. Reflection */}
                <FormField label="Lecturer Self-Reflection">
                  <textarea className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-[2rem] text-xs font-medium min-h-[150px] leading-relaxed italic" value={item.reflection} onChange={e => handleFieldChange('reflection', e.target.value)} placeholder="How to improve next session?" />
                </FormField>

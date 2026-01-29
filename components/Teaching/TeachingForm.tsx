@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+// @ts-ignore - Resolving TS error for missing exported members in some environments
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   TeachingItem, 

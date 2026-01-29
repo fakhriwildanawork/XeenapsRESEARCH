@@ -19,7 +19,9 @@ import {
   CloudUpload,
   Globe,
   Save,
-  ChevronRight
+  ChevronRight,
+  FileCode,
+  FileCheck
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsConfirm } from '../../utils/swalUtils';
@@ -187,14 +189,22 @@ const TeachingVault: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
             {items.map((item, idx) => {
               const isOptimistic = item.fileId?.startsWith('optimistic_');
-              const isImage = item.type === 'FILE' && item.mimeType?.startsWith('image/');
-              const displayUrl = isOptimistic ? item.fileId?.replace('optimistic_', '') : item.type === 'LINK' ? item.url : `https://lh3.googleusercontent.com/d/${item.fileId}`;
+              const isImage = item.type === 'FILE' && (item.mimeType?.startsWith('image/') || isOptimistic);
+              
+              let displayUrl = '';
+              if (item.type === 'LINK') {
+                displayUrl = item.url || '';
+              } else if (isOptimistic) {
+                displayUrl = item.fileId?.replace('optimistic_', '') || '';
+              } else if (item.fileId) {
+                displayUrl = `https://drive.google.com/file/d/${item.fileId}/view`;
+              }
 
               return (
                 <div key={idx} className={`group relative aspect-square bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 ${isOptimistic ? 'opacity-50' : ''}`}>
                   <div className="w-full h-full bg-gray-50 flex items-center justify-center">
                     {isImage ? (
-                      <img src={displayUrl!} className="w-full h-full object-cover" alt={item.label} />
+                      <img src={displayUrl} className="w-full h-full object-cover" alt={item.label} />
                     ) : item.type === 'LINK' ? (
                       <div className="flex flex-col items-center gap-2 text-[#004A74]/30 group-hover:text-[#FED400] transition-colors">
                         <Globe size={40} strokeWidth={1.5} />
@@ -203,7 +213,7 @@ const TeachingVault: React.FC = () => {
                     ) : (
                       <div className="flex flex-col items-center gap-2 text-[#004A74]/30 group-hover:text-[#004A74] transition-colors">
                         <FileText size={40} strokeWidth={1.5} />
-                        <span className="text-[8px] font-black uppercase tracking-tighter">File</span>
+                        <span className="text-[8px] font-black uppercase tracking-tighter">Document</span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-[#004A74]/90 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
@@ -214,7 +224,7 @@ const TeachingVault: React.FC = () => {
                     </div>
                   </div>
                   <div className="absolute inset-x-0 bottom-0 p-3 bg-white/90 backdrop-blur-sm border-t border-gray-100">
-                     <p className="text-[8px] font-black text-[#004A74] truncate uppercase tracking-tight">{item.label}</p>
+                     <p className="text-[9px] font-black text-[#004A74] truncate uppercase tracking-tight">{item.label}</p>
                   </div>
                 </div>
               );
