@@ -33,7 +33,8 @@ import {
   Calendar,
   Filter,
   CheckSquare,
-  Square
+  Square,
+  FileText
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import CVPreviewModal from './CVPreviewModal';
@@ -46,7 +47,6 @@ const CVForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewTemplate, setPreviewTemplate] = useState<CVTemplateType>(CVTemplateType.MODERN_ACADEMIC);
 
   const [pubFilter, setPubFilter] = useState({ start: '', end: '' });
   const [actFilter, setActFilter] = useState({ start: '', end: '' });
@@ -61,7 +61,7 @@ const CVForm: React.FC = () => {
 
   const [config, setConfig] = useState({
     title: `CV ARCHIVE - ${new Date().getFullYear()}`,
-    template: CVTemplateType.MODERN_ACADEMIC,
+    template: CVTemplateType.MODERN_ACADEMIC, // Internal identifier maintained for legacy backend support
     selectedEducationIds: [] as string[],
     selectedCareerIds: [] as string[],
     selectedPublicationIds: [] as string[],
@@ -85,7 +85,7 @@ const CVForm: React.FC = () => {
   }, []);
 
   const filteredPubs = useMemo(() => {
-    if (!pubFilter.start && !pubFilter.end) return [];
+    if (!pubFilter.start && !pubFilter.end) return sourceData.publications;
     return sourceData.publications.filter(p => {
       const yr = parseInt(p.year);
       if (pubFilter.start && yr < parseInt(pubFilter.start)) return false;
@@ -95,7 +95,7 @@ const CVForm: React.FC = () => {
   }, [sourceData.publications, pubFilter]);
 
   const filteredActs = useMemo(() => {
-    if (!actFilter.start && !actFilter.end) return [];
+    if (!actFilter.start && !actFilter.end) return sourceData.activities;
     return sourceData.activities.filter(a => {
       const date = new Date(a.startDate);
       if (actFilter.start && date < new Date(actFilter.start)) return false;
@@ -173,11 +173,11 @@ const CVForm: React.FC = () => {
     <FormPageContainer>
       <FormStickyHeader 
         title="CV Architect" 
-        subtitle="Professional Synthesis Engine" 
+        subtitle="Standard Professional Synthesis" 
         onBack={() => navigate('/cv-architect')}
         rightElement={
           <div className="flex bg-gray-50 p-1 rounded-2xl">
-            {[1, 2, 3].map(i => (
+            {[1, 2].map(i => (
               <div key={i} className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black transition-all ${step === i ? 'bg-[#004A74] text-white shadow-lg' : 'text-black opacity-20'}`}>{i}</div>
             ))}
           </div>
@@ -186,68 +186,35 @@ const CVForm: React.FC = () => {
 
       <FormContentArea>
         <div className="max-w-6xl mx-auto space-y-12 pb-32">
+          
           {step === 1 && (
             <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
-               <FormField label="Document Title">
+               <div className="bg-[#004A74]/5 border border-[#004A74]/10 p-8 rounded-[3rem] flex items-center gap-6 mb-10">
+                  <div className="w-14 h-14 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><FileText size={28} /></div>
+                  <div>
+                    <h3 className="text-lg font-black text-[#004A74] uppercase tracking-tighter">Xeenaps Standard Professional</h3>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Chronological Timeline • Zero-Gray Design • Aligned Profile Matrix</p>
+                  </div>
+                  <button onClick={() => setIsPreviewOpen(true)} className="ml-auto px-6 py-2 bg-white text-[#004A74] border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all shadow-sm">Preview Layout</button>
+               </div>
+
+               <FormField label="Document / Project Title">
                   <input className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base font-bold text-[#004A74] uppercase outline-none focus:ring-4 focus:ring-[#004A74]/5" 
-                    value={config.title} onChange={e => setConfig({...config, title: e.target.value})} />
+                    value={config.title} onChange={e => setConfig({...config, title: e.target.value})} placeholder="e.g. CV PROFESSIONAL 2024" />
                </FormField>
 
-               <div className="space-y-6">
-                  <label className="text-[10px] font-black uppercase tracking-[0.4em] text-black px-4">Blueprints Palette</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                     {Object.values(CVTemplateType).map((t) => (
-                       <div 
-                         key={t}
-                         onClick={() => setConfig({...config, template: t})}
-                         className={`group relative aspect-[1/1.2] rounded-[3rem] border-2 transition-all duration-700 cursor-pointer overflow-hidden flex flex-col ${config.template === t ? 'border-[#004A74] shadow-2xl scale-105 z-10' : 'border-gray-200 bg-white grayscale hover:grayscale-0'}`}
-                       >
-                          <div className="flex-1 bg-gray-50 flex items-center justify-center relative">
-                             <div className="w-24 h-32 bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col p-2 space-y-1 group-hover:scale-110 transition-transform">
-                                {t === CVTemplateType.MODERN_ACADEMIC ? (
-                                  <>
-                                    <div className="h-4 w-full bg-[#004A74] rounded-sm" />
-                                    <div className="h-1 w-1/2 bg-black rounded-sm" />
-                                    <div className="h-2 w-full bg-black opacity-10 rounded-sm" /><div className="h-2 w-full bg-black opacity-10 rounded-sm" />
-                                  </>
-                                ) : t === CVTemplateType.EXECUTIVE_BLUE ? (
-                                  <div className="flex gap-1 h-full">
-                                    <div className="w-1/3 bg-[#004A74] rounded-sm" />
-                                    <div className="flex-1 space-y-1">
-                                      <div className="h-2 w-full bg-[#004A74] rounded-sm" />
-                                      <div className="h-1 w-full bg-black rounded-sm" /><div className="h-1 w-full bg-black rounded-sm" />
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-2">
-                                    <div className="h-2 w-1/3 bg-black rounded-sm" />
-                                    <div className="h-1 w-full bg-black opacity-10 rounded-sm" />
-                                    <div className="h-1 w-full bg-black opacity-10 rounded-sm" />
-                                  </div>
-                                )}
-                             </div>
-                             <button onClick={(e) => { e.stopPropagation(); setPreviewTemplate(t); setIsPreviewOpen(true); }} className="absolute bottom-4 right-4 p-2.5 bg-[#004A74] text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"><Eye size={16} /></button>
-                          </div>
-                          <div className="p-5 bg-white border-t border-gray-100 text-center"><p className="text-[10px] font-black uppercase tracking-widest text-[#004A74]">{t}</p></div>
-                       </div>
-                     ))}
-                  </div>
-               </div>
-               <div className="flex justify-end pt-10"><button onClick={() => setStep(2)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 active:scale-95 transition-all">Proceed to Data <ChevronRight size={18} /></button></div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                   <section className="space-y-4">
                     <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2"><GraduationCap size={16} /> Education History</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                        {sourceData.education.map(edu => (
                          <div key={edu.id} onClick={() => setConfig({...config, selectedEducationIds: toggleSelection(config.selectedEducationIds, edu.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedEducationIds.includes(edu.id) ? 'border-[#004A74] bg-blue-50 shadow-sm' : 'border-gray-100 bg-white opacity-60 hover:opacity-100'}`}>
                             <div className="flex items-center gap-3 min-w-0">
                                <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedEducationIds.includes(edu.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedEducationIds.includes(edu.id) && <Check size={12} strokeWidth={4} />}</div>
-                               <span className="text-[10px] font-bold text-black uppercase truncate">{edu.institution}</span>
+                               <div className="min-w-0">
+                                  <p className="text-[10px] font-black text-black uppercase truncate">{edu.institution}</p>
+                                  <p className="text-[8px] font-bold text-gray-400 uppercase">{edu.level} • {edu.startYear}-{edu.endYear}</p>
+                               </div>
                             </div>
                          </div>
                        ))}
@@ -255,18 +222,22 @@ const CVForm: React.FC = () => {
                   </section>
                   <section className="space-y-4">
                     <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2"><Briefcase size={16} /> Professional Career</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                        {sourceData.career.map(job => (
                          <div key={job.id} onClick={() => setConfig({...config, selectedCareerIds: toggleSelection(config.selectedCareerIds, job.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedCareerIds.includes(job.id) ? 'border-[#004A74] bg-blue-50 shadow-sm' : 'border-gray-100 bg-white opacity-60 hover:opacity-100'}`}>
                             <div className="flex items-center gap-3 min-w-0">
                                <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedCareerIds.includes(job.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedCareerIds.includes(job.id) && <Check size={12} strokeWidth={4} />}</div>
-                               <span className="text-[10px] font-bold text-black uppercase truncate">{job.company}</span>
+                               <div className="min-w-0">
+                                  <p className="text-[10px] font-black text-black uppercase truncate">{job.company}</p>
+                                  <p className="text-[8px] font-bold text-gray-400 uppercase">{job.position}</p>
+                               </div>
                             </div>
                          </div>
                        ))}
                     </div>
                   </section>
                </div>
+
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-10 border-t border-gray-100">
                   <section className="space-y-6">
                     <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 space-y-4 shadow-inner">
@@ -282,7 +253,7 @@ const CVForm: React.FC = () => {
                           <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">To Year</label><input type="number" placeholder="2025" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={pubFilter.end} onChange={e => setPubFilter({...pubFilter, end: e.target.value})} /></div>
                        </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                        {filteredPubs.map(p => (
                           <div key={p.id} onClick={() => setConfig({...config, selectedPublicationIds: toggleSelection(config.selectedPublicationIds, p.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedPublicationIds.includes(p.id) ? 'border-black bg-black text-white shadow-sm' : 'bg-white border-gray-100'}`}><p className="text-[10px] font-bold truncate uppercase">{p.title}</p></div>
                        ))}
@@ -302,21 +273,18 @@ const CVForm: React.FC = () => {
                           <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">End Date</label><input type="date" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={actFilter.end} onChange={e => setActFilter({...actFilter, end: e.target.value})} /></div>
                        </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                        {filteredActs.map(a => (
                           <div key={a.id} onClick={() => setConfig({...config, selectedActivityIds: toggleSelection(config.selectedActivityIds, a.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedActivityIds.includes(a.id) ? 'border-black bg-black text-white shadow-sm' : 'bg-white border-gray-100'}`}><p className="text-[10px] font-bold truncate uppercase">{a.eventName}</p></div>
                        ))}
                     </div>
                   </section>
                </div>
-               <div className="flex justify-between pt-10">
-                  <button onClick={() => setStep(1)} className="flex items-center gap-2 px-8 py-4 bg-gray-100 text-black rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 active:scale-95 transition-all"><ChevronLeft size={16} /> Back</button>
-                  <button onClick={() => setStep(3)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 active:scale-95 transition-all">Final Synthesis <ChevronRight size={18} /></button>
-               </div>
+               <div className="flex justify-end pt-10"><button onClick={() => setStep(2)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 active:scale-95 transition-all">Proceed to AI Summary <ChevronRight size={18} /></button></div>
             </div>
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
                <div className="space-y-6">
                   <div className="flex items-center justify-between px-4">
@@ -325,17 +293,17 @@ const CVForm: React.FC = () => {
                         {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Draft with AI
                      </button>
                   </div>
-                  <textarea className="w-full p-10 bg-white border border-gray-100 rounded-[3rem] shadow-inner outline-none text-sm font-medium text-black leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[250px]" placeholder="Awaiting AI Synthesis..." value={config.aiSummary} onChange={e => setConfig({...config, aiSummary: e.target.value})} />
+                  <textarea className="w-full p-10 bg-white border border-gray-200 rounded-[3rem] shadow-inner outline-none text-sm font-medium text-black leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[250px]" placeholder="Awaiting AI Synthesis..." value={config.aiSummary} onChange={e => setConfig({...config, aiSummary: e.target.value})} />
                </div>
                <div className="flex flex-col md:flex-row gap-4 pt-10">
-                  <button onClick={() => setStep(2)} disabled={isGenerating} className="flex-1 py-5 bg-gray-100 text-black rounded-[1.5rem] font-black uppercase text-xs active:scale-95 transition-all">Adjust Data</button>
+                  <button onClick={() => setStep(1)} disabled={isGenerating} className="flex-1 py-5 bg-gray-100 text-black rounded-[1.5rem] font-black uppercase text-xs active:scale-95 transition-all">Adjust Data</button>
                   <button onClick={handleFinalSubmit} disabled={isGenerating} className="flex-[2] py-5 bg-[#004A74] text-white rounded-[1.5rem] font-black uppercase tracking-[0.3em] text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all">{isGenerating ? 'Synthesizing PDF...' : 'Generate CV PDF'}</button>
                </div>
             </div>
           )}
         </div>
       </FormContentArea>
-      {isPreviewOpen && <CVPreviewModal template={previewTemplate} onClose={() => setIsPreviewOpen(false)} />}
+      {isPreviewOpen && <CVPreviewModal template={config.template} onClose={() => setIsPreviewOpen(false)} />}
     </FormPageContainer>
   );
 };
