@@ -6,7 +6,7 @@ import { QuestionItem, TeachingItem, BloomsLevel } from '../../types';
 import { fetchAllQuestionsPaginated } from '../../services/QuestionService';
 import { fetchTeachingPaginated } from '../../services/TeachingService';
 import { 
-  ArrowLeft, 
+  ArrowLeftIcon, 
   AcademicCapIcon, 
   PlayIcon,
   RectangleStackIcon,
@@ -119,7 +119,7 @@ const AttachedQuestion: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button onClick={() => navigate(`/teaching/${sessionId}`)} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm">
-              <ArrowLeft size={18} />
+              <ArrowLeftIcon className="w-[18px] h-[18px]" />
             </button>
             <div className="min-w-0">
               <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Attached Questions</h2>
@@ -198,6 +198,7 @@ const AttachedQuestion: React.FC = () => {
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
       `}</style>
     </div>
   );
