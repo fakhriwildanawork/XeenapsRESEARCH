@@ -18,7 +18,6 @@ import {
   FormField, 
   FormDropdown 
 } from '../Common/FormComponents';
-// Added missing Plus and Trash2 icons to lucide-react imports
 import { 
   Calendar, 
   Clock, 
@@ -188,7 +187,7 @@ const TeachingForm: React.FC = () => {
 
                <div className="flex justify-between pt-10">
                   <div />
-                  <button onClick={() => setActiveStep(2)} className="flex items-center gap-2 px-10 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:scale-105 active:scale-95 transition-all">
+                  <button type="button" onClick={() => setActiveStep(2)} className="flex items-center gap-2 px-10 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:scale-105 active:scale-95 transition-all">
                     Next: Preparing <ChevronRight size={16} />
                   </button>
                </div>
@@ -201,7 +200,11 @@ const TeachingForm: React.FC = () => {
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <FormField label="Theory Credits"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={formData.theoryCredits} onChange={e => setFormData({...formData, theoryCredits: parseFloat(e.target.value) || 0})} /></FormField>
                   <FormField label="Practical Credits"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={formData.practicalCredits} onChange={e => setFormData({...formData, practicalCredits: parseFloat(e.target.value) || 0})} /></FormField>
-                  <div className="col-span-2"><FormField label="Course Category"><FormDropdown value={formData.courseType} options={Object.values(CourseType)} onChange={v => setFormData({...formData, courseType: v as CourseType})} placeholder="Type" /></FormField></div>
+                  <div className="col-span-2">
+                    <FormField label="Course Category">
+                      <FormDropdown value={formData.courseType} options={Object.values(CourseType)} onChange={v => setFormData({...formData, courseType: v as CourseType})} placeholder="Type" />
+                    </FormField>
+                  </div>
                </div>
 
                <FormField label="Planned Topic / Subject Matter" required>
@@ -219,7 +222,7 @@ const TeachingForm: React.FC = () => {
                <div className="space-y-4">
                   <div className="flex items-center justify-between px-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Library Resources & References</label>
-                    <button onClick={() => setIsResourcePickerOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FED400]/20 text-[#004A74] rounded-lg text-[8px] font-black uppercase tracking-widest border border-[#FED400]/40 hover:bg-[#FED400] transition-all">
+                    <button type="button" onClick={() => setIsResourcePickerOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FED400]/20 text-[#004A74] rounded-lg text-[8px] font-black uppercase tracking-widest border border-[#FED400]/40 hover:bg-[#FED400] transition-all">
                        <Plus size={12} /> Attach from Librarian
                     </button>
                   </div>
@@ -235,7 +238,7 @@ const TeachingForm: React.FC = () => {
                             <Layers size={14} className="text-[#004A74]" />
                             <span className="text-[10px] font-bold text-[#004A74] uppercase truncate max-w-sm">Library Item (ID: {refId.substring(0,8)})</span>
                          </div>
-                         <button onClick={() => setFormData({...formData, referenceLinks: formData.referenceLinks.filter(id => id !== refId)})} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                         <button type="button" onClick={() => setFormData({...formData, referenceLinks: formData.referenceLinks.filter(id => id !== refId)})} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
                             <Trash2 size={14} />
                          </button>
                       </div>
@@ -244,10 +247,10 @@ const TeachingForm: React.FC = () => {
                </div>
 
                <div className="flex justify-between pt-10">
-                  <button onClick={() => setActiveStep(1)} className="flex items-center gap-2 px-10 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-gray-200 transition-all">
+                  <button type="button" onClick={() => setActiveStep(1)} className="flex items-center gap-2 px-10 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-gray-200 transition-all">
                     <ChevronLeft size={16} /> Back
                   </button>
-                  <button onClick={() => setActiveStep(3)} className="flex items-center gap-2 px-10 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:scale-105 active:scale-95 transition-all">
+                  <button type="button" onClick={() => setActiveStep(3)} className="flex items-center gap-2 px-10 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:scale-105 active:scale-95 transition-all">
                     Next: Reporting <ChevronRight size={16} />
                   </button>
                </div>
@@ -258,8 +261,12 @@ const TeachingForm: React.FC = () => {
           {activeStep === 3 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Session Realization Status"><FormDropdown value={formData.status} options={Object.values(SessionStatus)} onChange={v => setFormData({...formData, status: v as SessionStatus})} placeholder="Status" /></FormField>
-                  <FormField label="Total Students Present"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={formData.totalStudentsPresent} onChange={e => setFormData({...formData, totalStudentsPresent: parseInt(e.target.value) || 0})} /></FormField>
+                  <FormField label="Session Realization Status">
+                    <FormDropdown value={formData.status} options={Object.values(SessionStatus)} onChange={v => setFormData({...formData, status: v as SessionStatus})} placeholder="Status" />
+                  </FormField>
+                  <FormField label="Total Students Present">
+                    <input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={formData.totalStudentsPresent} onChange={e => setFormData({...formData, totalStudentsPresent: parseInt(e.target.value) || 0})} />
+                  </FormField>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -275,8 +282,12 @@ const TeachingForm: React.FC = () => {
                </FormField>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
-                  <FormField label="Assignment Plan"><FormDropdown value={formData.assignmentType} options={Object.values(AssignmentType)} onChange={v => setFormData({...formData, assignmentType: v as AssignmentType})} placeholder="Assignment" /></FormField>
-                  <FormField label="Assessment Criteria"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold" value={formData.assessmentCriteria} onChange={e => setFormData({...formData, assessmentCriteria: e.target.value})} placeholder="e.g. rubrics, accuracy, quiz score..." /></FormField>
+                  <FormField label="Assignment Plan">
+                    <FormDropdown value={formData.assignmentType} options={Object.values(AssignmentType)} onChange={v => setFormData({...formData, assignmentType: v as AssignmentType})} placeholder="Assignment" />
+                  </FormField>
+                  <FormField label="Assessment Criteria">
+                    <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold" value={formData.assessmentCriteria} onChange={e => setFormData({...formData, assessmentCriteria: e.target.value})} placeholder="e.g. rubrics, accuracy, quiz score..." />
+                  </FormField>
                </div>
 
                <FormField label="Obstacles & Problems (BKD Report Requirement)">
@@ -285,13 +296,13 @@ const TeachingForm: React.FC = () => {
 
                <FormField label="Lecturer Self-Reflection">
                   <textarea className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-medium min-h-[120px]" value={formData.reflection} onChange={e => setFormData({...formData, reflection: e.target.value})} placeholder="What can be improved for the next session?" />
-               </div>
+               </FormField>
 
                <div className="flex justify-between pt-10">
-                  <button onClick={() => setActiveStep(2)} className="flex items-center gap-2 px-10 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-gray-200 transition-all">
+                  <button type="button" onClick={() => setActiveStep(2)} className="flex items-center gap-2 px-10 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-gray-200 transition-all">
                     <ChevronLeft size={16} /> Back
                   </button>
-                  <button onClick={handleSave} disabled={isSubmitting} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-[#004A74]/20 hover:scale-105 active:scale-95 transition-all">
+                  <button type="button" onClick={handleSave} disabled={isSubmitting} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-[#004A74]/20 hover:scale-105 active:scale-95 transition-all">
                     <Save size={18} /> {isSubmitting ? 'Syncing...' : 'Finalize Record'}
                   </button>
                </div>
