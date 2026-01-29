@@ -197,6 +197,104 @@ export interface ActivityItem {
   updatedAt: string;
 }
 
+// --- TEACHING MODULE TYPES ---
+
+export enum TeachingRole {
+  MANDIRI = 'Mandiri',
+  TEAM_TEACHING = 'Team Teaching',
+  COORDINATOR = 'Koordinator'
+}
+
+export enum SessionMode {
+  OFFLINE = 'Offline',
+  ONLINE = 'Online',
+  HYBRID = 'Hybrid'
+}
+
+export enum EducationLevel {
+  DIPLOMA = 'Diploma',
+  S1 = 'S1',
+  S2 = 'S2',
+  S3 = 'S3'
+}
+
+export enum CourseType {
+  WAJIB_PRODI = 'Wajib Prodi',
+  WAJIB_NASIONAL = 'Wajib Nasional',
+  PILIHAN = 'Mata Kuliah Pilihan'
+}
+
+export enum AssignmentType {
+  QUIZ = 'Quiz',
+  INDIVIDUAL_TASK = 'Individual Task',
+  GROUP_PROJECT = 'Group Project',
+  NONE = 'None'
+}
+
+export enum SessionStatus {
+  COMPLETED = 'Completed',
+  CANCELLED = 'Cancelled',
+  RESCHEDULED = 'Rescheduled',
+  SUBSTITUTED = 'Substituted'
+}
+
+export interface TeachingItem {
+  // Phase 1: Planning
+  id: string;
+  courseCode: string;
+  courseTitle: string;
+  institution: string;
+  faculty: string;
+  academicYear: string; // e.g., 2024/2025
+  semester: string; // e.g., Ganjil
+  classGroup: string;
+  meetingNo: number;
+  teachingDate: string;
+  startTime: string;
+  endTime: string;
+  mode: SessionMode;
+  location: string;
+  role: TeachingRole;
+  plannedStudents: number;
+  eventColor: string; // Hex Code
+  skReference: string;
+
+  // Phase 2: Preparing
+  theoryCredits: number;
+  practicalCredits: number;
+  courseType: CourseType;
+  educationLevel: EducationLevel;
+  learningOutcomes: string;
+  topic: string;
+  method: string;
+  referenceLinks: string[]; // Library IDs or External Links
+  syllabusLink: string;
+  lectureNotesLink: string;
+  assignmentType: AssignmentType;
+  assessmentCriteria: string;
+
+  // Phase 3: Reporting
+  actualStartTime?: string;
+  actualEndTime?: string;
+  status: SessionStatus;
+  substituteName?: string;
+  totalStudentsPresent?: number;
+  attendanceListLink?: string;
+  realizedTopic?: string;
+  realizedMethod?: string;
+  problems?: string;
+  journalFileId?: string;
+  journalNodeUrl?: string;
+  photoEvidenceId?: string;
+  photoEvidenceNodeUrl?: string;
+  studentWorkLink?: string;
+  reflection?: string;
+  selfAssessmentScore?: number; // 1-5
+
+  createdAt: string;
+  updatedAt: string;
+}
+
 // --- RESEARCH PROJECT TYPES ---
 
 export enum ResearchStatus {

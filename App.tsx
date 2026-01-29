@@ -16,8 +16,9 @@ import SettingsView from './components/Settings/SettingsView';
 import UserProfileView from './components/Profile/UserProfileView';
 import FindArticle from './components/Research/Literature/FindArticle';
 import ArchivedArticle from './components/Research/Literature/ArchivedArticle';
-// Placeholder for the upcoming Activities module to prevent build break
+// Placeholder for the upcoming modules
 const ActivityMain = React.lazy(() => import('./components/Activities/ActivityMain'));
+const TeachingMain = React.lazy(() => import('./components/Teaching/TeachingMain'));
 import { BRAND_ASSETS } from './assets';
 import { GlobalAppLoader } from './components/Common/LoadingComponents';
 
@@ -102,6 +103,9 @@ const App: React.FC = () => {
                 
                 {/* ACTIVITIES ROUTE */}
                 <Route path="/activities/*" element={<ActivityMain />} />
+
+                {/* TEACHING ROUTE */}
+                <Route path="/teaching/*" element={<TeachingMain />} />
                 
                 <Route path="/add" element={isLoading ? <GlobalAppLoader /> : <LibraryForm onComplete={loadData} items={items} />} />
                 <Route path="/edit/:id" element={isLoading ? <GlobalAppLoader /> : <LibraryEditForm onComplete={loadData} items={items} />} />

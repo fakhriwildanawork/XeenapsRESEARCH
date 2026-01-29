@@ -23,108 +23,33 @@ const CONFIG = {
     LITERATURE_ARCHIVE: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE',
     PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g',
     ACTIVITIES: '1IQ8dzXKfVuAtSnXsU5Wx2JGa5Wkmw_R38HbvH1tXTRU',
-    PROFILE: '1Tf9iW9qP8_8X_8vH_8V8H8v_8H8V8H8v_8H8V8H8v8' // Placeholder ID - User will update this
+    TEACHING: '1Y-7v_8H_v_8H_v_8H_v_8H_v_8H_v_8H_v_8H_v_8H', // Placeholder User ID
+    PROFILE: '1Tf9iW9qP8_8X_8vH_8V8H8v_8H8V8H8v_8H8V8H8v8'
   },
   SCHEMAS: {
     LIBRARY: [
-      'id', 
-      'title', 
-      'type', 
-      'category', 
-      'topic', 
-      'subTopic', 
-      'authors', // Merged JSON Array
-      'publisher', 
-      'year', 
-      'fullDate',
-      'pubInfo', // Merged JSON Object (journal, vol, issue, pages)
-      'identifiers', // Merged JSON Object (doi, issn, isbn, pmid, arxiv, bibcode)
-      'source', 
-      'format', 
-      'url', 
-      'fileId', 
-      'imageView', 
-      'youtubeId', 
-      'tags', // Merged JSON Object (keywords, labels)
-      'abstract', 
-      'mainInfo', // Search Indexer (Plain Text)
-      'extractedJsonId', 
-      'insightJsonId', 
-      'storageNodeUrl',
-      'isFavorite', 
-      'isBookmarked', 
-      'createdAt', 
-      'updatedAt',
-      'supportingReferences'
+      'id', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
+    ],
+    TEACHING: [
+      'id', 'courseCode', 'courseTitle', 'institution', 'faculty', 'academicYear', 'semester', 'classGroup', 'meetingNo', 'teachingDate', 'startTime', 'endTime', 'mode', 'location', 'role', 'plannedStudents', 'eventColor', 'skReference',
+      'theoryCredits', 'practicalCredits', 'courseType', 'educationLevel', 'learningOutcomes', 'topic', 'method', 'referenceLinks', 'syllabusLink', 'lectureNotesLink', 'assignmentType', 'assessmentCriteria',
+      'actualStartTime', 'actualEndTime', 'status', 'substituteName', 'totalStudentsPresent', 'attendanceListLink', 'realizedTopic', 'realizedMethod', 'problems', 'journalFileId', 'journalNodeUrl', 'photoEvidenceId', 'photoEvidenceNodeUrl', 'studentWorkLink', 'reflection', 'selfAssessmentScore',
+      'createdAt', 'updatedAt'
     ],
     PRESENTATIONS: [
-      'id',
-      'collectionIds',
-      'gSlidesId',
-      'title',
-      'presenters',
-      'templateName',
-      'themeConfig',
-      'slidesCount',
-      'storageNodeUrl',
-      'createdAt',
-      'updatedAt'
+      'id', 'collectionIds', 'gSlidesId', 'title', 'presenters', 'templateName', 'themeConfig', 'slidesCount', 'storageNodeUrl', 'createdAt', 'updatedAt'
     ],
     QUESTIONS: [
-      'id',
-      'collectionId',
-      'bloomLevel',
-      'customLabel',
-      'questionText',
-      'options', // JSON String Array of Objects
-      'correctAnswer', // Key A-E
-      'reasoningCorrect',
-      'reasoningDistractors', // JSON Object Map
-      'verbatimReference', // Grounding from source text
-      'language',
-      'createdAt'
+      'id', 'collectionId', 'bloomLevel', 'customLabel', 'questionText', 'options', 'correctAnswer', 'reasoningCorrect', 'reasoningDistractors', 'verbatimReference', 'language', 'createdAt'
     ],
     RESEARCH_PROJECTS: [
-      'id',
-      'projectName',
-      'language',
-      'status',
-      'isFavorite',
-      'isUsed',
-      'proposedTitle',
-      'noveltyNarrative',
-      'futureDirections',
-      'createdAt',
-      'updatedAt'
+      'id', 'projectName', 'language', 'status', 'isFavorite', 'isUsed', 'proposedTitle', 'noveltyNarrative', 'futureDirections', 'createdAt', 'updatedAt'
     ],
     PROJECT_SOURCES: [
-      'id',
-      'projectId',
-      'sourceId',
-      'title',
-      'findings',
-      'methodology',
-      'limitations',
-      'createdAt',
-      'isFavorite',
-      'isUsed'
+      'id', 'projectId', 'sourceId', 'title', 'findings', 'methodology', 'limitations', 'createdAt', 'isFavorite', 'isUsed'
     ],
     BRAINSTORMING: [
-      'id',
-      'label',
-      'roughIdea',
-      'proposedTitle',
-      'problemStatement',
-      'researchGap',
-      'researchQuestion',
-      'methodology',
-      'population',
-      'keywords', // JSON Array
-      'pillars', // JSON Array
-      'proposedAbstract',
-      'externalRefs', // JSON Array (New)
-      'internalRefs', // JSON Array (New)
-      'isFavorite', 'isUsed', 'createdAt', 'updatedAt'
+      'id', 'label', 'roughIdea', 'proposedTitle', 'problemStatement', 'researchGap', 'researchQuestion', 'methodology', 'population', 'keywords', 'pillars', 'proposedAbstract', 'externalRefs', 'internalRefs', 'isFavorite', 'isUsed', 'createdAt', 'updatedAt'
     ],
     ARCHIVED_ARTICLES: [
       'id', 'title', 'citationHarvard', 'doi', 'url', 'info', 'label', 'isFavorite', 'createdAt'

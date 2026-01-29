@@ -35,6 +35,16 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: getTeaching
+    if (action === 'getTeaching') {
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "25");
+      const search = e.parameter.search || "";
+      const academicYear = e.parameter.academicYear || "";
+      const result = getTeachingFromRegistry(page, limit, search, academicYear);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
     // NEW: getActivities (UPDATED FOR FILTERS)
     if (action === 'getActivities') {
       const page = parseInt(e.parameter.page || "1");
@@ -193,12 +203,22 @@ function doPost(e) {
   
   try {
     if (action === 'setupDatabase') return createJsonResponse(setupDatabase());
+    if (action === 'setupTeachingDatabase') return createJsonResponse(setupTeachingDatabase());
     if (action === 'setupResearchDatabase') return createJsonResponse(setupResearchDatabase());
     if (action === 'setupBrainstormingDatabase') return createJsonResponse(setupBrainstormingDatabase());
     if (action === 'setupPublicationDatabase') return createJsonResponse(setupPublicationDatabase());
     if (action === 'setupProfileDatabase') return createJsonResponse(setupProfileDatabase());
     if (action === 'setupActivitiesDatabase') return createJsonResponse(setupActivitiesDatabase());
     
+    // NEW ACTION: saveTeaching
+    if (action === 'saveTeaching') {
+      return createJsonResponse(saveTeachingToRegistry(body.item));
+    }
+    // NEW ACTION: deleteTeaching
+    if (action === 'deleteTeaching') {
+      return createJsonResponse(deleteTeachingFromRegistry(body.id));
+    }
+
     // NEW ACTION: saveProfile
     if (action === 'saveProfile') {
       return createJsonResponse(saveProfileToRegistry(body.item));
