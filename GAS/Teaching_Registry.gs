@@ -27,72 +27,40 @@ function setupTeachingDatabase() {
   }
 }
 
-function getTeachingFromRegistry(page = 1, limit = 25, search = "", startDate = "", endDate = "", academicYear = "") {
+function getTeachingFromRegistry(page = 1, limit = 25, search = "", academicYear = "") {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TEACHING);
     const sheet = ss.getSheetByName("TeachingLogs");
     if (!sheet) return { items: [], totalCount: 0 };
 
+    // CORE FIX: Use getDisplayValues() instead of getValues()
+    // This prevents Sheets from turning "10:00" into a JS Date object that shifts timezone on serialization.
     const allValues = sheet.getDataRange().getDisplayValues();
     if (allValues.length <= 1) return { items: [], totalCount: 0 };
 
     const headers = allValues[0];
     const rawData = allValues.slice(1);
     
-    // Indices for Search and Filter
-    const labelIdx = headers.indexOf('label');
-    const instIdx = headers.indexOf('institution');
-    const facIdx = headers.indexOf('faculty');
-    const progIdx = headers.indexOf('program');
-    const groupIdx = headers.indexOf('classGroup');
     const titleIdx = headers.indexOf('courseTitle');
     const codeIdx = headers.indexOf('courseCode');
+    const topicIdx = headers.indexOf('topic');
     const yearIdx = headers.indexOf('academicYear');
     const dateIdx = headers.indexOf('teachingDate');
     
     const searchLower = search.toLowerCase();
-    const searchTokens = searchLower.split(/\s+/).filter(t => t.length > 0);
 
-    // 1. UNIFIED FILTERING (Search + Date Range + Academic Year)
+    // 1. FILTERING
     let filtered = rawData.filter(row => {
-      // a. Academic Year Filter
+      // Academic Year Filter
       if (academicYear && row[yearIdx] !== academicYear) return false;
 
-      // b. Date Range Filter
-      if (startDate || endDate) {
-        const rowDateStr = row[dateIdx];
-        if (!rowDateStr) return false;
-        const rowDate = new Date(rowDateStr);
-        rowDate.setHours(0,0,0,0);
-
-        if (startDate) {
-          const startLimit = new Date(startDate);
-          startLimit.setHours(0,0,0,0);
-          if (rowDate < startLimit) return false;
-        }
-        if (endDate) {
-          const endLimit = new Date(endDate);
-          endLimit.setHours(23,59,59,999);
-          if (rowDate > endLimit) return false;
-        }
+      // Search Filter (Title, Code, Topic)
+      if (searchLower) {
+        const matchesSearch = String(row[titleIdx] || "").toLowerCase().includes(searchLower) ||
+                              String(row[codeIdx] || "").toLowerCase().includes(searchLower) ||
+                              String(row[topicIdx] || "").toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
       }
-
-      // c. Smart Multi-field Search
-      if (searchTokens.length > 0) {
-        const searchableStr = (
-          String(row[labelIdx] || "") + " " +
-          String(row[instIdx] || "") + " " +
-          String(row[facIdx] || "") + " " +
-          String(row[progIdx] || "") + " " +
-          String(row[groupIdx] || "") + " " +
-          String(row[titleIdx] || "") + " " +
-          String(row[codeIdx] || "")
-        ).toLowerCase();
-        
-        const allMatch = searchTokens.every(token => searchableStr.includes(token));
-        if (!allMatch) return false;
-      }
-      
       return true;
     });
 

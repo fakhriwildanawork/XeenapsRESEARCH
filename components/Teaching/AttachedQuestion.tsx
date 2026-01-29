@@ -51,8 +51,7 @@ const AttachedQuestion: React.FC = () => {
         // 1. Fetch Teaching Session if missing
         let session = teaching;
         if (!session && sessionId) {
-          // Fix: Added missing arguments to match fetchTeachingPaginated signature (6 strings before signal)
-          const res = await fetchTeachingPaginated(1, 1000, "", "", "", "", signal);
+          const res = await fetchTeachingPaginated(1, 1000, "", "", signal);
           session = res.items.find(i => i.id === sessionId) || null;
           setTeaching(session);
         }
@@ -68,7 +67,6 @@ const AttachedQuestion: React.FC = () => {
         }
 
         // 3. Fetch All Questions to filter (Simplest way to get full objects)
-        // Fix: Added missing arguments to match fetchAllQuestionsPaginated signature (8 strings before signal)
         const qRes = await fetchAllQuestionsPaginated(1, 1000, "", "", "", "All", "createdAt", "desc", signal);
         const attachedIds = session.questionBankId.map(q => q.id);
         const filtered = qRes.items.filter(q => attachedIds.includes(q.id));
@@ -77,7 +75,7 @@ const AttachedQuestion: React.FC = () => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [sessionId, teaching, workflow.execute]);
+  }, [sessionId, teaching]);
 
   useEffect(() => {
     loadData();
