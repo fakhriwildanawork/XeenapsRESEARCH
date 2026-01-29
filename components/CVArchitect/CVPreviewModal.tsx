@@ -24,14 +24,14 @@ const CVPreviewModal: React.FC<CVPreviewModalProps> = ({ template, onClose }) =>
                       <div className="h-1 w-12 bg-black rounded-full" />
                    </div>
                 </div>
-                <div className="w-14 h-[74px] rounded-lg bg-gray-50 border-2 border-[#004A74] flex items-center justify-center text-gray-200 shrink-0">
-                   <User size={24} />
+                <div className="w-14 h-[18.6px] rounded-sm bg-gray-50 border-2 border-[#004A74] flex items-center justify-center text-gray-200 shrink-0" style={{ height: '74.6px' }}>
+                   <User size={24} className="text-black" />
                 </div>
              </div>
              
              <div className="p-3 bg-blue-50 border-l-4 border-[#004A74] rounded-r-lg">
-                <div className="h-1 w-full bg-[#004A74]/40 rounded mb-1" />
-                <div className="h-1 w-4/5 bg-[#004A74]/40 rounded" />
+                <div className="h-1 w-full bg-[#004A74] rounded mb-1" />
+                <div className="h-1 w-4/5 bg-[#004A74] rounded" />
              </div>
 
              <div className="space-y-4">
@@ -39,19 +39,19 @@ const CVPreviewModal: React.FC<CVPreviewModalProps> = ({ template, onClose }) =>
                    <div className="h-3 w-32 bg-[#004A74] rounded-sm" />
                    <div className="pl-3 space-y-1.5 border-l-2 border-black">
                       <div className="flex justify-between items-center"><div className="h-2 w-28 bg-black rounded-sm" /><div className="h-1 w-8 bg-black rounded-full" /></div>
-                      <div className="h-1.5 w-40 bg-black opacity-40 rounded-sm" />
+                      <div className="h-1.5 w-40 bg-black rounded-sm" />
                    </div>
                 </div>
                 <div className="space-y-2">
                    <div className="h-3 w-40 bg-[#004A74] rounded-sm" />
                    <div className="space-y-1">
                       <div className="h-1.5 w-full bg-black rounded-sm" />
-                      <div className="h-1.5 w-11/12 bg-black opacity-60 rounded-sm" />
+                      <div className="h-1.5 w-11/12 bg-black rounded-sm" />
                    </div>
                 </div>
              </div>
-             <div className="mt-auto pt-2 border-t border-gray-100 text-center">
-                <div className="h-1 w-24 bg-gray-100 mx-auto rounded-full" />
+             <div className="mt-auto pt-2 border-t border-black text-center">
+                <div className="h-1 w-24 bg-black mx-auto rounded-full" />
              </div>
           </div>
         );
@@ -59,15 +59,15 @@ const CVPreviewModal: React.FC<CVPreviewModalProps> = ({ template, onClose }) =>
         return (
           <div className="w-full h-full bg-white flex animate-in zoom-in-95 duration-500 overflow-hidden">
              <div className="w-[30%] bg-[#004A74] p-4 text-white space-y-5 shrink-0 flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center mb-4 overflow-hidden">
-                   <User size={28} className="text-white/40" />
+                <div className="w-16 h-[21.3px] rounded-lg bg-white border-2 border-white flex items-center justify-center mb-4 overflow-hidden" style={{ height: '85.3px' }}>
+                   <User size={28} className="text-[#004A74]" />
                 </div>
                 <div className="w-full space-y-3">
-                   <div className="h-1 w-1/2 bg-white/20 rounded mx-auto" />
-                   <div className="h-1 w-2/3 bg-white/20 rounded mx-auto" />
+                   <div className="h-1 w-1/2 bg-white rounded mx-auto" />
+                   <div className="h-1 w-2/3 bg-white rounded mx-auto" />
                    <div className="pt-4 space-y-2">
-                      <div className="h-2 w-full bg-white/10 rounded" />
-                      <div className="h-2 w-full bg-white/10 rounded" />
+                      <div className="h-2 w-full bg-white rounded" />
+                      <div className="h-2 w-full bg-white rounded" />
                    </div>
                 </div>
              </div>
@@ -80,15 +80,15 @@ const CVPreviewModal: React.FC<CVPreviewModalProps> = ({ template, onClose }) =>
                    <div className="space-y-2">
                       <div className="h-2 w-20 bg-black rounded-sm" />
                       <div className="space-y-1.5">
-                         <div className="h-1.5 w-full bg-black/10 rounded-sm" />
-                         <div className="h-1.5 w-full bg-black/10 rounded-sm" />
+                         <div className="h-1.5 w-full bg-black rounded-sm" />
+                         <div className="h-1.5 w-full bg-black rounded-sm" />
                       </div>
                    </div>
                    <div className="space-y-3">
-                      <div className="h-3 w-32 bg-[#004A74]/10 rounded-sm" />
-                      <div className="p-2 border border-black/10 rounded-lg">
+                      <div className="h-3 w-32 bg-[#004A74] rounded-sm" />
+                      <div className="p-2 border border-black rounded-lg">
                          <div className="flex justify-between mb-1.5"><div className="h-2 w-20 bg-black rounded-sm" /><div className="h-1 w-8 bg-black rounded-full" /></div>
-                         <div className="h-1.5 w-full bg-black/5 rounded-sm" />
+                         <div className="h-1.5 w-full bg-black rounded-sm" />
                       </div>
                    </div>
                 </div>
@@ -99,7 +99,7 @@ const CVPreviewModal: React.FC<CVPreviewModalProps> = ({ template, onClose }) =>
         return (
           <div className="w-full h-full bg-white p-8 space-y-8 animate-in zoom-in-95 duration-500 overflow-hidden border border-gray-100">
              <div className="flex flex-col items-center space-y-3 pt-2 text-center border-b-2 border-[#004A74] pb-5">
-                <div className="w-12 h-16 bg-gray-50 border border-black rounded-sm flex items-center justify-center text-gray-200">
+                <div className="w-12 h-16 bg-white border border-black rounded-sm flex items-center justify-center text-black">
                    <User size={20} />
                 </div>
                 <div className="h-6 w-3/4 bg-[#004A74] rounded-sm" />
@@ -107,17 +107,17 @@ const CVPreviewModal: React.FC<CVPreviewModalProps> = ({ template, onClose }) =>
              </div>
              <div className="space-y-6">
                 <div className="space-y-3">
-                   <div className="h-3 w-32 border-b border-black flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#004A74]"/> <div className="h-2 w-20 bg-[#004A74] rounded-sm"/></div>
+                   <div className="h-3 w-32 border-b-2 border-black flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#004A74]"/> <div className="h-2 w-20 bg-[#004A74] rounded-sm"/></div>
                    <div className="space-y-3 pl-2">
                       <div className="flex justify-between"><div className="h-2 w-36 bg-black rounded-sm" /><div className="h-2 w-10 bg-black rounded-sm" /></div>
-                      <div className="h-1.5 w-48 bg-black/40 rounded-sm" />
+                      <div className="h-1.5 w-48 bg-black rounded-sm" />
                    </div>
                 </div>
                 <div className="space-y-3">
-                   <div className="h-3 w-40 border-b border-black flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#004A74]"/> <div className="h-2 w-24 bg-[#004A74] rounded-sm"/></div>
+                   <div className="h-3 w-40 border-b-2 border-black flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#004A74]"/> <div className="h-2 w-24 bg-[#004A74] rounded-sm"/></div>
                    <div className="space-y-1.5 pl-2">
-                      <div className="h-1.5 w-full bg-black/10 rounded-sm" />
-                      <div className="h-1.5 w-11/12 bg-black/10 rounded-sm" />
+                      <div className="h-1.5 w-full bg-black rounded-sm" />
+                      <div className="h-1.5 w-11/12 bg-black rounded-sm" />
                    </div>
                 </div>
              </div>
@@ -133,7 +133,7 @@ const CVPreviewModal: React.FC<CVPreviewModalProps> = ({ template, onClose }) =>
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
            <div>
               <h3 className="text-lg font-black text-[#004A74] uppercase tracking-tight">{template} Prototype</h3>
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">High Contrast / Zero Gray / 3:4 Aspect</p>
+              <p className="text-[9px] font-bold text-black uppercase tracking-widest">High Contrast / Zero Gray / 3:4 Aspect</p>
            </div>
            <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
               <X className="w-6 h-6" />
@@ -141,7 +141,7 @@ const CVPreviewModal: React.FC<CVPreviewModalProps> = ({ template, onClose }) =>
         </div>
 
         <div className="p-8 bg-gray-100 flex items-center justify-center overflow-hidden">
-           <div className="aspect-[1/1.414] w-[280px] md:w-[320px] bg-white rounded-lg shadow-2xl border border-gray-300 overflow-hidden ring-8 ring-white/50 transform hover:scale-105 transition-transform duration-700">
+           <div className="aspect-[1/1.414] w-[280px] md:w-[320px] bg-white rounded-lg shadow-2xl border border-gray-300 overflow-hidden transform hover:scale-105 transition-transform duration-700">
               {getTemplateLayout()}
            </div>
         </div>
