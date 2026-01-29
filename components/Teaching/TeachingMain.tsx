@@ -59,6 +59,15 @@ const TeachingDashboard: React.FC = () => {
     "Search Institution..."
   ];
 
+  // Helper to convert "8:00" or "10:00" to total minutes for correct numeric sorting
+  const timeToMinutes = (time: string): number => {
+    if (!time) return 0;
+    const parts = time.split(':');
+    const hours = parseInt(parts[0]) || 0;
+    const minutes = parseInt(parts[1]) || 0;
+    return (hours * 60) + minutes;
+  };
+
   // Helper for safe local ISO date (YYYY-MM-DD)
   const getLocalDateStr = (d: Date = new Date()) => d.toLocaleDateString('sv');
 
@@ -188,9 +197,14 @@ const TeachingDashboard: React.FC = () => {
     return filtered.sort((a, b) => {
       const dateCmp = b.teachingDate.localeCompare(a.teachingDate);
       if (dateCmp !== 0) return dateCmp;
-      const startCmp = b.startTime.localeCompare(a.startTime);
-      if (startCmp !== 0) return startCmp;
-      return b.endTime.localeCompare(a.endTime);
+      
+      const startA = timeToMinutes(a.startTime);
+      const startB = timeToMinutes(b.startTime);
+      if (startB !== startA) return startB - startA;
+      
+      const endA = timeToMinutes(a.endTime);
+      const endB = timeToMinutes(b.endTime);
+      return endB - endA;
     });
   }, [items, appliedDateRange]);
 
@@ -235,9 +249,13 @@ const TeachingDashboard: React.FC = () => {
     const rawSessions = sessionsByDate[selectedDate] || [];
     // Multi-layer Sorting for Calendar Mode Daily List: StartTime (ASC) -> EndTime (ASC)
     return [...rawSessions].sort((a, b) => {
-      const startCmp = a.startTime.localeCompare(b.startTime);
-      if (startCmp !== 0) return startCmp;
-      return a.endTime.localeCompare(b.endTime);
+      const startA = timeToMinutes(a.startTime);
+      const startB = timeToMinutes(b.startTime);
+      if (startA !== startB) return startA - startB;
+      
+      const endA = timeToMinutes(a.endTime);
+      const endB = timeToMinutes(b.endTime);
+      return endA - endB;
     });
   }, [selectedDate, sessionsByDate]);
 
@@ -275,7 +293,6 @@ const TeachingDashboard: React.FC = () => {
 
           <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
              <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-100 shrink-0 shadow-sm">
-                {/* Fix: Redundant ternary comparisons removed inside the card-mode header. Since this block only renders when viewMode is 'card', classes are now hardcoded for clarity and to prevent TS overlap errors. */}
                 <button onClick={() => setViewMode('card')} className="p-2 rounded-xl transition-all bg-[#004A74] text-white shadow-md"><LayoutGrid size={18} /></button>
                 <button onClick={() => setViewMode('calendar')} className="p-2 rounded-xl transition-all text-gray-400"><CalendarDays size={18} /></button>
              </div>
