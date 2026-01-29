@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -59,7 +58,8 @@ const PresentationDetailModal: React.FC<{
   onDelete: (id: string) => void;
 }> = ({ ppt, allLibraryItems, onClose, onDelete }) => {
   const navigate = useNavigate();
-  const sourceItems = ppt.collectionIds.map(id => allLibraryItems.find(it => it.id === id)).filter(Boolean) as LibraryItem[];
+  // DEFENSIVE CHECK: collectionIds might be undefined
+  const sourceItems = (ppt.collectionIds || []).map(id => allLibraryItems.find(it => it.id === id)).filter(Boolean) as LibraryItem[];
 
   const formatDateTime = (dateStr: string) => {
     try {
@@ -306,7 +306,7 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
   };
 
   const getSourceTitles = (ids: string[]) => {
-    return ids.map(id => items.find(it => it.id === id)?.title || 'Unknown Source').join(', ');
+    return (ids || []).map(id => items.find(it => it.id === id)?.title || 'Unknown Source').join(', ');
   };
 
   return (
@@ -363,7 +363,6 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
         <StandardPrimaryButton onClick={() => setShowSetup(true)} icon={<PlusIcon className="w-5 h-5" />}>Create Presentation</StandardPrimaryButton>
       </div>
 
-      {/* MOBILE SORT & SELECT ALL BAR */}
       <div className="lg:hidden flex items-center justify-start gap-4 px-1 py-1 shrink-0 mb-4">
         <div className="relative">
           <button onClick={() => setShowSortMenu(!showSortMenu)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${showSortMenu ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-100 text-[#004A74] shadow-sm'}`}><AdjustmentsHorizontalIcon className="w-4 h-4 stroke-[2.5]" /><span className="text-[10px] font-black uppercase tracking-widest">Sort</span></button>
@@ -385,7 +384,6 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
       </StandardQuickAccessBar>
 
       <div className="mt-4 flex-1">
-        {/* DESKTOP TABLE VIEW */}
         <div className="hidden lg:block">
           <StandardTableContainer>
             <StandardTableWrapper>
@@ -486,7 +484,6 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
           </StandardTableContainer>
         </div>
 
-        {/* MOBILE CARD GRID VIEW */}
         <div className="lg:hidden">
           {isLoading ? (
             <CardGridSkeleton count={8} />
@@ -500,6 +497,7 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
               {presentations.map((ppt) => (
                 <StandardItemCard key={ppt.id} isSelected={selectedIds.includes(ppt.id)} onClick={() => setSelectedDetail(ppt)}>
                   <div className="flex items-center gap-3 mb-4" onClick={(e) => e.stopPropagation()}>
+                    {/* Fix: Line 501 - Corrected 'item.id' to 'ppt.id' */}
                     <button onClick={() => toggleSelectItem(ppt.id)} className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(ppt.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}>
                       {selectedIds.includes(ppt.id) && <CheckIcon className="w-3 h-3 stroke-[4]" />}
                     </button>

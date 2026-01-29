@@ -83,7 +83,8 @@ const TeachingDetail: React.FC = () => {
   };
 
   const calculateAttendancePercent = () => {
-    if (!item?.plannedStudents || !item?.totalStudentsPresent) return "0%";
+    if (!item?.plannedStudents || item.plannedStudents === 0) return "100%";
+    if (!item?.totalStudentsPresent) return "0%";
     const pct = (item.totalStudentsPresent / item.plannedStudents) * 100;
     return `${pct.toFixed(1)}%`;
   };
@@ -177,7 +178,7 @@ const TeachingDetail: React.FC = () => {
     } else if (pickerType === 'PRESENTATION') {
       const current = item.presentationId || [];
       if (!current.some(p => p.id === data.id)) {
-        handleFieldChange('presentationId', [...current, { id: data.id, title: data.title }]);
+        handleFieldChange('presentationId', [...current, { id: data.id, title: data.title, gSlidesId: data.gSlidesId }]);
       }
     } else if (pickerType === 'QUESTION') {
       const current = item.questionBankId || [];
@@ -340,7 +341,18 @@ const TeachingDetail: React.FC = () => {
                                <div key={ppt.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-200 hover:border-[#004A74]/20 transition-all shadow-sm">
                                   <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">{ppt.title}</span>
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                                     <button onClick={() => navigate('/presentations', { state: { reopenPPT: { id: ppt.id, title: ppt.title } } })} className="p-1 text-cyan-600 hover:bg-gray-50 rounded-md transition-all"><Eye size={12} /></button>
+                                     <button 
+                                       onClick={() => {
+                                         if ((ppt as any).gSlidesId) {
+                                            window.open(`https://docs.google.com/presentation/d/${(ppt as any).gSlidesId}/edit`, '_blank');
+                                         } else {
+                                            navigate('/presentations', { state: { reopenPPT: { id: ppt.id, title: ppt.title } } });
+                                         }
+                                       }} 
+                                       className="p-1 text-cyan-600 hover:bg-gray-50 rounded-md transition-all"
+                                     >
+                                       <Eye size={12} />
+                                     </button>
                                      <button onClick={() => handleFieldChange('presentationId', item.presentationId.filter(i => i.id !== ppt.id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-all"><TrashIcon size={12} /></button>
                                   </div>
                                </div>
@@ -430,8 +442,8 @@ const TeachingDetail: React.FC = () => {
                     <input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.totalStudentsPresent} onChange={e => handleFieldChange('totalStudentsPresent', parseInt(e.target.value) || 0)} />
                   </FormField>
                   <FormField label="Percentage (%)">
-                    <div className="w-full px-5 py-3 bg-[#004A74]/5 border border-[#004A74]/10 rounded-xl font-black text-[#004A74] flex items-center gap-2">
-                       <Activity size={14} className="text-[#FED400]" /> {calculateAttendancePercent()}
+                    <div className="w-full px-5 py-3 bg-[#004A74]/5 border border-[#004A74]/10 rounded-xl font-black text-[#004A74] flex items-center justify-center">
+                        {calculateAttendancePercent()}
                     </div>
                   </FormField>
                   <FormField label="Attendance List (Link/ID)">

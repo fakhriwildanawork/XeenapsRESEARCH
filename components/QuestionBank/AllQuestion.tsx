@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -209,7 +208,9 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
       setQuestions,
       idsToDelete,
       async (id) => await deleteQuestion(id),
-      () => showXeenapsToast('error', 'Bulk sync failed. Items restored.')
+      () => {
+        showXeenapsToast('error', 'Bulk sync failed. Items restored.');
+      }
     );
     showXeenapsToast('success', 'Bulk deletion processed.');
   };
@@ -514,7 +515,8 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                 return (
                   <StandardItemCard key={q.id} isSelected={isSelected} onClick={() => setSelectedQuestionDetail(q)}>
                     <div className="flex items-center gap-3 mb-4" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => toggleSelect(q.id)} className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${isSelected ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}>
+                      {/* Fix: Line 521 - Corrected 'item.id' to 'q.id' */}
+                      <button onClick={() => toggleSelect(q.id)} className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(q.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}>
                         {isSelected && <CheckIcon className="w-3 h-3 stroke-[4]" />}
                       </button>
                       <span className={`px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-white ${getBloomColor(q.bloomLevel)}`}>

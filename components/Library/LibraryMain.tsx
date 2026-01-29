@@ -74,8 +74,8 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [showSortMenu, setShowSortMenu] = useState(false);
   
-  // FIX: Synchronous state initialization to prevent visual flash
-  const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(() => (location.state as any)?.openItem || null);
+  // FIX: Synchronous state initialization
+  const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   
   // FIX: Background suppression during initial route mount
   const [isTransitioning, setIsTransitioning] = useState(() => !!(location.state as any)?.openItem);
@@ -97,21 +97,27 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
     }
   }, [globalSearch]);
 
+  // DATA RE-HYDRATION LOGIC: Ensure partial items from navigation are filled with full metadata
   useEffect(() => {
     const state = location.state as any;
     if (state?.openItem) {
-      setSelectedItem(state.openItem);
+      const partialItem = state.openItem;
+      // Look for the full object in already loaded items or server items
+      const fullItem = items.find(i => i.id === partialItem.id) || 
+                       serverItems.find(i => i.id === partialItem.id);
       
-      // FIX: DELAYED CLEANUP
+      // If we found a fuller version, use it, otherwise use what we have
+      setSelectedItem(fullItem || partialItem);
+      
       const timer = setTimeout(() => {
         const { openItem, ...rest } = state;
         navigate(location.pathname, { replace: true, state: rest });
-        setIsTransitioning(false); // Stop background suppression
+        setIsTransitioning(false);
       }, 800); 
       
       return () => clearTimeout(timer);
     }
-  }, [location.state, navigate, location.pathname]);
+  }, [location.state, navigate, location.pathname, items, serverItems]);
 
   useEffect(() => {
     workflow.execute(
@@ -211,7 +217,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
 
   const isDataLoading = isInternalLoading || isGlobalLoading;
 
-  // Strict truncation style - Forces text to stay within box and truncates after 2 lines
   const clampStyle = { 
     display: '-webkit-box', 
     WebkitLineClamp: 2, 
@@ -234,7 +239,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
         />
       )}
 
-      {/* FIX: Background Wrapper with suppression logic */}
       <div className={`flex-1 flex flex-col transition-opacity duration-300 ${isTransitioning ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between shrink-0 mb-4">
           <SmartSearchBox value={localSearch} onChange={setLocalSearch} onSearch={handleSearchTrigger} />
@@ -284,7 +288,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
                   <StandardTr key={item.id} className="cursor-pointer" onClick={() => setSelectedItem(item)}>
                     <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={(e) => e.stopPropagation()}><StandardCheckbox checked={selectedIds.includes(item.id)} onChange={() => toggleSelectItem(item.id)} /></td>
                     
-                    {/* Title Column */}
                     <StandardTd isActiveSort={sortConfig.key === 'title'} className="sticky left-12 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm">
                       <ElegantTooltip text={item.title}>
                         <div className="flex items-start gap-2 group/title w-full">
@@ -304,7 +307,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
                       </ElegantTooltip>
                     </StandardTd>
 
-                    {/* Authors Column */}
                     <StandardTd isActiveSort={sortConfig.key === 'authors'}>
                       <ElegantTooltip text={item.authors?.join(', ') || ''}>
                         <div className="text-xs text-gray-600 italic text-center w-full line-clamp-2" style={clampStyle}>
@@ -313,7 +315,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
                       </ElegantTooltip>
                     </StandardTd>
 
-                    {/* Publisher Column */}
                     <StandardTd isActiveSort={sortConfig.key === 'publisher'}>
                       <ElegantTooltip text={item.publisher}>
                         <div className="text-xs text-gray-600 text-center w-full line-clamp-2" style={clampStyle}>
@@ -322,19 +323,16 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
                       </ElegantTooltip>
                     </StandardTd>
 
-                    {/* Year Column */}
                     <StandardTd isActiveSort={sortConfig.key === 'year'} className="text-xs text-gray-600 font-mono text-center">
                       <div className="line-clamp-2" style={clampStyle}>{item.year || '-'}</div>
                     </StandardTd>
 
-                    {/* Category Column */}
                     <StandardTd isActiveSort={sortConfig.key === 'category'} className="text-xs text-gray-600 text-center">
                       <ElegantTooltip text={item.category || '-'}>
                         <div className="line-clamp-2" style={clampStyle}>{item.category || '-'}</div>
                       </ElegantTooltip>
                     </StandardTd>
 
-                    {/* Topic Column */}
                     <StandardTd isActiveSort={sortConfig.key === 'topic'}>
                       <ElegantTooltip text={item.topic}>
                         <div className="text-xs text-gray-600 text-center w-full line-clamp-2" style={clampStyle}>
@@ -343,7 +341,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
                       </ElegantTooltip>
                     </StandardTd>
 
-                    {/* Sub Topic Column */}
                     <StandardTd isActiveSort={sortConfig.key === 'subTopic'}>
                       <ElegantTooltip text={item.subTopic}>
                         <div className="text-xs text-gray-600 text-center w-full line-clamp-2" style={clampStyle}>
@@ -352,7 +349,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
                       </ElegantTooltip>
                     </StandardTd>
 
-                    {/* Created At Column */}
                     <StandardTd isActiveSort={sortConfig.key === 'createdAt'} className="text-xs font-medium text-gray-400 whitespace-nowrap text-center">
                       <div className="line-clamp-2" style={clampStyle}>{formatDateTime(item.createdAt)}</div>
                     </StandardTd>
