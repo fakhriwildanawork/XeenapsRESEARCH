@@ -190,7 +190,6 @@ export interface ActivityItem {
   isFavorite: boolean;
   vaultJsonId: string;
   storageNodeUrl: string;
-  // Fix: Added missing certificate properties to resolve type errors in ActivityDetail.tsx
   certificateFileId?: string;
   certificateNodeUrl?: string;
   createdAt: string;
@@ -238,59 +237,76 @@ export enum SessionStatus {
   SUBSTITUTED = 'Substituted'
 }
 
+export interface TeachingVaultItem {
+  type: 'FILE' | 'LINK';
+  fileId?: string;
+  url?: string;
+  label: string;
+  mimeType?: string;
+  nodeUrl?: string;
+}
+
 export interface TeachingItem {
-  // Phase 1: Planning
+  // Logic Identity
   id: string;
-  courseCode: string;
-  courseTitle: string;
-  institution: string;
-  faculty: string;
-  academicYear: string; // e.g., 2024/2025
-  semester: string; // e.g., Ganjil
-  classGroup: string;
-  meetingNo: number;
+  label: string; 
+  
+  // Phase 1: Planning
   teachingDate: string;
   startTime: string;
   endTime: string;
+  institution: string;
+  faculty: string;
+  program: string;
+  academicYear: string;
+  semester: string;
+  classGroup: string;
+  meetingNo: number;
   mode: SessionMode;
-  location: string;
-  role: TeachingRole;
   plannedStudents: number;
-  eventColor: string; // Hex Code
-  skReference: string;
+  // Added missing location property to resolve compilation errors
+  location: string;
+  // Added optional stylistic and formal reference fields
+  eventColor?: string;
+  skReference?: string;
 
   // Phase 2: Preparing
+  courseTitle: string;
+  courseCode: string;
+  learningOutcomes: string;
+  method: string;
   theoryCredits: number;
+  // Added missing practical credits and pedagogical classification properties
   practicalCredits: number;
   courseType: CourseType;
   educationLevel: EducationLevel;
-  learningOutcomes: string;
   topic: string;
-  method: string;
-  referenceLinks: string[]; // Library IDs or External Links
-  syllabusLink: string;
-  lectureNotesLink: string;
-  assignmentType: AssignmentType;
-  assessmentCriteria: string;
+  role: TeachingRole;
+  referenceLinks: string[]; // Library IDs
+  presentationId?: string; // Link to Presentation Module
+  questionBankId?: string; // Link to Question Module
+  attachmentLink?: string;
+  // Added optional documentation links
+  syllabusLink?: string;
+  lectureNotesLink?: string;
 
   // Phase 3: Reporting
   actualStartTime?: string;
   actualEndTime?: string;
-  status: SessionStatus;
-  substituteName?: string;
+  teachingDuration?: string; // Computed
   totalStudentsPresent?: number;
+  attendancePercentage?: number; // Computed
   attendanceListLink?: string;
-  realizedTopic?: string;
-  realizedMethod?: string;
   problems?: string;
-  journalFileId?: string;
-  journalNodeUrl?: string;
-  photoEvidenceId?: string;
-  photoEvidenceNodeUrl?: string;
-  studentWorkLink?: string;
   reflection?: string;
-  selfAssessmentScore?: number; // 1-5
+  // Added missing reporting and assessment properties
+  assignmentType: AssignmentType;
+  assessmentCriteria: string;
 
+  // System
+  vaultJsonId: string;
+  storageNodeUrl: string;
+  status: SessionStatus;
   createdAt: string;
   updatedAt: string;
 }

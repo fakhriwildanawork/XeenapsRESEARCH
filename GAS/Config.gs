@@ -31,10 +31,10 @@ const CONFIG = {
       'id', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
     ],
     TEACHING: [
-      'id', 'courseCode', 'courseTitle', 'institution', 'faculty', 'academicYear', 'semester', 'classGroup', 'meetingNo', 'teachingDate', 'startTime', 'endTime', 'mode', 'location', 'role', 'plannedStudents', 'eventColor', 'skReference',
-      'theoryCredits', 'practicalCredits', 'courseType', 'educationLevel', 'learningOutcomes', 'topic', 'method', 'referenceLinks', 'syllabusLink', 'lectureNotesLink', 'assignmentType', 'assessmentCriteria',
-      'actualStartTime', 'actualEndTime', 'status', 'substituteName', 'totalStudentsPresent', 'attendanceListLink', 'realizedTopic', 'realizedMethod', 'problems', 'journalFileId', 'journalNodeUrl', 'photoEvidenceId', 'photoEvidenceNodeUrl', 'studentWorkLink', 'reflection', 'selfAssessmentScore',
-      'createdAt', 'updatedAt'
+      'id', 'label', 'teachingDate', 'startTime', 'endTime', 'institution', 'faculty', 'program', 'academicYear', 'semester', 'classGroup', 'meetingNo', 'mode', 'plannedStudents',
+      'courseTitle', 'courseCode', 'learningOutcomes', 'method', 'theoryCredits', 'role', 'referenceLinks', 'presentationId', 'questionBankId', 'attachmentLink',
+      'actualStartTime', 'actualEndTime', 'teachingDuration', 'totalStudentsPresent', 'attendancePercentage', 'attendanceListLink', 'problems', 'reflection',
+      'vaultJsonId', 'storageNodeUrl', 'status', 'createdAt', 'updatedAt'
     ],
     PRESENTATIONS: [
       'id', 'collectionIds', 'gSlidesId', 'title', 'presenters', 'templateName', 'themeConfig', 'slidesCount', 'storageNodeUrl', 'createdAt', 'updatedAt'
