@@ -2,7 +2,7 @@
  * XEENAPS PKM - GROQ AI LIBRARIAN SERVICE
  */
 
-function callGroqLibrarian(prompt, modelOverride) {
+function callGroqLibrarian(prompt, modelOverride, forceText = false) {
   const keys = getKeysFromSheet('Groq', 2);
   if (!keys || keys.length === 0) return { status: 'error', message: 'No Groq keys found in database.' };
   
@@ -15,11 +15,11 @@ function callGroqLibrarian(prompt, modelOverride) {
       const payload = { 
         model: model, 
         messages: [
-          { role: "system", content: "You are the Xeenaps AI Librarian. An expert in academic metadata extraction, knowledge organization, and deep conceptual analysis. Always respond in valid JSON format as requested." }, 
+          { role: "system", content: forceText ? "You are a professional CV editor. Write only the requested summary as clean text. No JSON, no markdown, no intro/outro." : "You are the Xeenaps AI Librarian. An expert in academic metadata extraction, knowledge organization, and deep conceptual analysis. Always respond in valid JSON format as requested." }, 
           { role: "user", content: prompt }
         ], 
         temperature: 0.1, 
-        response_format: { type: "json_object" } 
+        response_format: forceText ? undefined : { type: "json_object" } 
       };
       
       const res = UrlFetchApp.fetch(url, { 

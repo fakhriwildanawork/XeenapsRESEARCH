@@ -1,15 +1,22 @@
-
 /**
  * XEENAPS PKM - ROUTER HELPERS
- * RESTORES MISSING OPERATIONAL LOGIC FOR SHARDING, AI PROXY, AND EXTRACTION ROUTING.
  */
+
+function handleAiRequest(provider, prompt, modelOverride, responseType) {
+  if (!provider) return { status: 'error', message: 'No provider specified' };
+  
+  const forceText = responseType === 'text';
+
+  if (provider.toLowerCase() === 'groq') {
+    return callGroqLibrarian(prompt, modelOverride, forceText);
+  }
+  return callGeminiService(prompt, modelOverride);
+}
 
 /**
  * getViableStorageTarget
- * Logic to determine if data should go to Master Drive or a registered Slave Storage Node.
  */
 function getViableStorageTarget(threshold) {
-  // 1. Check Master Drive first
   try {
     const masterQuota = Drive.About.get({fields: 'storageQuota'}).storageQuota;
     const masterRemaining = parseInt(masterQuota.limit) - parseInt(masterQuota.usage);
@@ -23,7 +30,6 @@ function getViableStorageTarget(threshold) {
     }
   } catch (e) { console.log("Master quota check failed: " + e.toString()); }
 
-  // 2. Check Slave Nodes from Registry
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.STORAGE_REGISTRY);
     const sheet = ss.getSheetByName(CONFIG.STORAGE.REGISTRY_SHEET);
@@ -35,7 +41,6 @@ function getViableStorageTarget(threshold) {
       const nodeFolderId = data[i][2];
       const status = data[i][3];
       
-      // STABILITY FIX: Use smarter URL parameter appending
       if (status === 'active' && nodeUrl) {
         try {
           const separator = nodeUrl.indexOf('?') === -1 ? '?' : '&';
@@ -56,41 +61,17 @@ function getViableStorageTarget(threshold) {
   return null;
 }
 
-/**
- * routerUrlExtraction
- * Directs URL-based extraction to the appropriate specialized module.
- */
 function routerUrlExtraction(url) {
   const driveId = getFileIdFromUrl(url);
-  
   if (driveId && (url.includes('drive.google.com') || url.includes('docs.google.com'))) {
     return handleDriveExtraction(url, driveId);
   }
-  
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     return handleYoutubeExtraction(url);
   }
-  
   return handleWebExtraction(url);
 }
 
-/**
- * handleAiRequest
- * Proxies AI requests to either Groq or Gemini based on user configuration.
- */
-function handleAiRequest(provider, prompt, modelOverride) {
-  if (!provider) return { status: 'error', message: 'No provider specified' };
-  
-  if (provider.toLowerCase() === 'groq') {
-    return callGroqLibrarian(prompt, modelOverride);
-  }
-  return callGeminiService(prompt, modelOverride);
-}
-
-/**
- * extractYoutubeId
- * Helper to get video ID for embedding and metadata purposes.
- */
 function extractYoutubeId(url) {
   let videoId = "";
   if (url.includes('youtu.be/')) {

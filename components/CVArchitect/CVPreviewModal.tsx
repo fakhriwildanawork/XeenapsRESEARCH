@@ -114,32 +114,32 @@ const CVPreviewModal: React.FC<CVPreviewModalProps> = ({ template, onClose }) =>
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-[#004A74]/40 backdrop-blur-xl animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-white rounded-[3rem] w-full max-w-xl shadow-2xl overflow-hidden relative flex flex-col border border-white/20">
         
-        {/* Header */}
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
            <div>
-              <h3 className="text-lg font-black text-[#004A74] uppercase tracking-tight">{template} Preview</h3>
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Architectural Layout Blueprint</p>
+              <h3 className="text-lg font-black text-[#004A74] uppercase tracking-tight">{template} Prototype</h3>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Architectural Layout Preview</p>
            </div>
            <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
               <X className="w-6 h-6" />
            </button>
         </div>
 
-        {/* Scaled Preview Box */}
-        <div className="p-8 bg-gray-100 shrink-0">
-           <div className="aspect-[1/1.414] w-full bg-white rounded-2xl shadow-inner border border-gray-200 overflow-hidden ring-8 ring-white/50">
+        <div className="p-8 bg-gray-100 flex items-center justify-center">
+           <div className="aspect-[1/1.414] w-[300px] md:w-[350px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden ring-8 ring-white/50">
               {getTemplateLayout()}
            </div>
         </div>
 
-        {/* Footer Info */}
         <div className="px-10 py-6 border-t border-gray-100 text-center bg-gray-50/30">
-           <p className="text-[10px] font-bold text-gray-400 italic">
-             "Layout will dynamically adjust based on your selected data entries and chronological sorting."
-           </p>
+           <button 
+             onClick={onClose}
+             className="px-10 py-3 bg-[#004A74] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
+           >
+             Close Preview
+           </button>
         </div>
 
       </div>

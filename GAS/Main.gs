@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -80,6 +79,11 @@ function doGet(e) {
       const search = e.parameter.search || "";
       const result = getPublicationFromRegistry(page, limit, search);
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
+    // NEW: CV List Retrieval
+    if (action === 'getCVList') {
+      return createJsonResponse({ status: 'success', data: getCVFromRegistry() });
     }
 
     // NEW: searchGlobalArticles (Proxy for OpenAlex)
@@ -210,6 +214,7 @@ function doPost(e) {
     if (action === 'setupPublicationDatabase') return createJsonResponse(setupPublicationDatabase());
     if (action === 'setupProfileDatabase') return createJsonResponse(setupProfileDatabase());
     if (action === 'setupActivitiesDatabase') return createJsonResponse(setupActivitiesDatabase());
+    if (action === 'setupCVDatabase') return createJsonResponse(setupCVDatabase());
     
     // NEW ACTION: saveTeaching
     if (action === 'saveTeaching') {
@@ -261,6 +266,16 @@ function doPost(e) {
       return createJsonResponse(deleteActivityFromRegistry(body.id));
     }
 
+    // NEW ACTION: deleteCV
+    if (action === 'deleteCV') {
+      return createJsonResponse(deleteCVFromRegistry(body.id));
+    }
+
+    // NEW ACTION: generateCV_PDF
+    if (action === 'generateCV_PDF') {
+      return createJsonResponse(handleGenerateCV_PDF(body.config));
+    }
+
     // NEW ACTION: saveArchivedArticle
     if (action === 'saveArchivedArticle') {
       return createJsonResponse(saveArchivedArticleToRegistry(body.item));
@@ -276,7 +291,7 @@ function doPost(e) {
 
     // NEW ACTION: saveBrainstorming
     if (action === 'saveBrainstorming') {
-      return createJsonResponse(saveBrainstormingToRegistry(body.item));
+      return createJsonResponse(saveBrainstormingToRegistry(item));
     }
 
     // NEW ACTION: deleteBrainstorming

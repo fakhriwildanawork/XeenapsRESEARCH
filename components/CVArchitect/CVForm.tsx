@@ -7,8 +7,7 @@ import {
   EducationEntry, 
   CareerEntry, 
   PublicationItem, 
-  ActivityItem, 
-  ResearchStatus 
+  ActivityItem 
 } from '../../types';
 import { fetchSourceDataForCV, generateCVPdf } from '../../services/CVService';
 import { callAiProxy } from '../../services/gasService';
@@ -22,18 +21,19 @@ import {
   Layout, 
   CheckCircle2, 
   Sparkles, 
-  User, 
   ChevronRight, 
   ChevronLeft, 
   Loader2, 
-  Image as ImageIcon,
   Check,
   Eye,
   GraduationCap,
   Briefcase,
   Share2,
   ClipboardCheck,
-  Info
+  Calendar,
+  Filter,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import CVPreviewModal from './CVPreviewModal';
@@ -48,6 +48,10 @@ const CVForm: React.FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<CVTemplateType>(CVTemplateType.MODERN_ACADEMIC);
 
+  // Filters for Pubs & Acts
+  const [pubFilter, setPubFilter] = useState({ start: '', end: '' });
+  const [actFilter, setActFilter] = useState({ start: '', end: '' });
+
   // Source Data
   const [sourceData, setSourceData] = useState<{
     profile: UserProfile | null,
@@ -59,7 +63,7 @@ const CVForm: React.FC = () => {
 
   // Selections
   const [config, setConfig] = useState({
-    title: `CV - ${new Date().getFullYear()}`,
+    title: `CV ARCHIVE - ${new Date().getFullYear()}`,
     template: CVTemplateType.MODERN_ACADEMIC,
     selectedEducationIds: [] as string[],
     selectedCareerIds: [] as string[],
@@ -73,48 +77,42 @@ const CVForm: React.FC = () => {
     const load = async () => {
       const data = await fetchSourceDataForCV();
       setSourceData(data);
-      // Default selection: All items
+      // Auto-select Edu & Career initially
       setConfig(prev => ({
         ...prev,
         selectedEducationIds: data.education.map(e => e.id),
-        selectedCareerIds: data.career.map(c => c.id),
-        selectedPublicationIds: data.publications.map(p => p.id),
-        selectedActivityIds: data.activities.map(a => a.id)
+        selectedCareerIds: data.career.map(c => c.id)
       }));
       setIsLoading(false);
     };
     load();
   }, []);
 
-  // --- LOGIKA SORTING CHRONOLOGICAL DESCENDING ---
-  const sortedEdu = useMemo(() => {
-    return [...sourceData.education].sort((a, b) => {
-      const getVal = (v: string) => v === 'Present' ? '9999' : (v || '0000');
-      return String(getVal(b.endYear)).localeCompare(String(getVal(a.endYear))) || 
-             String(b.startYear).localeCompare(String(a.startYear));
-    });
-  }, [sourceData.education]);
+  // --- FILTERED LISTS ---
+  const filteredPubs = useMemo(() => {
+    if (!pubFilter.start && !pubFilter.end) return [];
+    return sourceData.publications.filter(p => {
+      const yr = parseInt(p.year);
+      if (pubFilter.start && yr < parseInt(pubFilter.start)) return false;
+      if (pubFilter.end && yr > parseInt(pubFilter.end)) return false;
+      return true;
+    }).sort((a,b) => String(b.year).localeCompare(String(a.year)));
+  }, [sourceData.publications, pubFilter]);
 
-  const sortedCareer = useMemo(() => {
-    return [...sourceData.career].sort((a, b) => {
-      const getVal = (v: string) => v === 'Present' ? '9999' : (v || '0000');
-      return String(getVal(b.endDate)).localeCompare(String(getVal(a.endDate))) || 
-             String(b.startDate).localeCompare(String(a.startDate));
-    });
-  }, [sourceData.career]);
-
-  const sortedPubs = useMemo(() => {
-    return [...sourceData.publications].sort((a, b) => String(b.year).localeCompare(String(a.year)));
-  }, [sourceData.publications]);
-
-  const sortedActs = useMemo(() => {
-    return [...sourceData.activities].sort((a, b) => String(b.startDate).localeCompare(String(a.startDate)));
-  }, [sourceData.activities]);
+  const filteredActs = useMemo(() => {
+    if (!actFilter.start && !actFilter.end) return [];
+    return sourceData.activities.filter(a => {
+      const date = new Date(a.startDate);
+      if (actFilter.start && date < new Date(actFilter.start)) return false;
+      if (actFilter.end && date > new Date(actFilter.end)) return false;
+      return true;
+    }).sort((a,b) => String(b.startDate).localeCompare(String(a.startDate)));
+  }, [sourceData.activities, actFilter]);
 
   const handleGenerateSummary = async () => {
     if (!sourceData.profile) return;
     setIsGenerating(true);
-    showXeenapsToast('info', 'AI is drafting your profile summary...');
+    showXeenapsToast('info', 'AI GROQ is architecting your summary...');
 
     const eduText = sourceData.education
       .filter(e => config.selectedEducationIds.includes(e.id))
@@ -126,45 +124,38 @@ const CVForm: React.FC = () => {
       .map(c => `${c.position} at ${c.company}`)
       .join(', ');
 
-    const prompt = `ACT AS A PROFESSIONAL EXECUTIVE BRANDING EXPERT.
-    Draft a powerful 3-sentence professional summary for a CV based on these facts:
+    const prompt = `ACT AS A CV BRANDING ARCHITECT.
+    Draft a concise 3-sentence professional executive summary.
     NAME: ${sourceData.profile.fullName}
-    CURRENT ROLE: ${sourceData.profile.jobTitle} at ${sourceData.profile.affiliation}
-    EDUCATION: ${eduText}
-    KEY ROLES: ${careerText}
+    CURRENT: ${sourceData.profile.jobTitle} at ${sourceData.profile.affiliation}
+    EDU: ${eduText}
+    EXP: ${careerText}
     
-    RULES: Use formal, authoritative tone. Max 60 words. No hallucinations. Return only the summary text.`;
+    RULE: RETURN ONLY CLEAN TEXT STRING. NO JSON. NO QUOTES.`;
 
     try {
+      // Fix: Removed extra argument from callAiProxy call on line 138 (now 139) to match its defined signature (provider, prompt, modelOverride?, signal?)
       const result = await callAiProxy('groq', prompt);
       if (result) setConfig({ ...config, aiSummary: result });
     } catch (e) {
-      showXeenapsToast('error', 'AI Synthesis failed');
+      showXeenapsToast('error', 'Synthesis failed');
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleFinalSubmit = async () => {
-    if (!config.title.trim()) {
-      showXeenapsToast('warning', 'Document title is required');
-      return;
-    }
-    
     setIsGenerating(true);
-    Swal.fire({ title: 'Architecting PDF Document...', text: 'Rendering templates and assets...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
-
+    Swal.fire({ title: 'Synthesizing PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
     try {
       const result = await generateCVPdf(config);
       Swal.close();
       if (result) {
-        showXeenapsToast('success', 'CV Architecture Successful');
+        showXeenapsToast('success', 'PDF Synchronized');
         navigate('/cv-architect');
-      } else {
-        throw new Error("PDF Engine failed");
-      }
+      } else throw new Error("Backend failed");
     } catch (e) {
-      Swal.fire({ icon: 'error', title: 'SYNTHESIS FAILED', text: 'Backend engine timeout or storage error.', ...XEENAPS_SWAL_CONFIG });
+      Swal.fire({ icon: 'error', title: 'SYNTHESIS FAILED', text: 'Cloud Engine Timeout.', ...XEENAPS_SWAL_CONFIG });
     } finally {
       setIsGenerating(false);
     }
@@ -174,264 +165,238 @@ const CVForm: React.FC = () => {
     return list.includes(id) ? list.filter(i => i !== id) : [...list, id];
   };
 
-  if (isLoading) return <div className="p-20 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Entering Studio...</div>;
+  const bulkSelect = (type: 'PUB' | 'ACT', isAll: boolean) => {
+    if (type === 'PUB') {
+      setConfig({ ...config, selectedPublicationIds: isAll ? filteredPubs.map(p => p.id) : [] });
+    } else {
+      setConfig({ ...config, selectedActivityIds: isAll ? filteredActs.map(a => a.id) : [] });
+    }
+  };
+
+  if (isLoading) return <div className="p-20 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Entering Architecture Studio...</div>;
 
   return (
     <FormPageContainer>
       <FormStickyHeader 
-        title="The Architect" 
-        subtitle="Step-by-step CV Synthesis" 
+        title="CV Architect" 
+        subtitle="Professional Synthesis Engine" 
         onBack={() => navigate('/cv-architect')}
         rightElement={
-          <div className="flex items-center gap-4">
-             <div className="flex bg-gray-50 p-1 rounded-2xl">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black transition-all ${step === i ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-300'}`}>{i}</div>
-                ))}
-             </div>
+          <div className="flex bg-gray-50 p-1 rounded-2xl">
+            {[1, 2, 3].map(i => (
+              <div key={i} className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black transition-all ${step === i ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-300'}`}>{i}</div>
+            ))}
           </div>
         }
       />
 
       <FormContentArea>
-        <div className="max-w-4xl mx-auto space-y-12 pb-32">
+        <div className="max-w-6xl mx-auto space-y-12 pb-32">
           
-          {/* STEP 1: TEMPLATE & IDENTITY */}
+          {/* STEP 1: TEMPLATE SELECTION */}
           {step === 1 && (
-            <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
-               <FormField label="Document Internal Label">
+            <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
+               <FormField label="Document Title">
                   <input className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base font-bold text-[#004A74] uppercase outline-none focus:ring-4 focus:ring-[#004A74]/5" 
-                    value={config.title} onChange={e => setConfig({...config, title: e.target.value})} placeholder="e.g. CV 2024 - ACADEMIC MODE" />
+                    value={config.title} onChange={e => setConfig({...config, title: e.target.value})} />
                </FormField>
 
-               <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 px-2">Select Visual Architecture</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="space-y-6">
+                  <label className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 px-4">Blueprints Palette</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                      {Object.values(CVTemplateType).map((t) => (
                        <div 
                          key={t}
                          onClick={() => setConfig({...config, template: t})}
-                         className={`group relative aspect-[1/1.2] rounded-[2.5rem] border-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col ${config.template === t ? 'border-[#004A74] shadow-2xl scale-105 z-10' : 'border-gray-100 bg-white hover:border-[#004A74]/30 grayscale hover:grayscale-0'}`}
+                         className={`group relative aspect-[1/1.2] rounded-[3rem] border-2 transition-all duration-700 cursor-pointer overflow-hidden flex flex-col ${config.template === t ? 'border-[#004A74] shadow-2xl scale-105 z-10' : 'border-gray-100 bg-white grayscale hover:grayscale-0'}`}
                        >
                           <div className="flex-1 bg-gray-50 flex items-center justify-center relative">
-                             <Layout size={48} className={`transition-all duration-500 ${config.template === t ? 'text-[#004A74] scale-110' : 'text-gray-200'}`} />
+                             {/* VISUAL BLUEPRINT THUMBNAILS */}
+                             <div className="w-24 h-32 bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col p-2 space-y-1 group-hover:scale-110 transition-transform">
+                                {t === CVTemplateType.MODERN_ACADEMIC ? (
+                                  <>
+                                    <div className="h-4 w-full bg-[#004A74]/10 rounded" />
+                                    <div className="h-1 w-1/2 bg-[#FED400] rounded" />
+                                    <div className="h-2 w-full bg-gray-50 rounded" /><div className="h-2 w-full bg-gray-50 rounded" />
+                                  </>
+                                ) : t === CVTemplateType.EXECUTIVE_BLUE ? (
+                                  <div className="flex gap-1 h-full">
+                                    <div className="w-1/3 bg-[#004A74]/20 rounded" />
+                                    <div className="flex-1 space-y-1">
+                                      <div className="h-2 w-full bg-[#004A74]/10 rounded" />
+                                      <div className="h-1 w-full bg-gray-50 rounded" /><div className="h-1 w-full bg-gray-50 rounded" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <div className="h-2 w-1/3 bg-gray-300 rounded" />
+                                    <div className="h-1 w-full bg-gray-50 rounded" />
+                                    <div className="h-1 w-full bg-gray-50 rounded" />
+                                  </div>
+                                )}
+                             </div>
+
                              <button 
                                onClick={(e) => { e.stopPropagation(); setPreviewTemplate(t); setIsPreviewOpen(true); }}
-                               className="absolute bottom-4 right-4 p-2.5 bg-white text-[#004A74] rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-[#FED400] active:scale-90"
+                               className="absolute bottom-4 right-4 p-2.5 bg-[#004A74] text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-[#FED400] hover:text-[#004A74] active:scale-90"
                              >
                                 <Eye size={16} />
                              </button>
-                             {config.template === t && (
-                               <div className="absolute top-4 right-4 w-6 h-6 bg-[#004A74] text-[#FED400] rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-in zoom-in-95">
-                                  <Check size={14} strokeWidth={4} />
-                               </div>
-                             )}
                           </div>
-                          <div className="p-4 bg-white border-t border-gray-50 text-center">
+                          <div className="p-5 bg-white border-t border-gray-50 text-center">
                              <p className="text-[10px] font-black uppercase tracking-widest text-[#004A74]">{t}</p>
-                             <p className="text-[8px] font-bold text-gray-400 uppercase mt-1">
-                               {t === CVTemplateType.MODERN_ACADEMIC ? 'Gold Accents • Clean' : t === CVTemplateType.EXECUTIVE_BLUE ? 'Professional • Navy Sidebar' : 'Minimalist • Formal'}
-                             </p>
                           </div>
                        </div>
                      ))}
                   </div>
-               </div>
-
-               <div className="p-8 bg-[#004A74]/5 rounded-[2.5rem] border border-[#004A74]/10 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#004A74] shadow-sm border border-gray-100">
-                        <ImageIcon size={24} />
-                     </div>
-                     <div>
-                        <h4 className="text-sm font-black text-[#004A74] uppercase tracking-tighter">Include Profile Photo</h4>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Automatic sync from profile module</p>
-                     </div>
-                  </div>
-                  <button 
-                    onClick={() => setConfig({...config, includePhoto: !config.includePhoto})}
-                    className={`w-14 h-8 rounded-full p-1 transition-all duration-500 flex items-center ${config.includePhoto ? 'bg-emerald-500 justify-end' : 'bg-gray-200 justify-start'}`}
-                  >
-                     <div className="w-6 h-6 bg-white rounded-full shadow-md" />
-                  </button>
                </div>
 
                <div className="flex justify-end pt-10">
-                  <button onClick={() => setStep(2)} className="flex items-center gap-3 px-10 py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 transition-all">
-                    Data Selection <ChevronRight size={18} />
+                  <button onClick={() => setStep(2)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 transition-all">
+                    Proceed to Data <ChevronRight size={18} />
                   </button>
                </div>
             </div>
           )}
 
-          {/* STEP 2: DATA SELECTION (CHRONOLOGICAL DESCENDING) */}
+          {/* STEP 2: DATA GRID SELECTION */}
           {step === 2 && (
             <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
                
-               {/* EDUCATION SECTION */}
-               <section className="space-y-6">
-                  <div className="flex items-center gap-3 px-4">
-                     <GraduationCap size={20} className="text-[#004A74]" />
-                     <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest">Education Credentials</h3>
-                  </div>
-                  <div className="grid grid-cols-1 gap-4">
-                     {sortedEdu.map(edu => (
-                       <div key={edu.id} onClick={() => setConfig({...config, selectedEducationIds: toggleSelection(config.selectedEducationIds, edu.id)})} className={`group p-5 rounded-3xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedEducationIds.includes(edu.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 bg-white hover:border-[#004A74]/20'}`}>
-                          <div className="flex items-center gap-4">
-                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${config.selectedEducationIds.includes(edu.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'border-gray-200 bg-white'}`}>
-                                {config.selectedEducationIds.includes(edu.id) && <Check size={14} strokeWidth={4} />}
-                             </div>
-                             <div>
-                                <h4 className="text-[11px] font-black text-[#004A74] uppercase">{edu.institution}</h4>
-                                <p className="text-[10px] font-bold text-gray-500">{edu.level} • {edu.major} ({edu.startYear}-{edu.endYear})</p>
-                             </div>
-                          </div>
-                          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">{edu.startYear}</span>
-                       </div>
-                     ))}
-                  </div>
-               </section>
+               {/* GRID 1: EDUCATION & CAREER */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                  <section className="space-y-4">
+                    <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2">
+                       <GraduationCap size={16} /> Education History
+                    </h3>
+                    <div className="space-y-3">
+                       {sourceData.education.map(edu => (
+                         <div key={edu.id} onClick={() => setConfig({...config, selectedEducationIds: toggleSelection(config.selectedEducationIds, edu.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedEducationIds.includes(edu.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-50 bg-white opacity-60'}`}>
+                            <div className="flex items-center gap-3">
+                               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedEducationIds.includes(edu.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>
+                                  {config.selectedEducationIds.includes(edu.id) && <Check size={12} strokeWidth={4} />}
+                               </div>
+                               <span className="text-[10px] font-bold text-[#004A74] uppercase truncate max-w-[180px]">{edu.institution}</span>
+                            </div>
+                            <span className="text-[9px] font-black text-gray-400">{edu.endYear}</span>
+                         </div>
+                       ))}
+                    </div>
+                  </section>
 
-               {/* CAREER SECTION */}
-               <section className="space-y-6">
-                  <div className="flex items-center gap-3 px-4">
-                     <Briefcase size={20} className="text-[#004A74]" />
-                     <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest">Professional Experience</h3>
-                  </div>
-                  <div className="grid grid-cols-1 gap-4">
-                     {sortedCareer.map(job => (
-                       <div key={job.id} onClick={() => setConfig({...config, selectedCareerIds: toggleSelection(config.selectedCareerIds, job.id)})} className={`group p-5 rounded-3xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedCareerIds.includes(job.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 bg-white hover:border-[#004A74]/20'}`}>
-                          <div className="flex items-center gap-4">
-                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${config.selectedCareerIds.includes(job.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'border-gray-200 bg-white'}`}>
-                                {config.selectedCareerIds.includes(job.id) && <Check size={14} strokeWidth={4} />}
-                             </div>
-                             <div>
-                                <h4 className="text-[11px] font-black text-[#004A74] uppercase">{job.company}</h4>
-                                <p className="text-[10px] font-bold text-gray-500">{job.position} ({job.startDate}-{job.endDate})</p>
-                             </div>
-                          </div>
-                          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">{job.startDate}</span>
-                       </div>
-                     ))}
-                  </div>
-               </section>
+                  <section className="space-y-4">
+                    <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2">
+                       <Briefcase size={16} /> Professional Career
+                    </h3>
+                    <div className="space-y-3">
+                       {sourceData.career.map(job => (
+                         <div key={job.id} onClick={() => setConfig({...config, selectedCareerIds: toggleSelection(config.selectedCareerIds, job.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedCareerIds.includes(job.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-50 bg-white opacity-60'}`}>
+                            <div className="flex items-center gap-3">
+                               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedCareerIds.includes(job.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>
+                                  {config.selectedCareerIds.includes(job.id) && <Check size={12} strokeWidth={4} />}
+                               </div>
+                               <span className="text-[10px] font-bold text-[#004A74] uppercase truncate max-w-[180px]">{job.company}</span>
+                            </div>
+                            <span className="text-[9px] font-black text-gray-400">{job.startDate}</span>
+                         </div>
+                       ))}
+                    </div>
+                  </section>
+               </div>
 
-               {/* PUBLICATIONS & ACTIVITIES COLLAPSIBLE INFO */}
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100">
-                     <h4 className="text-[10px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 mb-4"><Share2 size={14} /> Publications</h4>
-                     <p className="text-[11px] font-bold text-gray-400 mb-4">{sourceData.publications.length} Total Registered. Selective logic applied.</p>
-                     <button onClick={() => setConfig({...config, selectedPublicationIds: config.selectedPublicationIds.length === 0 ? sortedPubs.map(p => p.id) : []})} className={`px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${config.selectedPublicationIds.length > 0 ? 'bg-[#004A74] text-white' : 'bg-white text-gray-400 border-gray-100'}`}>
-                       {config.selectedPublicationIds.length > 0 ? `Include All (${config.selectedPublicationIds.length})` : 'Skip All'}
-                     </button>
-                  </div>
-                  <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100">
-                     <h4 className="text-[10px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 mb-4"><ClipboardCheck size={14} /> Activities</h4>
-                     <p className="text-[11px] font-bold text-gray-400 mb-4">{sourceData.activities.length} Total Registered. Selective logic applied.</p>
-                     <button onClick={() => setConfig({...config, selectedActivityIds: config.selectedActivityIds.length === 0 ? sortedActs.map(a => a.id) : []})} className={`px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${config.selectedActivityIds.length > 0 ? 'bg-[#004A74] text-white' : 'bg-white text-gray-400 border-gray-100'}`}>
-                       {config.selectedActivityIds.length > 0 ? `Include All (${config.selectedActivityIds.length})` : 'Skip All'}
-                     </button>
-                  </div>
+               {/* GRID 2: PUBLICATIONS & ACTIVITIES WITH FILTERS */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-10 border-t border-gray-100">
+                  <section className="space-y-6">
+                    <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 space-y-4">
+                       <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Share2 size={16} /> Publications</h3>
+                       <div className="grid grid-cols-2 gap-3">
+                          <input type="number" placeholder="Start Year" className="w-full px-4 py-2 rounded-xl text-[10px] border border-gray-200" value={pubFilter.start} onChange={e => setPubFilter({...pubFilter, start: e.target.value})} />
+                          <input type="number" placeholder="End Year" className="w-full px-4 py-2 rounded-xl text-[10px] border border-gray-200" value={pubFilter.end} onChange={e => setPubFilter({...pubFilter, end: e.target.value})} />
+                       </div>
+                    </div>
+                    {filteredPubs.length > 0 && (
+                      <div className="space-y-3 animate-in zoom-in-95 duration-300">
+                        <div className="flex gap-2 mb-4">
+                           <button onClick={() => bulkSelect('PUB', true)} className="text-[9px] font-black uppercase tracking-widest text-[#004A74] flex items-center gap-1.5 hover:underline"><CheckSquare size={14}/> Select All</button>
+                           <button onClick={() => bulkSelect('PUB', false)} className="text-[9px] font-black uppercase tracking-widest text-red-500 flex items-center gap-1.5 hover:underline"><Square size={14}/> Deselect</button>
+                        </div>
+                        {filteredPubs.map(p => (
+                          <div key={p.id} onClick={() => setConfig({...config, selectedPublicationIds: toggleSelection(config.selectedPublicationIds, p.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedPublicationIds.includes(p.id) ? 'border-emerald-500 bg-emerald-50' : 'bg-white border-gray-50'}`}>
+                             <p className="text-[10px] font-bold text-[#004A74] truncate flex-1 pr-4 uppercase">{p.title}</p>
+                             <span className="text-[8px] font-black text-gray-400">{p.year}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="space-y-6">
+                    <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 space-y-4">
+                       <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><ClipboardCheck size={16} /> Activities</h3>
+                       <div className="grid grid-cols-2 gap-3">
+                          <input type="date" className="w-full px-4 py-2 rounded-xl text-[10px] border border-gray-200" value={actFilter.start} onChange={e => setActFilter({...actFilter, start: e.target.value})} />
+                          <input type="date" className="w-full px-4 py-2 rounded-xl text-[10px] border border-gray-200" value={actFilter.end} onChange={e => setActFilter({...actFilter, end: e.target.value})} />
+                       </div>
+                    </div>
+                    {filteredActs.length > 0 && (
+                      <div className="space-y-3 animate-in zoom-in-95 duration-300">
+                        <div className="flex gap-2 mb-4">
+                           <button onClick={() => bulkSelect('ACT', true)} className="text-[9px] font-black uppercase tracking-widest text-[#004A74] flex items-center gap-1.5 hover:underline"><CheckSquare size={14}/> Select All</button>
+                           <button onClick={() => bulkSelect('ACT', false)} className="text-[9px] font-black uppercase tracking-widest text-red-500 flex items-center gap-1.5 hover:underline"><Square size={14}/> Deselect</button>
+                        </div>
+                        {filteredActs.map(a => (
+                          <div key={a.id} onClick={() => setConfig({...config, selectedActivityIds: toggleSelection(config.selectedActivityIds, a.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedActivityIds.includes(a.id) ? 'border-emerald-500 bg-emerald-50' : 'bg-white border-gray-50'}`}>
+                             <p className="text-[10px] font-bold text-[#004A74] truncate flex-1 pr-4 uppercase">{a.eventName}</p>
+                             <span className="text-[8px] font-black text-gray-400">{new Date(a.startDate).getFullYear()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
                </div>
 
                <div className="flex justify-between pt-10">
-                  <button onClick={() => setStep(1)} className="flex items-center gap-2 px-8 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all">
+                  <button onClick={() => setStep(1)} className="flex items-center gap-2 px-8 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-200">
                     <ChevronLeft size={16} /> Back
                   </button>
-                  <button onClick={() => setStep(3)} className="flex items-center gap-3 px-10 py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 transition-all">
-                    AI Summary & Review <ChevronRight size={18} />
+                  <button onClick={() => setStep(3)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 active:scale-95 transition-all">
+                    Final Synthesis <ChevronRight size={18} />
                   </button>
                </div>
             </div>
           )}
 
-          {/* STEP 3: AI SUMMARY & FINAL REVIEW */}
+          {/* STEP 3: SUMMARY */}
           {step === 3 && (
             <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
-               
                <div className="space-y-6">
                   <div className="flex items-center justify-between px-4">
-                     <div className="flex items-center gap-3">
-                        <Sparkles size={20} className="text-[#FED400]" />
-                        <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest">Professional Statement</h3>
-                     </div>
-                     <button 
-                        onClick={handleGenerateSummary}
-                        disabled={isGenerating}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg hover:scale-105 transition-all disabled:opacity-50"
-                     >
-                        {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Draft with GROQ AI
+                     <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Sparkles size={18} className="text-[#FED400]" /> Professional Statement</h3>
+                     <button onClick={handleGenerateSummary} disabled={isGenerating} className="px-6 py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2">
+                        {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Draft with AI
                      </button>
                   </div>
-                  
                   <textarea 
-                    className="w-full p-10 bg-white border border-gray-100 rounded-[3rem] shadow-sm outline-none text-sm font-medium text-gray-600 leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[150px]"
+                    className="w-full p-10 bg-white border border-gray-100 rounded-[3rem] shadow-sm outline-none text-sm font-medium text-gray-600 leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[200px]"
                     value={config.aiSummary}
                     onChange={e => setConfig({...config, aiSummary: e.target.value})}
-                    placeholder="AI will summarize your selected education and career entries here..."
                   />
-                  <p className="text-[9px] font-bold text-gray-400 text-center uppercase tracking-widest">Review and edit manually if needed before final generation.</p>
-               </div>
-
-               <div className="p-10 bg-[#004A74]/5 rounded-[3rem] border border-[#004A74]/10 space-y-8">
-                  <div className="flex items-center gap-4">
-                     <div className="w-14 h-14 bg-[#004A74] text-[#FED400] rounded-3xl flex items-center justify-center shadow-xl">
-                        <Info size={28} />
-                     </div>
-                     <div>
-                        <h4 className="text-base font-black text-[#004A74] uppercase tracking-tighter">Architecture Summary</h4>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Final document validation</p>
-                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                     <div className="p-4 bg-white rounded-2xl border border-gray-100 text-center">
-                        <span className="text-[8px] font-black text-gray-400 uppercase block mb-1">Education</span>
-                        <span className="text-sm font-black text-[#004A74]">{config.selectedEducationIds.length} Slots</span>
-                     </div>
-                     <div className="p-4 bg-white rounded-2xl border border-gray-100 text-center">
-                        <span className="text-[8px] font-black text-gray-400 uppercase block mb-1">Experience</span>
-                        <span className="text-sm font-black text-[#004A74]">{config.selectedCareerIds.length} Slots</span>
-                     </div>
-                     <div className="p-4 bg-white rounded-2xl border border-gray-100 text-center">
-                        <span className="text-[8px] font-black text-gray-400 uppercase block mb-1">Impact</span>
-                        <span className="text-sm font-black text-[#004A74]">{config.selectedPublicationIds.length + config.selectedActivityIds.length} Items</span>
-                     </div>
-                     <div className="p-4 bg-white rounded-2xl border border-gray-100 text-center">
-                        <span className="text-[8px] font-black text-gray-400 uppercase block mb-1">Photo</span>
-                        <span className="text-sm font-black text-emerald-500">{config.includePhoto ? 'YES' : 'NO'}</span>
-                     </div>
-                  </div>
                </div>
 
                <div className="flex flex-col md:flex-row gap-4 pt-10">
-                  <button onClick={() => setStep(2)} disabled={isGenerating} className="flex-1 py-5 bg-gray-100 text-gray-400 rounded-[1.5rem] font-black uppercase tracking-widest text-xs hover:bg-gray-200 transition-all">
-                    Adjust Data
-                  </button>
-                  <button onClick={handleFinalSubmit} disabled={isGenerating} className="flex-[2] py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.3em] text-sm shadow-2xl shadow-[#004A74]/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4">
-                    {isGenerating ? <Loader2 size={24} className="animate-spin" /> : <CheckCircle2 size={24} />}
-                    Architect My CV
+                  <button onClick={() => setStep(2)} disabled={isGenerating} className="flex-1 py-5 bg-gray-100 text-gray-400 rounded-[1.5rem] font-black uppercase text-xs">Adjust Data</button>
+                  <button onClick={handleFinalSubmit} disabled={isGenerating} className="flex-[2] py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.3em] text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                    Generate CV PDF
                   </button>
                </div>
             </div>
           )}
-
         </div>
       </FormContentArea>
 
       {isPreviewOpen && (
-        <CVPreviewModal 
-          template={previewTemplate} 
-          onClose={() => setIsPreviewOpen(false)} 
-        />
+        <CVPreviewModal template={previewTemplate} onClose={() => setIsPreviewOpen(false)} />
       )}
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
-      `}</style>
     </FormPageContainer>
   );
 };

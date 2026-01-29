@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - GLOBAL CONFIGURATION
  */
@@ -24,7 +23,8 @@ const CONFIG = {
     PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g',
     ACTIVITIES: '1IQ8dzXKfVuAtSnXsU5Wx2JGa5Wkmw_R38HbvH1tXTRU',
     TEACHING: '18630rhA5D_JDuCMcQ5XT3pVii1VYAhC7ixUnTcN8gHU',
-    PROFILE: '1aGnFF7Tr8nnq69Qk6EjJXZb6yJb-OJBMZkOPZpBOexo'
+    PROFILE: '1aGnFF7Tr8nnq69Qk6EjJXZb6yJb-OJBMZkOPZpBOexo',
+    CV_REGISTRY: '1w_-GyH_gTansPBt_6tSR9twcAV0tQi4dan9rUfKdyKw'
   },
   SCHEMAS: {
     LIBRARY: [
@@ -68,6 +68,9 @@ const CONFIG = {
     ],
     CAREER: [
       'id', 'company', 'position', 'type', 'startDate', 'endDate', 'location', 'description'
+    ],
+    CV_REGISTRY: [
+      'id', 'title', 'template', 'fileId', 'storageNodeUrl', 'selectedEducationIds', 'selectedCareerIds', 'selectedPublicationIds', 'selectedActivityIds', 'includePhoto', 'aiSummary', 'createdAt', 'updatedAt'
     ]
   }
 };
