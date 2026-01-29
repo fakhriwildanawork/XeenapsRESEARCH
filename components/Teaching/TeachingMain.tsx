@@ -71,11 +71,12 @@ const TeachingDashboard: React.FC = () => {
   // Helper for safe local ISO date (YYYY-MM-DD)
   const getLocalDateStr = (d: Date = new Date()) => d.toLocaleDateString('sv');
 
+  // Unified loadData: triggered by both appliedSearch and appliedDateRange changes
   const loadData = useCallback(() => {
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
-        // Integrated Server-side filtering with search and potential date ranges in future service updates
+        // Sync with backend: pass search. Local filtering will handle the date specifics on the resulting set.
         const result = await fetchTeachingPaginated(1, 1000, appliedSearch, "", signal);
         setItems(result.items);
         setTotalCount(result.totalCount);
@@ -83,7 +84,7 @@ const TeachingDashboard: React.FC = () => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [appliedSearch, workflow.execute]);
+  }, [appliedSearch, appliedDateRange, workflow.execute]);
 
   useEffect(() => {
     loadData();
@@ -292,11 +293,18 @@ const TeachingDashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-             <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-100 shrink-0 shadow-sm">
-                <button onClick={() => setViewMode('card')} className="p-2 rounded-xl transition-all bg-[#004A74] text-white shadow-md"><LayoutGrid size={18} /></button>
-                <button onClick={() => setViewMode('calendar')} className="p-2 rounded-xl transition-all text-gray-400"><CalendarDays size={18} /></button>
+             <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 shrink-0 shadow-sm">
+                <button onClick={() => setViewMode('card')} className={`p-2 rounded-xl transition-all bg-[#004A74] text-white shadow-md`}><LayoutGrid size={18} /></button>
+                <button onClick={() => setViewMode('calendar')} className={`p-2 rounded-xl transition-all text-gray-400`}><CalendarDays size={18} /></button>
              </div>
-             <StandardPrimaryButton onClick={() => handleCreateNew()} icon={<Plus size={18} />} className="shrink-0 scale-90 md:scale-100">Record Session</StandardPrimaryButton>
+             {/* Mobile-optimized size for Record Session button in header */}
+             <StandardPrimaryButton 
+               onClick={() => handleCreateNew()} 
+               icon={<Plus size={18} />} 
+               className="shrink-0 !px-4 !py-2 md:!px-6 md:!py-3 !text-[10px] md:!text-sm scale-90 md:scale-100"
+             >
+               Record Session
+             </StandardPrimaryButton>
           </div>
         </div>
       )}
@@ -411,9 +419,10 @@ const TeachingDashboard: React.FC = () => {
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dailySessions.length} Sessions Found</p>
                        </div>
                     </div>
+                    {/* Mobile-optimized size for Add Session button in calendar detail */}
                     <button 
                       onClick={() => handleCreateNew(selectedDate)}
-                      className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all w-full md:w-auto"
+                      className="flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all w-full md:w-auto"
                     >
                        <CalendarPlus size={16} /> Add Session
                     </button>
