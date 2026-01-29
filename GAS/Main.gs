@@ -35,12 +35,15 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
-    // NEW: getActivities
+    // NEW: getActivities (UPDATED FOR FILTERS)
     if (action === 'getActivities') {
       const page = parseInt(e.parameter.page || "1");
       const limit = parseInt(e.parameter.limit || "25");
       const search = e.parameter.search || "";
-      const result = getActivitiesFromRegistry(page, limit, search);
+      const type = e.parameter.type || "All";
+      const startDate = e.parameter.startDate || "";
+      const endDate = e.parameter.endDate || "";
+      const result = getActivitiesFromRegistry(page, limit, search, startDate, endDate, type);
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 

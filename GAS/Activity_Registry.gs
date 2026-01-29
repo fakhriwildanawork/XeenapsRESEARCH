@@ -29,9 +29,9 @@ function setupActivitiesDatabase() {
 }
 
 /**
- * Fetch activities with pagination, search, and date range
+ * Fetch activities with pagination, search, and date range (UPDATED FOR TYPE FILTER)
  */
-function getActivitiesFromRegistry(page = 1, limit = 25, search = "", startDate = "", endDate = "") {
+function getActivitiesFromRegistry(page = 1, limit = 25, search = "", startDate = "", endDate = "", typeFilter = "All") {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.ACTIVITIES);
     const sheet = ss.getSheetByName("Activities");
@@ -47,6 +47,7 @@ function getActivitiesFromRegistry(page = 1, limit = 25, search = "", startDate 
     const nameIdx = headers.indexOf('eventName');
     const orgIdx = headers.indexOf('organizer');
     const descIdx = headers.indexOf('description');
+    const typeIdx = headers.indexOf('type');
     const favIdx = headers.indexOf('isFavorite');
     const startIdx = headers.indexOf('startDate');
     
@@ -54,6 +55,9 @@ function getActivitiesFromRegistry(page = 1, limit = 25, search = "", startDate 
 
     // 1. FILTERING
     let filtered = rawData.filter(row => {
+      // Activity Type Filter (CRITICAL BUG FIX)
+      if (typeFilter !== "All" && row[typeIdx] !== typeFilter) return false;
+
       // Search Filter
       if (searchLower) {
         const matchesSearch = String(row[nameIdx] || "").toLowerCase().includes(searchLower) ||

@@ -13,11 +13,12 @@ export const fetchActivitiesPaginated = async (
   search: string = "",
   startDate: string = "",
   endDate: string = "",
+  type: string = "All",
   signal?: AbortSignal
 ): Promise<{ items: ActivityItem[], totalCount: number }> => {
   if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
   try {
-    const url = `${GAS_WEB_APP_URL}?action=getActivities&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&startDate=${startDate}&endDate=${endDate}`;
+    const url = `${GAS_WEB_APP_URL}?action=getActivities&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&startDate=${startDate}&endDate=${endDate}&type=${encodeURIComponent(type)}`;
     const res = await fetch(url, { signal });
     const result = await res.json();
     return { 

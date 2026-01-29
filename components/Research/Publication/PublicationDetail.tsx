@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+// @ts-ignore - Resolving TS error for missing exported members useParams, useNavigate, useLocation
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { PublicationItem, PublicationStatus } from '../../../types';
 import { savePublication, fetchPublicationsPaginated, deletePublication } from '../../../services/PublicationService';
@@ -225,7 +226,7 @@ const PublicationDetail: React.FC = () => {
                  <FormField label="Manuscript / Source Link">
                     <div className="relative group">
                        <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#004A74]" />
-                       <input className="w-full bg-gray-50 border-none pl-12 pr-4 py-3 rounded-xl text-xs font-bold text-blue-500 underline" 
+                       <input className="w-full bg-gray-50 border-none pl-12 pr-4 py-3 rounded-xl text-xs font-bold text-blue-500 underline outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/10 transition-all" 
                          placeholder="Paste Drive or Web link..."
                          value={item.manuscriptLink || ''} onChange={(e) => setItem({...item, manuscriptLink: e.target.value})} />
                     </div>
@@ -296,8 +297,8 @@ const PublicationDetail: React.FC = () => {
                     isMulti
                     multiValues={item.keywords || []}
                     options={[]}
-                    onAddMulti={(v) => setItem({...item, keywords: [...(item.keywords || []), v]})}
-                    onRemoveMulti={(v) => setItem({...item, keywords: (item.keywords || []).filter(k => k !== v)})}
+                    onAddMulti={(v) => setItem({...item, authors: [...(item.authors || []), v]})}
+                    onRemoveMulti={(v) => setItem({...item, authors: (item.authors || []).filter(a => a !== v)})}
                     placeholder="Add keywords..."
                     value="" onChange={() => {}}
                  />

@@ -82,14 +82,15 @@ const ActivityDashboard: React.FC = () => {
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
-        const result = await fetchActivitiesPaginated(currentPage, itemsPerPage, appliedSearch, startDate, endDate, signal);
+        // Server-side filtering by passing activeFilter
+        const result = await fetchActivitiesPaginated(currentPage, itemsPerPage, appliedSearch, startDate, endDate, activeFilter, signal);
         setItems(result.items);
         setTotalCount(result.totalCount);
       },
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [currentPage, appliedSearch, startDate, endDate, itemsPerPage]);
+  }, [currentPage, appliedSearch, startDate, endDate, activeFilter, itemsPerPage]);
 
   useEffect(() => {
     loadData();
@@ -190,10 +191,6 @@ const ActivityDashboard: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const filteredItems = useMemo(() => {
-    return items.filter(item => activeFilter === 'All' || item.type === activeFilter);
-  }, [items, activeFilter]);
-
   const formatShortDate = (dateStr: string) => {
     if (!dateStr) return "-";
     try {
@@ -245,7 +242,7 @@ const ActivityDashboard: React.FC = () => {
             <StandardFilterButton 
               key={type} 
               isActive={activeFilter === type} 
-              onClick={() => setActiveFilter(type)}
+              onClick={() => { setActiveFilter(type); setCurrentPage(1); }}
             >
               {type}
             </StandardFilterButton>
@@ -266,7 +263,7 @@ const ActivityDashboard: React.FC = () => {
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {isLoading ? (
           <CardGridSkeleton count={8} />
-        ) : filteredItems.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="py-32 text-center flex flex-col items-center justify-center space-y-2 opacity-30">
             <ClipboardCheck size={64} className="text-[#004A74] mb-4" />
             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No Activities Found</p>
@@ -274,7 +271,7 @@ const ActivityDashboard: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 pb-10 px-1">
-            {filteredItems.map(item => (
+            {items.map(item => (
               <div 
                 key={item.id}
                 onClick={() => navigate(`/activities/${item.id}`)}
@@ -325,6 +322,14 @@ const ActivityDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      <StandardTableFooter 
+        totalItems={totalCount} 
+        currentPage={currentPage} 
+        itemsPerPage={itemsPerPage} 
+        totalPages={Math.ceil(totalCount / itemsPerPage)} 
+        onPageChange={setCurrentPage} 
+      />
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
