@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -48,7 +47,7 @@ const TeachingForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResourcePickerOpen, setIsResourcePickerOpen] = useState(false);
 
-  // Fix: Added missing required fields presentationIds, questionBankIds, and externalLinks to satisfy TeachingItem type
+  // Fix: Renamed properties to correctly match TeachingItem interface definition (presentationId, questionBankId, attachmentLink)
   const [formData, setFormData] = useState<TeachingItem>({
     id: crypto.randomUUID(),
     label: '', 
@@ -78,9 +77,12 @@ const TeachingForm: React.FC = () => {
     topic: '',
     method: 'Lecture',
     referenceLinks: [],
-    presentationIds: [],
-    questionBankIds: [],
-    externalLinks: [],
+    // Fix: Corrected property name from presentationIds to presentationId
+    presentationId: [],
+    // Fix: Corrected property name from questionBankIds to questionBankId
+    questionBankId: [],
+    // Fix: Corrected property name from externalLinks to attachmentLink
+    attachmentLink: [],
     syllabusLink: '',
     lectureNotesLink: '',
     assignmentType: AssignmentType.NONE,
@@ -322,7 +324,6 @@ const TeachingForm: React.FC = () => {
 
       {isResourcePickerOpen && (
         <ResourcePicker 
-          // Fix: Added missing required 'type' prop to ResourcePicker component
           type="LIBRARY"
           onClose={() => setIsResourcePickerOpen(false)}
           onSelect={(id) => {

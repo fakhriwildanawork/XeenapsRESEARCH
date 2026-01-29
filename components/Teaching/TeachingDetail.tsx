@@ -57,7 +57,9 @@ const TeachingDetail: React.FC = () => {
   const location = useLocation();
   
   const [item, setItem] = useState<TeachingItem | null>(null);
-  const [activeTab, setActiveTab] = useState<'schedule' | 'substance' | 'report'>('schedule');
+  const [activeTab, setActiveTab] = useState<'schedule' | 'substance' | 'report'>(
+    (location.state as any)?.activeTab || 'schedule'
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<PickerType>('LIBRARY');
@@ -78,9 +80,9 @@ const TeachingDetail: React.FC = () => {
       if (stateItem && stateItem.id === sessionId) {
         setItem({
           ...stateItem,
-          presentationIds: stateItem.presentationIds || [],
-          questionBankIds: stateItem.questionBankIds || [],
-          externalLinks: stateItem.externalLinks || []
+          presentationId: stateItem.presentationId || [],
+          questionBankId: stateItem.questionBankId || [],
+          attachmentLink: stateItem.attachmentLink || []
         });
         setIsLoading(false);
         return;
@@ -90,9 +92,9 @@ const TeachingDetail: React.FC = () => {
       if (found) {
         setItem({
           ...found,
-          presentationIds: found.presentationIds || [],
-          questionBankIds: found.questionBankIds || [],
-          externalLinks: found.externalLinks || []
+          presentationId: found.presentationId || [],
+          questionBankId: found.questionBankId || [],
+          attachmentLink: found.attachmentLink || []
         });
       } else navigate('/teaching');
       setIsLoading(false);
@@ -113,21 +115,21 @@ const TeachingDetail: React.FC = () => {
       }
       
       // Resolve PPT Titles
-      if (item.presentationIds.length > 0) {
+      if (item.presentationId.length > 0) {
         const res = await fetchPresentationsPaginated(1, 1000);
         const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
         setResolvedData(prev => ({ ...prev, presentations: mapping }));
       }
       
       // Resolve Question Texts
-      if (item.questionBankIds.length > 0) {
+      if (item.questionBankId.length > 0) {
         const res = await fetchAllQuestionsPaginated(1, 1000);
         const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
         setResolvedData(prev => ({ ...prev, questions: mapping }));
       }
     };
     resolve();
-  }, [item?.referenceLinks.length, item?.presentationIds.length, item?.questionBankIds.length]);
+  }, [item?.referenceLinks.length, item?.presentationId.length, item?.questionBankId.length]);
 
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
@@ -168,8 +170,8 @@ const TeachingDetail: React.FC = () => {
     });
 
     if (formValues && formValues[0] && formValues[1]) {
-      const newLinks = [...(item?.externalLinks || []), { label: formValues[0], url: formValues[1] }];
-      handleFieldChange('externalLinks', newLinks);
+      const newLinks = [...(item?.attachmentLink || []), { label: formValues[0], url: formValues[1] }];
+      handleFieldChange('attachmentLink', newLinks);
     }
   };
 
@@ -185,12 +187,12 @@ const TeachingDetail: React.FC = () => {
         handleFieldChange('referenceLinks', [...item.referenceLinks, id]);
       }
     } else if (pickerType === 'PRESENTATION') {
-      if (!item.presentationIds.includes(id)) {
-        handleFieldChange('presentationIds', [...item.presentationIds, id]);
+      if (!item.presentationId.includes(id)) {
+        handleFieldChange('presentationId', [...item.presentationId, id]);
       }
     } else if (pickerType === 'QUESTION') {
-      if (!item.questionBankIds.includes(id)) {
-        handleFieldChange('questionBankIds', [...item.questionBankIds, id]);
+      if (!item.questionBankId.includes(id)) {
+        handleFieldChange('questionBankId', [...item.questionBankId, id]);
       }
     }
     setIsPickerOpen(false);
@@ -352,7 +354,7 @@ const TeachingDetail: React.FC = () => {
                                       {lib?.title || `ID: ${id.substring(0, 8)}...`}
                                     </span>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                       <button onClick={() => lib && navigate('/', { state: { openItem: lib } })} className="p-1 text-cyan-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
+                                       <button onClick={() => lib && navigate('/', { state: { openItem: lib, returnToTeaching: item.id, activeTab: 'substance' } })} className="p-1 text-cyan-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
                                        <button onClick={() => handleFieldChange('referenceLinks', item.referenceLinks.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
                                     </div>
                                  </div>
@@ -369,8 +371,8 @@ const TeachingDetail: React.FC = () => {
                            <button onClick={() => openPicker('PRESENTATION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
-                           {item.presentationIds.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Slides Attached</p> : 
-                             item.presentationIds.map(id => {
+                           {item.presentationId.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Slides Attached</p> : 
+                             item.presentationId.map(id => {
                                const ppt = resolvedData.presentations[id];
                                return (
                                  <div key={id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
@@ -379,7 +381,7 @@ const TeachingDetail: React.FC = () => {
                                     </span>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                                        <button onClick={() => ppt && window.open(`https://docs.google.com/presentation/d/${ppt.gSlidesId}/edit`, '_blank')} className="p-1 text-emerald-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
-                                       <button onClick={() => handleFieldChange('presentationIds', item.presentationIds.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
+                                       <button onClick={() => handleFieldChange('presentationId', item.presentationId.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
                                     </div>
                                  </div>
                                );
@@ -395,8 +397,8 @@ const TeachingDetail: React.FC = () => {
                            <button onClick={() => openPicker('QUESTION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
-                           {item.questionBankIds.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Question Bank</p> : 
-                             item.questionBankIds.map(id => {
+                           {item.questionBankId.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Question Bank</p> : 
+                             item.questionBankId.map(id => {
                                const q = resolvedData.questions[id];
                                return (
                                  <div key={id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
@@ -405,7 +407,7 @@ const TeachingDetail: React.FC = () => {
                                     </span>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                                        <button onClick={() => q && Swal.fire({ title: 'QUESTION PREVIEW', text: q.questionText, ...XEENAPS_SWAL_CONFIG })} className="p-1 text-cyan-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
-                                       <button onClick={() => handleFieldChange('questionBankIds', item.questionBankIds.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
+                                       <button onClick={() => handleFieldChange('questionBankId', item.questionBankId.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
                                     </div>
                                  </div>
                                );
@@ -421,13 +423,13 @@ const TeachingDetail: React.FC = () => {
                            <button onClick={handleAddExternalLink} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
-                           {item.externalLinks.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No External Links</p> : 
-                             item.externalLinks.map((link, idx) => (
+                           {item.attachmentLink.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No External Links</p> : 
+                             item.attachmentLink.map((link, idx) => (
                                <div key={idx} className="flex items-center justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
                                   <a href={link.url} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-600 truncate hover:underline flex items-center gap-1 flex-1">
                                     {link.label} <ExternalLink size={8} />
                                   </a>
-                                  <button onClick={() => handleFieldChange('externalLinks', item.externalLinks.filter((_, i) => i !== idx))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-white rounded-md shadow-sm"><TrashIcon size={12} /></button>
+                                  <button onClick={() => handleFieldChange('attachmentLink', item.attachmentLink.filter((_, i) => i !== idx))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-white rounded-md shadow-sm"><TrashIcon size={12} /></button>
                                </div>
                              ))
                            }

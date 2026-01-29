@@ -32,7 +32,7 @@ const CONFIG = {
     ],
     TEACHING: [
       'id', 'label', 'teachingDate', 'startTime', 'endTime', 'institution', 'faculty', 'program', 'academicYear', 'semester', 'classGroup', 'meetingNo', 'mode', 'plannedStudents', 'location', 'eventColor', 'skReference',
-      'courseTitle', 'courseCode', 'learningOutcomes', 'method', 'theoryCredits', 'practicalCredits', 'courseType', 'educationLevel', 'topic', 'role', 'referenceLinks', 'presentationIds', 'questionBankIds', 'externalLinks', 'syllabusLink', 'lectureNotesLink',
+      'courseTitle', 'courseCode', 'learningOutcomes', 'method', 'theoryCredits', 'practicalCredits', 'courseType', 'educationLevel', 'topic', 'role', 'referenceLinks', 'presentationId', 'questionBankId', 'attachmentLink', 'syllabusLink', 'lectureNotesLink',
       'actualStartTime', 'actualEndTime', 'teachingDuration', 'totalStudentsPresent', 'attendancePercentage', 'attendanceListLink', 'problems', 'reflection', 'assignmentType', 'assessmentCriteria',
       'vaultJsonId', 'storageNodeUrl', 'status', 'createdAt', 'updatedAt'
     ],

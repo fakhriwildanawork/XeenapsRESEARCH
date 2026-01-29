@@ -537,7 +537,13 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
 
   const handleBack = () => {
     const state = location.state as any;
-    if (state?.returnToPPT) {
+    if (state?.returnToTeaching) {
+      // SMART REDIRECTION TO TEACHING: Back to the specific session and Substance tab
+      navigate(`/teaching/${state.returnToTeaching}`, { 
+        state: { activeTab: state.returnTab || 'substance' }, 
+        replace: true 
+      });
+    } else if (state?.returnToPPT) {
       // SMART REDIRECTION: Kembali ke halaman presentasi dan perintahkan buka modal detail
       navigate('/presentations', { state: { reopenPPT: state.returnToPPT }, replace: true });
     } else if (state?.returnToAudit) {
