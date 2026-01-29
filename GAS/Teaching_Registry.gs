@@ -1,3 +1,4 @@
+
 /**
  * XEENAPS PKM - TEACHING REGISTRY MODULE
  * Pure Data Management for Academic Teaching Logs
@@ -27,40 +28,67 @@ function setupTeachingDatabase() {
   }
 }
 
-function getTeachingFromRegistry(page = 1, limit = 25, search = "", academicYear = "") {
+/**
+ * Fetch teaching logs with pagination, search, and date range filtering (SERVER-SIDE)
+ */
+function getTeachingFromRegistry(page = 1, limit = 25, search = "", startDate = "", endDate = "") {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TEACHING);
     const sheet = ss.getSheetByName("TeachingLogs");
     if (!sheet) return { items: [], totalCount: 0 };
 
     // CORE FIX: Use getDisplayValues() instead of getValues()
-    // This prevents Sheets from turning "10:00" into a JS Date object that shifts timezone on serialization.
     const allValues = sheet.getDataRange().getDisplayValues();
     if (allValues.length <= 1) return { items: [], totalCount: 0 };
 
     const headers = allValues[0];
     const rawData = allValues.slice(1);
     
+    const labelIdx = headers.indexOf('label');
+    const dateIdx = headers.indexOf('teachingDate');
+    const institutionIdx = headers.indexOf('institution');
+    const facultyIdx = headers.indexOf('faculty');
+    const programIdx = headers.indexOf('program');
+    const groupIdx = headers.indexOf('classGroup');
     const titleIdx = headers.indexOf('courseTitle');
     const codeIdx = headers.indexOf('courseCode');
     const topicIdx = headers.indexOf('topic');
-    const yearIdx = headers.indexOf('academicYear');
-    const dateIdx = headers.indexOf('teachingDate');
     
     const searchLower = search.toLowerCase();
 
-    // 1. FILTERING
+    // 1. FILTERING (SERVER-SIDE)
     let filtered = rawData.filter(row => {
-      // Academic Year Filter
-      if (academicYear && row[yearIdx] !== academicYear) return false;
-
-      // Search Filter (Title, Code, Topic)
-      if (searchLower) {
-        const matchesSearch = String(row[titleIdx] || "").toLowerCase().includes(searchLower) ||
-                              String(row[codeIdx] || "").toLowerCase().includes(searchLower) ||
-                              String(row[topicIdx] || "").toLowerCase().includes(searchLower);
-        if (!matchesSearch) return false;
+      // Date Range Filter
+      if (startDate || endDate) {
+        const itemDate = new Date(row[dateIdx]);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (itemDate < start) return false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (itemDate > end) return false;
+        }
       }
+
+      // Expanded Smart Search (Label, Identity, Substance)
+      if (searchLower) {
+        const searchableStr = (
+          String(row[labelIdx] || "") + " " +
+          String(row[institutionIdx] || "") + " " +
+          String(row[facultyIdx] || "") + " " +
+          String(row[programIdx] || "") + " " +
+          String(row[groupIdx] || "") + " " +
+          String(row[titleIdx] || "") + " " +
+          String(row[codeIdx] || "") + " " +
+          String(row[topicIdx] || "")
+        ).toLowerCase();
+        
+        if (!searchableStr.includes(searchLower)) return false;
+      }
+
       return true;
     });
 
@@ -93,6 +121,7 @@ function getTeachingFromRegistry(page = 1, limit = 25, search = "", academicYear
 
     return { items, totalCount };
   } catch (e) {
+    console.error("Error fetching teaching logs: " + e.toString());
     return { items: [], totalCount: 0 };
   }
 }

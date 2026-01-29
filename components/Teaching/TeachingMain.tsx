@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { Routes, Route, useNavigate } from 'react-router-dom';
@@ -71,13 +72,20 @@ const TeachingDashboard: React.FC = () => {
   // Helper for safe local ISO date (YYYY-MM-DD)
   const getLocalDateStr = (d: Date = new Date()) => d.toLocaleDateString('sv');
 
-  // Unified loadData: triggered by both appliedSearch and appliedDateRange changes
+  // Unified loadData: triggered by both appliedSearch and appliedDateRange changes (Server-Side)
   const loadData = useCallback(() => {
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
-        // Sync with backend: pass search. Local filtering will handle the date specifics on the resulting set.
-        const result = await fetchTeachingPaginated(1, 1000, appliedSearch, "", signal);
+        // Sync with backend: pass search + dates for accurate pagination
+        const result = await fetchTeachingPaginated(
+          1, 
+          1000, 
+          appliedSearch, 
+          appliedDateRange.start, 
+          appliedDateRange.end, 
+          signal
+        );
         setItems(result.items);
         setTotalCount(result.totalCount);
       },
@@ -150,7 +158,7 @@ const TeachingDashboard: React.FC = () => {
         attachmentLink: [],
         assignmentType: AssignmentType.NONE,
         assessmentCriteria: '',
-        status: SessionStatus.PLANNED, // Set default to PLANNED
+        status: SessionStatus.PLANNED, 
         vaultJsonId: '',
         storageNodeUrl: '',
         createdAt: new Date().toISOString(),
@@ -185,17 +193,10 @@ const TeachingDashboard: React.FC = () => {
     showXeenapsToast('success', 'Filter synchronized');
   };
 
+  // filteredItems is now used only for client-side multi-layer sorting since data is clean from server
   const filteredItems = useMemo(() => {
-    const filtered = items.filter(item => {
-      if (!appliedDateRange.start && !appliedDateRange.end) return true;
-      const itemDate = new Date(item.teachingDate);
-      if (appliedDateRange.start && itemDate < new Date(appliedDateRange.start)) return false;
-      if (appliedDateRange.end && itemDate > new Date(appliedDateRange.end)) return false;
-      return true;
-    });
-
-    // Multi-layer Sorting for Card Mode: Date (DESC) -> StartTime (DESC) -> EndTime (DESC)
-    return filtered.sort((a, b) => {
+    // Sorting for Card Mode: Date (DESC) -> StartTime (DESC) -> EndTime (DESC)
+    return [...items].sort((a, b) => {
       const dateCmp = b.teachingDate.localeCompare(a.teachingDate);
       if (dateCmp !== 0) return dateCmp;
       
@@ -207,7 +208,7 @@ const TeachingDashboard: React.FC = () => {
       const endB = timeToMinutes(b.endTime);
       return endB - endA;
     });
-  }, [items, appliedDateRange]);
+  }, [items]);
 
   const getStatusColor = (status: SessionStatus) => {
     switch (status) {
@@ -262,7 +263,7 @@ const TeachingDashboard: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* HEADER SECTION - Only visible in CARD mode to maximize space in CALENDAR mode */}
+      {/* HEADER SECTION - Only visible in CARD mode */}
       {viewMode === 'card' && (
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
@@ -293,15 +294,15 @@ const TeachingDashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-             <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 shrink-0 shadow-sm">
+             <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-100 shrink-0 shadow-sm">
                 <button onClick={() => setViewMode('card')} className={`p-2 rounded-xl transition-all bg-[#004A74] text-white shadow-md`}><LayoutGrid size={18} /></button>
                 <button onClick={() => setViewMode('calendar')} className={`p-2 rounded-xl transition-all text-gray-400`}><CalendarDays size={18} /></button>
              </div>
-             {/* Mobile-optimized size for Record Session button in header */}
+             {/* RESPONSIVE OPTIMIZATION: Full width on mobile/tablet, auto on desktop */}
              <StandardPrimaryButton 
                onClick={() => handleCreateNew()} 
                icon={<Plus size={18} />} 
-               className="shrink-0 !px-4 !py-2 md:!px-6 md:!py-3 !text-[10px] md:!text-sm scale-90 md:scale-100"
+               className="w-full md:w-auto !px-4 !py-3 !text-[10px] md:!text-sm shadow-xl"
              >
                Record Session
              </StandardPrimaryButton>
@@ -354,7 +355,6 @@ const TeachingDashboard: React.FC = () => {
                     <h3 className="text-2xl font-black text-[#004A74] uppercase tracking-tighter">
                        {monthNames[selectedMonth.getMonth()]} <span className="text-gray-400 font-bold ml-1">{selectedMonth.getFullYear()}</span>
                     </h3>
-                    {/* Mode Toggle Switch Integrated next to the month/year */}
                     <div className="flex bg-white/80 p-1 rounded-xl border border-gray-100 shadow-sm">
                       <button onClick={() => setViewMode('card')} className="p-1.5 text-gray-400 hover:text-[#004A74] transition-all" title="Card View"><LayoutGrid size={16} /></button>
                       <button className="p-1.5 bg-[#004A74] text-white rounded-lg shadow-sm" title="Calendar View"><CalendarDays size={16} /></button>
@@ -419,10 +419,10 @@ const TeachingDashboard: React.FC = () => {
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dailySessions.length} Sessions Found</p>
                        </div>
                     </div>
-                    {/* Mobile-optimized size for Add Session button in calendar detail */}
+                    {/* RESPONSIVE ADD BUTTON */}
                     <button 
                       onClick={() => handleCreateNew(selectedDate)}
-                      className="flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all w-full md:w-auto"
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all w-full md:w-auto"
                     >
                        <CalendarPlus size={16} /> Add Session
                     </button>
@@ -456,7 +456,7 @@ const TeachingDashboard: React.FC = () => {
                            </div>
                            <div className="flex items-center justify-end gap-3 shrink-0 ml-auto">
                               <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusColor(s.status)}`}>{s.status}</span>
-                              <ChevronRight size={18} className="text-gray-300 group-hover:text-[#004A74] transition-all" />
+                              <ChevronRight size={18} className="text-gray-300 group-hover:text-[#FED400] transition-all" />
                            </div>
                         </div>
                       );

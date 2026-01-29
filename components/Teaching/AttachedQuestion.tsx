@@ -51,7 +51,8 @@ const AttachedQuestion: React.FC = () => {
         // 1. Fetch Teaching Session if missing
         let session = teaching;
         if (!session && sessionId) {
-          const res = await fetchTeachingPaginated(1, 1000, "", "", signal);
+          // Fix: Added missing empty string for endDate parameter to align signal correctly
+          const res = await fetchTeachingPaginated(1, 1000, "", "", "", signal);
           session = res.items.find(i => i.id === sessionId) || null;
           setTeaching(session);
         }
@@ -75,7 +76,7 @@ const AttachedQuestion: React.FC = () => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [sessionId, teaching]);
+  }, [sessionId, teaching, workflow]);
 
   useEffect(() => {
     loadData();

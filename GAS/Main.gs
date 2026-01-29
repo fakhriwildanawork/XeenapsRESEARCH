@@ -35,13 +35,14 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
-    // NEW: getTeaching
+    // NEW: getTeaching (UPDATED FOR SERVER-SIDE DATE FILTERING)
     if (action === 'getTeaching') {
       const page = parseInt(e.parameter.page || "1");
       const limit = parseInt(e.parameter.limit || "25");
       const search = e.parameter.search || "";
-      const academicYear = e.parameter.academicYear || "";
-      const result = getTeachingFromRegistry(page, limit, search, academicYear);
+      const startDate = e.parameter.startDate || "";
+      const endDate = e.parameter.endDate || "";
+      const result = getTeachingFromRegistry(page, limit, search, startDate, endDate);
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 

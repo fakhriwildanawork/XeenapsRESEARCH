@@ -11,12 +11,13 @@ export const fetchTeachingPaginated = async (
   page: number = 1,
   limit: number = 25,
   search: string = "",
-  academicYear: string = "",
+  startDate: string = "",
+  endDate: string = "",
   signal?: AbortSignal
 ): Promise<{ items: TeachingItem[], totalCount: number }> => {
   if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
   try {
-    const url = `${GAS_WEB_APP_URL}?action=getTeaching&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&academicYear=${encodeURIComponent(academicYear)}`;
+    const url = `${GAS_WEB_APP_URL}?action=getTeaching&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
     const res = await fetch(url, { signal });
     const result = await res.json();
     return { 
