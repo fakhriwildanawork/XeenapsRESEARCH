@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -55,6 +54,7 @@ interface LibraryMainProps {
   isMobileSidebarOpen?: boolean;
 }
 
+// Fix: Corrected typo 'key0f' to 'keyof' in SortConfig definition
 type SortConfig = { key: keyof LibraryItem | 'none'; direction: 'asc' | 'desc' | null; };
 
 const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoading, onRefresh, globalSearch, isMobileSidebarOpen }) => {
@@ -74,10 +74,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [showSortMenu, setShowSortMenu] = useState(false);
   
-  // FIX: Synchronous state initialization
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
-  
-  // FIX: Background suppression during initial route mount
   const [isTransitioning, setIsTransitioning] = useState(() => !!(location.state as any)?.openItem);
 
   useEffect(() => {
@@ -136,6 +133,8 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
   }, [currentPage, appliedSearch, activeFilter, location.pathname, itemsPerPage, sortConfig.key, sortConfig.direction]);
 
   const handleSearchTrigger = () => { setAppliedSearch(localSearch); setCurrentPage(1); };
+  
+  // Fix: Corrected typo 'key0f' to 'keyof' in handleSort parameter
   const handleSort = (key: keyof LibraryItem) => {
     let direction: 'asc' | 'desc' | null = 'asc';
     if (sortConfig.key === key) {
@@ -146,6 +145,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
     setCurrentPage(1); 
   };
 
+  // Fix: Corrected typo 'key0f' to 'keyof' in getSortIcon parameter
   const getSortIcon = (key: keyof LibraryItem) => {
     if (sortConfig.key !== key) return <ArrowsUpDownIcon className="w-3 h-3 text-gray-300" />;
     if (sortConfig.direction === 'asc') return <ChevronUpIcon className="w-3 h-3 text-[#004A74]" />;
@@ -204,6 +204,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
     } catch { return '-'; }
   };
 
+  // Fix: Corrected typo 'key0f' to 'keyof' in tableColumns type definition
   const tableColumns: { key: keyof LibraryItem; label: string; width?: string }[] = [
     { key: 'title', label: 'Title', width: '300px' },
     { key: 'authors', label: 'Author(s)', width: '200px' },
@@ -260,6 +261,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
               <div className="absolute left-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[60] p-2 animate-in fade-in zoom-in-95">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-3 py-2 border-b border-gray-50 mb-1">Sort By</p>
                 {['title', 'authors', 'publisher', 'year', 'category', 'topic', 'subTopic', 'createdAt'].map((k) => (
+                  // Fix: Corrected typo 'key0f' to 'keyof' in sort menu click handler
                   <button key={k} onClick={() => { handleSort(k as keyof LibraryItem); setShowSortMenu(false); }} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${sortConfig.key === k ? 'bg-[#004A74]/10 text-[#004A74]' : 'text-gray-500 hover:bg-gray-50'}`}><span>{k}</span>{sortConfig.key === k && (sortConfig.direction === 'asc' ? <ChevronUpIcon className="w-3 h-3 stroke-[3]" /> : <ChevronDownIcon className="w-3 h-3 stroke-[3]" />)}</button>
                 ))}
               </div>

@@ -101,7 +101,7 @@ const PresentationDetailModal: React.FC<{
             <div className="grid grid-cols-2 gap-4">
               <div className="p-6 bg-gray-50/50 rounded-3xl border border-gray-100">
                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Presenters</h4>
-                <p className="text-sm font-bold text-[#004A74]">{ppt.presenters.join(', ')}</p>
+                <p className="text-sm font-bold text-[#004A74]">{(ppt.presenters || []).join(', ')}</p>
               </div>
               <div className="p-6 bg-gray-50/50 rounded-3xl border border-gray-100">
                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Slides</h4>
@@ -438,9 +438,9 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
                         </ElegantTooltip>
                       </StandardTd>
                       <StandardTd>
-                        <ElegantTooltip text={ppt.presenters.join(', ')}>
+                        <ElegantTooltip text={(ppt.presenters || []).join(', ')}>
                           <div className="text-xs font-bold text-[#004A74] opacity-80 text-center uppercase tracking-tighter line-clamp-2">
-                            {ppt.presenters.join(', ')}
+                            {(ppt.presenters || []).join(', ')}
                           </div>
                         </ElegantTooltip>
                       </StandardTd>
@@ -497,7 +497,6 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
               {presentations.map((ppt) => (
                 <StandardItemCard key={ppt.id} isSelected={selectedIds.includes(ppt.id)} onClick={() => setSelectedDetail(ppt)}>
                   <div className="flex items-center gap-3 mb-4" onClick={(e) => e.stopPropagation()}>
-                    {/* Fix: Line 501 - Corrected 'item.id' to 'ppt.id' */}
                     <button onClick={() => toggleSelectItem(ppt.id)} className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(ppt.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}>
                       {selectedIds.includes(ppt.id) && <CheckIcon className="w-3 h-3 stroke-[4]" />}
                     </button>
@@ -513,7 +512,7 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
                     </div>
                   </div>
 
-                  <p className="text-xs font-medium text-gray-500 italic mb-1 line-clamp-1">{ppt.presenters.join(', ')}</p>
+                  <p className="text-xs font-medium text-gray-500 italic mb-1 line-clamp-1">{(ppt.presenters || []).join(', ')}</p>
                   <p className="text-[10px] text-gray-400 line-clamp-2 mb-4 leading-relaxed">{getSourceTitles(ppt.collectionIds)}</p>
 
                   <div className="h-px bg-gray-50 mb-3" />

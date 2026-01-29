@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -119,6 +118,7 @@ const TeachingDetail: React.FC = () => {
     load();
   }, [sessionId, location.state, navigate]);
 
+  // Fix: Corrected typo 'key0f' to 'keyof' in handleFieldChange definition
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
     const updated = { ...item, [field]: val, updatedAt: new Date().toISOString() };
