@@ -258,33 +258,33 @@ const TeachingDetail: React.FC = () => {
 
   return (
     <FormPageContainer>
-      {/* UNIFIED ONE-LINE HEADER */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-4 md:px-8 py-4 border-b border-gray-100 flex items-center gap-3 md:gap-6 shrink-0">
-        <button 
-          onClick={() => navigate('/teaching')}
-          className="p-2 md:p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90 shrink-0"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        
-        <div className="min-w-0 flex-1 lg:flex-none">
-          <h2 className="text-sm md:text-base font-black text-[#004A74] uppercase truncate leading-tight">{item.label}</h2>
-          <p className="hidden md:block text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Teaching Ledger</p>
+      {/* UNIFIED ONE-LINE HEADER - OPTIMIZED FOR ALL SCREENS */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-3 md:px-8 py-3 md:py-4 border-b border-gray-100 flex items-center justify-between gap-2 md:gap-4 shrink-0">
+        <div className="flex items-center gap-2 md:gap-4 min-w-0">
+          <button 
+            onClick={() => navigate('/teaching')}
+            className="p-2 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div className="min-w-0">
+            <h2 className="text-xs md:text-sm lg:text-base font-black text-[#004A74] uppercase truncate leading-tight">{item.label}</h2>
+            <p className="hidden sm:block text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Teaching Ledger</p>
+          </div>
         </div>
 
-        {/* COMPACT NAVIGATION TABS - SCROLLABLE ON MOBILE */}
-        <div className="flex-1 flex justify-center overflow-x-auto no-scrollbar scroll-smooth">
-          <div className="flex bg-gray-100 p-1 rounded-2xl gap-0.5 md:gap-1 whitespace-nowrap">
-            {tabs.map(tab => (
-              <button 
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-2 rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}
-              >
-                <tab.icon size={12} className="md:w-3.5 md:h-3.5" /> {tab.label}
-              </button>
-            ))}
-          </div>
+        {/* NAVIGATION TABS - ICON ONLY ON NARROW SCREENS */}
+        <div className="flex bg-gray-100 p-1 rounded-2xl gap-0.5 md:gap-1">
+          {tabs.map(tab => (
+            <button 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}
+            >
+              <tab.icon size={14} className="shrink-0" />
+              <span className="hidden lg:inline text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
+            </button>
+          ))}
         </div>
 
         {/* ACTION BUTTONS */}
@@ -313,15 +313,15 @@ const TeachingDetail: React.FC = () => {
           
           {activeTab === 'schedule' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                  <div className="md:col-span-3">
+               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-end">
+                  <div className="lg:col-span-3">
                     <FormField label="Ledger Identity / Session Label" required>
                       <input className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base font-black text-[#004A74] uppercase transition-all focus:bg-white focus:ring-4 focus:ring-[#004A74]/5" 
                         value={item.label} onChange={e => handleFieldChange('label', e.target.value)} />
                     </FormField>
                   </div>
                   <div>
-                    <FormField label="Identifier Color">
+                    <FormField label="Color Identity">
                       <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-2xl">
                          <div 
                            className="w-8 h-8 rounded-full border-2 border-white shadow-sm shrink-0" 
@@ -443,7 +443,7 @@ const TeachingDetail: React.FC = () => {
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.presentationId) || item.presentationId.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Slides Attached</p> : 
                              item.presentationId.map(ppt => (
-                               <div key={ppt.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-200 hover:border-[#004A74]/20 transition-all shadow-sm">
+                               <div key={ppt.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-100 hover:border-[#004A74]/20 transition-all shadow-sm">
                                   <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">{ppt.title}</span>
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                                      <button 
@@ -486,7 +486,7 @@ const TeachingDetail: React.FC = () => {
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.questionBankId) || item.questionBankId.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Questions Bank</p> : 
                              item.questionBankId.map(q => (
-                               <div key={q.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-200 hover:border-[#004A74]/20 transition-all shadow-sm">
+                               <div key={q.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-100 hover:border-[#004A74]/20 transition-all shadow-sm">
                                   <span className="text-[9px] font-bold text-[#004A74] leading-tight line-clamp-2 overflow-hidden flex-1 italic">
                                     {q.label || q.questionText}
                                   </span>

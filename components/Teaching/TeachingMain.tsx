@@ -15,7 +15,9 @@ import {
   CalendarDays,
   X,
   ChevronLeft,
-  Search
+  Search,
+  CheckCircle2,
+  CalendarPlus
 } from 'lucide-react';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { StandardPrimaryButton } from '../Common/ButtonComponents';
@@ -36,18 +38,17 @@ const TeachingDashboard: React.FC = () => {
   const [items, setItems] = useState<TeachingItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   
-  // New States: View Mode and Date Filter
+  // States: View Mode and Date Filter
   const [viewMode, setViewMode] = useState<'card' | 'calendar'>('card');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [appliedDateRange, setAppliedDateRange] = useState({ start: '', end: '' });
   
   // Calendar States
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-
-  const itemsPerPage = 100; // Larger limit to handle calendar indicators locally if needed
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const loadData = useCallback(() => {
     workflow.execute(
@@ -61,13 +62,13 @@ const TeachingDashboard: React.FC = () => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [appliedSearch]);
+  }, [appliedSearch, workflow.execute]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const handleCreateNew = async () => {
+  const handleCreateNew = async (prefilledDate?: string) => {
     const { value: label } = await Swal.fire({
       title: 'NEW TEACHING LOG',
       input: 'text',
@@ -87,7 +88,7 @@ const TeachingDashboard: React.FC = () => {
       const newItem: TeachingItem = {
         id,
         label,
-        teachingDate: new Date().toISOString().substring(0, 10),
+        teachingDate: prefilledDate || new Date().toISOString().substring(0, 10),
         startTime: '08:00',
         endTime: '10:00',
         institution: '',
@@ -145,15 +146,20 @@ const TeachingDashboard: React.FC = () => {
     }
   };
 
+  const handleApplyRange = () => {
+    setAppliedDateRange({ ...dateRange });
+    showXeenapsToast('success', 'Filter applied');
+  };
+
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      if (!dateRange.start && !dateRange.end) return true;
+      if (!appliedDateRange.start && !appliedDateRange.end) return true;
       const itemDate = new Date(item.teachingDate);
-      if (dateRange.start && itemDate < new Date(dateRange.start)) return false;
-      if (dateRange.end && itemDate > new Date(dateRange.end)) return false;
+      if (appliedDateRange.start && itemDate < new Date(appliedDateRange.start)) return false;
+      if (appliedDateRange.end && itemDate > new Date(appliedDateRange.end)) return false;
       return true;
     });
-  }, [items, dateRange]);
+  }, [items, appliedDateRange]);
 
   const getStatusColor = (status: SessionStatus) => {
     switch (status) {
@@ -164,10 +170,9 @@ const TeachingDashboard: React.FC = () => {
     }
   };
 
-  // --- CALENDAR LOGIC (iPhone style) ---
+  // --- CALENDAR LOGIC ---
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
-
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   
   const calendarDays = useMemo(() => {
@@ -175,233 +180,222 @@ const TeachingDashboard: React.FC = () => {
     const month = selectedMonth.getMonth();
     const totalDays = daysInMonth(year, month);
     const startDay = firstDayOfMonth(year, month);
-    
     const days = [];
-    // Padding for first week
     for (let i = 0; i < startDay; i++) days.push(null);
     for (let d = 1; d <= totalDays; d++) days.push(new Date(year, month, d));
-    
     return days;
   }, [selectedMonth]);
 
   const sessionsByDate = useMemo(() => {
     const map: Record<string, TeachingItem[]> = {};
     items.forEach(item => {
-      const dateStr = item.teachingDate; // YYYY-MM-DD
+      const dateStr = item.teachingDate;
       if (!map[dateStr]) map[dateStr] = [];
       map[dateStr].push(item);
+    });
+    // Sort each day's sessions by start time
+    Object.keys(map).forEach(d => {
+      map[d].sort((a, b) => a.startTime.localeCompare(b.startTime));
     });
     return map;
   }, [items]);
 
+  const dailySessions = useMemo(() => {
+    if (!selectedDate) return [];
+    return sessionsByDate[selectedDate] || [];
+  }, [selectedDate, sessionsByDate]);
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0">
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          <SmartSearchBox 
-            value={localSearch} 
-            onChange={setLocalSearch} 
-            onSearch={() => { setAppliedSearch(localSearch); }} 
-            className="flex-1 lg:w-72"
-          />
-          {/* VIEW MODE TOGGLE */}
-          <div className="flex bg-gray-50 p-1 rounded-2xl border border-gray-100 shrink-0">
-            <button 
-              onClick={() => setViewMode('card')}
-              className={`p-2 rounded-xl transition-all ${viewMode === 'card' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400 hover:text-[#004A74]'}`}
-              title="Card View"
-            >
-              <LayoutGrid size={18} />
-            </button>
-            <button 
-              onClick={() => setViewMode('calendar')}
-              className={`p-2 rounded-xl transition-all ${viewMode === 'calendar' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400 hover:text-[#004A74]'}`}
-              title="Calendar View"
-            >
-              <CalendarDays size={18} />
-            </button>
+      {/* TOP HEADER: HIDDEN IN CALENDAR MODE */}
+      {viewMode === 'card' && (
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0 animate-in fade-in duration-300">
+          <div className="flex items-center gap-3 w-full lg:w-auto">
+            <SmartSearchBox 
+              value={localSearch} 
+              onChange={setLocalSearch} 
+              onSearch={() => { setAppliedSearch(localSearch); }} 
+              className="flex-1 lg:w-72"
+            />
+            <div className="flex bg-gray-50 p-1 rounded-2xl border border-gray-100 shrink-0 shadow-sm">
+              {/* Fix: Added explicit string casting for viewMode comparisons inside narrowed blocks to resolve TypeScript overlap errors */}
+              <button onClick={() => setViewMode('card')} className={`p-2 rounded-xl transition-all ${(viewMode as string) === 'card' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400 hover:text-[#004A74]'}`}><LayoutGrid size={18} /></button>
+              <button onClick={() => setViewMode('calendar')} className={`p-2 rounded-xl transition-all ${(viewMode as string) === 'calendar' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400 hover:text-[#004A74]'}`}><CalendarDays size={18} /></button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          {/* DATE RANGE FILTER - ONLY IN CARD MODE */}
-          {viewMode === 'card' && (
+          <div className="flex items-center gap-3 w-full lg:w-auto">
             <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-100 flex-1 lg:flex-none">
-              <input 
-                type="date" 
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[#004A74] outline-none p-1.5 w-full cursor-pointer"
-                value={dateRange.start}
-                onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-              />
+              <input type="date" className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[#004A74] outline-none p-1.5 w-full cursor-pointer" value={dateRange.start} onChange={(e) => setDateRange({...dateRange, start: e.target.value})} />
               <span className="text-gray-300">-</span>
-              <input 
-                type="date" 
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[#004A74] outline-none p-1.5 w-full cursor-pointer"
-                value={dateRange.end}
-                onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-              />
+              <input type="date" className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[#004A74] outline-none p-1.5 w-full cursor-pointer" value={dateRange.end} onChange={(e) => setDateRange({...dateRange, end: e.target.value})} />
+              <button onClick={handleApplyRange} className="px-3 py-1.5 bg-[#004A74] text-white text-[9px] font-black uppercase rounded-xl hover:bg-[#003859] transition-all ml-1">APPLY</button>
               {(dateRange.start || dateRange.end) && (
-                <button onClick={() => setDateRange({start: '', end: ''})} className="p-1 hover:bg-gray-200 rounded-lg transition-all text-red-400">
-                  <X size={14} />
-                </button>
+                <button onClick={() => { setDateRange({start: '', end: ''}); setAppliedDateRange({start: '', end: ''}); }} className="p-1 hover:bg-gray-200 rounded-lg transition-all text-red-400"><X size={14} /></button>
               )}
             </div>
-          )}
-          <StandardPrimaryButton onClick={handleCreateNew} icon={<Plus size={20} />} className="shrink-0">
-            Record Session
-          </StandardPrimaryButton>
+            <StandardPrimaryButton onClick={() => handleCreateNew()} icon={<Plus size={20} />} className="shrink-0">Record Session</StandardPrimaryButton>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
         {isLoading ? (
           <CardGridSkeleton count={8} />
         ) : viewMode === 'card' ? (
           /* CARD MODE */
-          <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredItems.length === 0 ? (
-              <div className="py-40 text-center flex flex-col items-center justify-center space-y-4 opacity-30 grayscale">
+              <div className="col-span-full py-40 text-center flex flex-col items-center justify-center space-y-4 opacity-30 grayscale">
                 <School size={80} strokeWidth={1} className="text-[#004A74]" />
                 <p className="text-sm font-black uppercase tracking-[0.4em]">No Teaching Logs Found</p>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredItems.map(item => (
-                  <div 
-                    key={item.id}
-                    onClick={() => navigate(`/teaching/${item.id}`, { state: { item } })}
-                    className="group relative bg-white border border-gray-100 border-l-[6px] rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer flex flex-col h-full"
-                    style={{ borderLeftColor: item.eventColor || '#004A74' }}
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <span className="px-3 py-1 bg-gray-50 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full truncate max-w-[150px]">{item.label}</span>
-                      <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
-                        <Trash2 size={16} />
-                      </button>
+            ) : filteredItems.map(item => (
+              <div 
+                key={item.id}
+                onClick={() => navigate(`/teaching/${item.id}`, { state: { item } })}
+                className="group relative bg-white border border-gray-100 border-l-[6px] rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer flex flex-col h-full"
+                style={{ borderLeftColor: item.eventColor || '#004A74' }}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <span className="px-3 py-1 bg-gray-50 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full truncate max-w-[150px]">{item.label}</span>
+                  <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all"><Trash2 size={16} /></button>
+                </div>
+                <h3 className="text-base font-black text-[#004A74] leading-tight mb-2 uppercase line-clamp-2">{item.courseTitle || 'Untitled Course'}</h3>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6 italic">{item.courseCode || 'No Code'}</p>
+                <div className="space-y-3 mb-6 flex-1">
+                   <div className="flex items-center gap-2 text-gray-500"><CalendarIcon size={14} className="shrink-0 text-[#FED400]" /><span className="text-[10px] font-bold uppercase tracking-tight">{item.teachingDate}</span></div>
+                   <div className="flex items-center gap-2 text-gray-500"><Clock size={14} className="shrink-0" /><span className="text-[10px] font-bold uppercase tracking-tight">{item.startTime} - {item.endTime}</span></div>
+                   <div className="flex items-center gap-2 text-gray-500"><Users size={14} className="shrink-0" /><span className="text-[10px] font-bold uppercase tracking-tight">{item.totalStudentsPresent || 0} / {item.plannedStudents} Present</span></div>
+                </div>
+                <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                   <span className={`px-3 py-1 border text-[8px] font-black uppercase tracking-widest rounded-full ${getStatusColor(item.status)}`}>{item.status}</span>
+                   <ChevronRight size={18} className="text-gray-300 group-hover:text-[#FED400] transition-colors" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* CALENDAR MODE: FULL SCREEN FOCUS */
+          <div className="space-y-8 max-w-5xl mx-auto px-1 animate-in zoom-in-95 duration-500">
+            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl overflow-hidden">
+              <div className="p-6 md:p-8 bg-gray-50/80 backdrop-blur-sm flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100">
+                 <div className="flex items-center gap-4">
+                    <h3 className="text-2xl font-black text-[#004A74] uppercase tracking-tighter">
+                       {monthNames[selectedMonth.getMonth()]} <span className="text-gray-400 font-bold ml-1">{selectedMonth.getFullYear()}</span>
+                    </h3>
+                    {/* View Toggle integrated in calendar header */}
+                    <div className="flex bg-white/80 p-1 rounded-xl border border-gray-100 shadow-sm">
+                      <button onClick={() => setViewMode('card')} className="p-1.5 text-gray-400 hover:text-[#004A74] transition-all"><LayoutGrid size={16} /></button>
+                      <button className="p-1.5 bg-[#004A74] text-white rounded-lg shadow-sm"><CalendarDays size={16} /></button>
                     </div>
+                 </div>
+                 
+                 <div className="flex gap-2">
+                    <button onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1))} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-white active:scale-90 transition-all text-[#004A74] shadow-sm"><ChevronLeft size={20} /></button>
+                    <button onClick={() => setSelectedMonth(new Date())} className="px-5 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all text-[#004A74] shadow-sm">Today</button>
+                    <button onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1))} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-white active:scale-90 transition-all text-[#004A74] shadow-sm"><ChevronRight size={20} /></button>
+                 </div>
+              </div>
 
-                    <h3 className="text-base font-black text-[#004A74] leading-tight mb-2 uppercase line-clamp-2">{item.courseTitle || 'Untitled Course'}</h3>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6 italic">{item.courseCode || 'No Code'}</p>
-                    
-                    <div className="space-y-3 mb-6 flex-1">
-                       <div className="flex items-center gap-2 text-gray-500">
-                          <CalendarIcon size={14} className="shrink-0 text-[#FED400]" />
-                          <span className="text-[10px] font-bold uppercase tracking-tight">{item.teachingDate}</span>
-                       </div>
-                       <div className="flex items-center gap-2 text-gray-500">
-                          <Clock size={14} className="shrink-0" />
-                          <span className="text-[10px] font-bold uppercase tracking-tight">{item.startTime} - {item.endTime}</span>
-                       </div>
-                       <div className="flex items-center gap-2 text-gray-500">
-                          <Users size={14} className="shrink-0" />
-                          <span className="text-[10px] font-bold uppercase tracking-tight">{item.totalStudentsPresent || 0} / {item.plannedStudents} Present</span>
-                       </div>
-                    </div>
+              <div className="p-4 md:p-8">
+                 <div className="grid grid-cols-7 mb-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className="text-center text-[10px] font-black text-gray-300 uppercase tracking-widest py-3">{day}</div>
+                    ))}
+                 </div>
+                 <div className="grid grid-cols-7 gap-px bg-gray-100 border border-gray-100 rounded-[1.5rem] overflow-hidden">
+                    {calendarDays.map((date, idx) => {
+                      if (!date) return <div key={`pad-${idx}`} className="bg-white/30 h-24 md:h-32" />;
+                      
+                      const dateStr = date.toISOString().split('T')[0];
+                      const daySessions = sessionsByDate[dateStr] || [];
+                      const isToday = dateStr === new Date().toISOString().split('T')[0];
+                      const isSelected = selectedDate === dateStr;
+                      
+                      return (
+                        <div 
+                          key={dateStr} 
+                          onClick={() => setSelectedDate(isSelected ? null : dateStr)}
+                          className={`bg-white min-h-[96px] md:min-h-[128px] p-2 md:p-3 relative group cursor-pointer transition-all ${isSelected ? 'ring-2 ring-inset ring-[#004A74] z-10' : 'hover:bg-blue-50/40'}`}
+                        >
+                           <div className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-black transition-all ${isToday ? 'bg-[#FED400] text-[#004A74] shadow-md' : isSelected ? 'bg-[#004A74] text-white' : 'text-gray-400 group-hover:text-[#004A74]'}`}>
+                              {date.getDate()}
+                           </div>
+                           <div className="mt-2 flex flex-wrap gap-1">
+                              {daySessions.map(s => (
+                                <div key={s.id} className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full shadow-sm" style={{ backgroundColor: s.eventColor || '#004A74' }} />
+                              ))}
+                           </div>
+                           {daySessions.length > 0 && (
+                             <p className="hidden md:block mt-auto text-[8px] font-black text-gray-300 uppercase truncate">
+                                {daySessions.length} Session{daySessions.length > 1 ? 's' : ''}
+                             </p>
+                           )}
+                        </div>
+                      );
+                    })}
+                 </div>
+              </div>
+            </div>
 
-                    <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                       <span className={`px-3 py-1 border text-[8px] font-black uppercase tracking-widest rounded-full ${getStatusColor(item.status)}`}>{item.status}</span>
-                       <ChevronRight size={18} className="text-gray-300 group-hover:text-[#FED400] transition-colors" />
+            {/* DAILY SESSION LIST: APPEARS BELOW CALENDAR */}
+            {selectedDate && (
+              <div className="animate-in slide-in-from-top-4 duration-500 bg-white border border-gray-100 rounded-[2.5rem] shadow-xl overflow-hidden">
+                 <div className="px-8 py-6 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                       <CheckCircle2 size={24} className="text-emerald-500" />
+                       <div>
+                          <h4 className="text-lg font-black text-[#004A74] uppercase tracking-tighter">Schedule: {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dailySessions.length} Sessions Found</p>
+                       </div>
                     </div>
-                  </div>
-                ))}
+                    <button 
+                      onClick={() => handleCreateNew(selectedDate)}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
+                    >
+                       <CalendarPlus size={16} /> Add Session
+                    </button>
+                 </div>
+                 <div className="p-4 md:p-8 space-y-4">
+                    {dailySessions.length === 0 ? (
+                      <div className="py-12 text-center text-gray-300 italic text-sm">No ledger entries for this date.</div>
+                    ) : dailySessions.map(s => (
+                      <div 
+                        key={s.id} 
+                        onClick={() => navigate(`/teaching/${s.id}`, { state: { item: s } })}
+                        className="group flex flex-col md:flex-row md:items-center gap-4 p-5 bg-white border border-gray-100 rounded-3xl hover:border-[#004A74]/30 hover:shadow-lg transition-all cursor-pointer"
+                      >
+                         <div className="w-2 h-10 rounded-full shrink-0 hidden md:block" style={{ backgroundColor: s.eventColor || '#004A74' }} />
+                         <div className="flex items-center gap-3 shrink-0">
+                            <Clock size={16} className="text-gray-300" />
+                            <span className="text-sm font-black text-[#004A74]">{s.startTime} - {s.endTime}</span>
+                         </div>
+                         <div className="flex-1 min-w-0">
+                            <h5 className="text-sm font-black text-[#004A74] uppercase truncate">{s.courseTitle || s.label}</h5>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                               <MapPin size={10} /> {s.location || 'Venue Pending'} • {s.topic || 'Subject TBA'}
+                            </p>
+                         </div>
+                         <div className="flex items-center justify-end gap-3 shrink-0">
+                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${getStatusColor(s.status)}`}>{s.status}</span>
+                            <ChevronRight size={18} className="text-gray-300 group-hover:text-[#004A74] transition-all" />
+                         </div>
+                      </div>
+                    ))}
+                 </div>
               </div>
             )}
-          </>
-        ) : (
-          /* CALENDAR MODE (iPhone style) */
-          <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
-            {/* Calendar Header */}
-            <div className="p-6 md:p-8 bg-gray-50/50 flex items-center justify-between border-b border-gray-100">
-               <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tighter">
-                  {monthNames[selectedMonth.getMonth()]} <span className="text-gray-400 font-bold ml-1">{selectedMonth.getFullYear()}</span>
-               </h3>
-               <div className="flex gap-2">
-                  <button 
-                    onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1))}
-                    className="p-2.5 bg-white border border-gray-100 rounded-xl hover:bg-white active:scale-90 transition-all text-[#004A74] shadow-sm"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button 
-                    onClick={() => setSelectedMonth(new Date())}
-                    className="px-4 py-2 bg-white border border-gray-100 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all text-[#004A74] shadow-sm"
-                  >
-                    Today
-                  </button>
-                  <button 
-                    onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1))}
-                    className="p-2.5 bg-white border border-gray-100 rounded-xl hover:bg-white active:scale-90 transition-all text-[#004A74] shadow-sm"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-               </div>
-            </div>
-
-            {/* Calendar Grid */}
-            <div className="p-4 md:p-8">
-               <div className="grid grid-cols-7 mb-4">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                    <div key={day} className="text-center text-[10px] font-black text-gray-300 uppercase tracking-widest py-2">{day}</div>
-                  ))}
-               </div>
-               <div className="grid grid-cols-7 gap-px bg-gray-50 rounded-[1.5rem] overflow-hidden border border-gray-50">
-                  {calendarDays.map((date, idx) => {
-                    if (!date) return <div key={`pad-${idx}`} className="bg-white min-h-[80px] md:min-h-[100px]" />;
-                    
-                    const dateStr = date.toISOString().split('T')[0];
-                    const daySessions = sessionsByDate[dateStr] || [];
-                    const isToday = dateStr === new Date().toISOString().split('T')[0];
-                    
-                    return (
-                      <div 
-                        key={dateStr} 
-                        className="bg-white min-h-[80px] md:min-h-[100px] p-2 relative group hover:bg-blue-50/30 transition-colors"
-                      >
-                         <div className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-black transition-all ${isToday ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 group-hover:text-[#004A74]'}`}>
-                            {date.getDate()}
-                         </div>
-
-                         {/* Session Indicators (Colored Dots) */}
-                         <div className="mt-2 flex flex-wrap gap-1">
-                            {daySessions.map(session => (
-                              <div 
-                                key={session.id} 
-                                onClick={(e) => { e.stopPropagation(); navigate(`/teaching/${session.id}`, { state: { item: session } }); }}
-                                className="w-2 h-2 rounded-full cursor-pointer hover:scale-150 transition-transform shadow-sm"
-                                style={{ backgroundColor: session.eventColor || '#004A74' }}
-                                title={session.courseTitle || session.label}
-                              />
-                            ))}
-                         </div>
-                         
-                         {/* Preview Session Title (on desktop hover) */}
-                         {daySessions.length > 0 && (
-                           <div className="hidden lg:block mt-2">
-                             {daySessions.slice(0, 2).map(s => (
-                               <p key={s.id} className="text-[7px] font-black text-[#004A74] truncate uppercase opacity-60 leading-tight">
-                                 {s.courseTitle || s.label}
-                               </p>
-                             ))}
-                             {daySessions.length > 2 && <p className="text-[7px] font-black text-gray-300 uppercase tracking-tighter">+{daySessions.length - 2} More</p>}
-                           </div>
-                         )}
-                      </div>
-                    );
-                  })}
-               </div>
-            </div>
-            
-            {/* Mobile Legend/Indicator Info */}
-            <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-center gap-4">
-               <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#004A74]" />
-                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Scheduled Session</span>
-               </div>
-               <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest italic">Tap indicators to open ledger</p>
-            </div>
           </div>
-        ) }
+        )}
       </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
+      `}</style>
     </div>
   );
 };
