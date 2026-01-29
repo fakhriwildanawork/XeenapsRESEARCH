@@ -115,7 +115,7 @@ const TeachingDashboard: React.FC = () => {
         endTime: '10:00',
         institution: '',
         faculty: '',
-        program: '',
+        program: '', 
         academicYear: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`,
         semester: '1',
         classGroup: '',
@@ -233,7 +233,7 @@ const TeachingDashboard: React.FC = () => {
   const dailySessions = useMemo(() => {
     if (!selectedDate) return [];
     const rawSessions = sessionsByDate[selectedDate] || [];
-    // Multi-layer Sorting for Calendar Mode: StartTime (ASC) -> EndTime (ASC)
+    // Multi-layer Sorting for Calendar Mode Daily List: StartTime (ASC) -> EndTime (ASC)
     return [...rawSessions].sort((a, b) => {
       const startCmp = a.startTime.localeCompare(b.startTime);
       if (startCmp !== 0) return startCmp;
@@ -243,47 +243,46 @@ const TeachingDashboard: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* HEADER SECTION */}
-      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0 animate-in fade-in slide-in-from-top-2 duration-300">
-        <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
-          {viewMode === 'card' && (
-            <>
-              <SmartSearchBox 
-                value={localSearch} 
-                onChange={setLocalSearch} 
-                onSearch={() => { setAppliedSearch(localSearch); }} 
-                phrases={teachingPhrases}
-                className="w-full lg:max-w-md"
-              />
-              <div className="flex flex-col items-stretch md:flex-row md:items-center gap-2 bg-gray-50/80 p-1 rounded-2xl border border-gray-100">
-                <div className="flex items-center gap-2 px-3 py-2 md:py-0">
-                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">From</span>
-                  <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.start} onChange={(e) => setTempDateRange({...tempDateRange, start: e.target.value})} />
-                </div>
-                <div className="hidden md:block w-px h-4 bg-gray-200" />
-                <div className="flex items-center gap-2 px-3 py-2 md:py-0">
-                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">Until</span>
-                  <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.end} onChange={(e) => setTempDateRange({...tempDateRange, end: e.target.value})} />
-                </div>
-                {(tempDateRange.start || tempDateRange.end) && (
-                  <button onClick={handleApplyRange} className="w-full md:w-auto px-4 py-2 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003859] transition-all shadow-md md:ml-1">APPLY</button>
-                )}
-                {(appliedDateRange.start || appliedDateRange.end) && (
-                  <button onClick={() => { setTempDateRange({start: '', end: ''}); setAppliedDateRange({start: '', end: ''}); }} className="p-2 hover:bg-gray-200 rounded-lg transition-all flex justify-center text-red-400"><X size={16} /></button>
-                )}
+      {/* HEADER SECTION - Only visible in CARD mode to maximize space in CALENDAR mode */}
+      {viewMode === 'card' && (
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
+            <SmartSearchBox 
+              value={localSearch} 
+              onChange={setLocalSearch} 
+              onSearch={() => { setAppliedSearch(localSearch); }} 
+              phrases={teachingPhrases}
+              className="w-full lg:max-w-md"
+            />
+            <div className="flex flex-col items-stretch md:flex-row md:items-center gap-2 bg-gray-50/80 p-1 rounded-2xl border border-gray-100">
+              <div className="flex items-center gap-2 px-3 py-2 md:py-0">
+                <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">From</span>
+                <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.start} onChange={(e) => setTempDateRange({...tempDateRange, start: e.target.value})} />
               </div>
-            </>
-          )}
-        </div>
+              <div className="hidden md:block w-px h-4 bg-gray-200" />
+              <div className="flex items-center gap-2 px-3 py-2 md:py-0">
+                <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">Until</span>
+                <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.end} onChange={(e) => setTempDateRange({...tempDateRange, end: e.target.value})} />
+              </div>
+              {(tempDateRange.start || tempDateRange.end) && (
+                <button onClick={handleApplyRange} className="w-full md:w-auto px-4 py-2 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003859] transition-all shadow-md md:ml-1">APPLY</button>
+              )}
+              {(appliedDateRange.start || appliedDateRange.end) && (
+                <button onClick={() => { setTempDateRange({start: '', end: ''}); setAppliedDateRange({start: '', end: ''}); }} className="p-2 hover:bg-gray-200 rounded-lg transition-all flex justify-center text-red-400"><X size={16} /></button>
+              )}
+            </div>
+          </div>
 
-        <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-           <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 shrink-0 shadow-sm">
-              <button onClick={() => setViewMode('card')} className={`p-2 rounded-xl transition-all ${viewMode === 'card' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400'}`}><LayoutGrid size={18} /></button>
-              <button onClick={() => setViewMode('calendar')} className={`p-2 rounded-xl transition-all ${viewMode === 'calendar' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400'}`}><CalendarDays size={18} /></button>
-           </div>
-           <StandardPrimaryButton onClick={() => handleCreateNew()} icon={<Plus size={18} />} className="shrink-0 scale-90 md:scale-100">Record Session</StandardPrimaryButton>
+          <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+             <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-100 shrink-0 shadow-sm">
+                {/* Fix: Redundant ternary comparisons removed inside the card-mode header. Since this block only renders when viewMode is 'card', classes are now hardcoded for clarity and to prevent TS overlap errors. */}
+                <button onClick={() => setViewMode('card')} className="p-2 rounded-xl transition-all bg-[#004A74] text-white shadow-md"><LayoutGrid size={18} /></button>
+                <button onClick={() => setViewMode('calendar')} className="p-2 rounded-xl transition-all text-gray-400"><CalendarDays size={18} /></button>
+             </div>
+             <StandardPrimaryButton onClick={() => handleCreateNew()} icon={<Plus size={18} />} className="shrink-0 scale-90 md:scale-100">Record Session</StandardPrimaryButton>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
         {isLoading ? (
@@ -330,9 +329,10 @@ const TeachingDashboard: React.FC = () => {
                     <h3 className="text-2xl font-black text-[#004A74] uppercase tracking-tighter">
                        {monthNames[selectedMonth.getMonth()]} <span className="text-gray-400 font-bold ml-1">{selectedMonth.getFullYear()}</span>
                     </h3>
+                    {/* Mode Toggle Switch Integrated next to the month/year */}
                     <div className="flex bg-white/80 p-1 rounded-xl border border-gray-100 shadow-sm">
-                      <button onClick={() => setViewMode('card')} className="p-1.5 text-gray-400 hover:text-[#004A74] transition-all"><LayoutGrid size={16} /></button>
-                      <button className="p-1.5 bg-[#004A74] text-white rounded-lg shadow-sm"><CalendarDays size={16} /></button>
+                      <button onClick={() => setViewMode('card')} className="p-1.5 text-gray-400 hover:text-[#004A74] transition-all" title="Card View"><LayoutGrid size={16} /></button>
+                      <button className="p-1.5 bg-[#004A74] text-white rounded-lg shadow-sm" title="Calendar View"><CalendarDays size={16} /></button>
                     </div>
                  </div>
                  
