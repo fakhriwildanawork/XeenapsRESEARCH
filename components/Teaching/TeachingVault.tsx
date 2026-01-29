@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -73,6 +74,17 @@ const TeachingVault: React.FC = () => {
     }
   };
 
+  // HELPER: Modal closers with auto-reset
+  const closeFileModal = () => {
+    setFileQueue([]);
+    setIsFileModalOpen(false);
+  };
+
+  const closeLinkModal = () => {
+    setLinkQueue([{ url: '', label: '' }]);
+    setIsLinkModalOpen(false);
+  };
+
   const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const newQueueItems = files.map(file => ({
@@ -86,14 +98,17 @@ const TeachingVault: React.FC = () => {
   const handleUploadFiles = async () => {
     if (fileQueue.length === 0) return;
     setIsProcessing(true);
-    setIsFileModalOpen(false);
+    
+    // Close & Reset modal immediately for UX
+    const currentQueue = [...fileQueue];
+    closeFileModal();
 
-    // Optimistic thumbnails
-    const optimisticItems: TeachingVaultItem[] = fileQueue.map(q => ({
+    // 1. OPTIMISTIC UI: Add thumbnails with markers
+    const optimisticItems: TeachingVaultItem[] = currentQueue.map(q => ({
       type: 'FILE',
       label: q.label,
       mimeType: q.file.type,
-      fileId: q.previewUrl ? `optimistic_${q.previewUrl}` : undefined,
+      fileId: q.previewUrl ? `optimistic_${q.previewUrl}` : 'optimistic_file',
       nodeUrl: metadata?.storageNodeUrl
     }));
     
@@ -102,7 +117,7 @@ const TeachingVault: React.FC = () => {
 
     try {
       const uploaded: TeachingVaultItem[] = [];
-      for (const q of fileQueue) {
+      for (const q of currentQueue) {
         const res = await uploadVaultFile(q.file);
         if (res) {
           uploaded.push({ type: 'FILE', fileId: res.fileId, nodeUrl: res.nodeUrl, label: q.label, mimeType: q.file.type });
@@ -115,7 +130,6 @@ const TeachingVault: React.FC = () => {
       setItems(prevItems);
       showXeenapsToast('error', 'Batch upload failed');
     } finally {
-      setFileQueue([]);
       setIsProcessing(false);
     }
   };
@@ -124,23 +138,36 @@ const TeachingVault: React.FC = () => {
     const validLinks = linkQueue.filter(l => l.url.trim() && l.label.trim());
     if (validLinks.length === 0) return;
 
-    setIsLinkModalOpen(false);
+    setIsProcessing(true);
+    closeLinkModal();
+    
     const prevItems = [...items];
-    const newLinks: TeachingVaultItem[] = validLinks.map(l => ({
+    
+    // 1. OPTIMISTIC UI: Add link items with markers
+    const optimisticLinks: TeachingVaultItem[] = validLinks.map(l => ({
+      type: 'LINK',
+      url: l.url,
+      label: l.label,
+      fileId: 'optimistic_link' // Marker for spinner
+    }));
+
+    setItems(prev => [...prev, ...optimisticLinks]);
+
+    const cleanNewLinks: TeachingVaultItem[] = validLinks.map(l => ({
       type: 'LINK',
       url: l.url,
       label: l.label
     }));
 
-    const final = [...items, ...newLinks];
-    setItems(final);
-
     try {
-      await handleSyncVault(final);
+      const finalGallery = [...prevItems, ...cleanNewLinks];
+      await handleSyncVault(finalGallery);
+      setItems(finalGallery);
     } catch (err) {
       setItems(prevItems);
+      showXeenapsToast('error', 'Link synchronization failed');
     } finally {
-      setLinkQueue([{ url: '', label: '' }]);
+      setIsProcessing(false);
     }
   };
 
@@ -167,10 +194,18 @@ const TeachingVault: React.FC = () => {
             <h2 className="text-sm md:text-xl font-black text-[#004A74] uppercase tracking-tight truncate max-w-[150px] md:max-w-md">{metadata?.label || 'Session Vault'}</h2>
          </div>
          <div className="flex items-center gap-2">
-            <button onClick={() => setIsLinkModalOpen(true)} className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-white text-[#004A74] border border-gray-100 rounded-2xl text-[9px] font-black uppercase shadow-sm">
+            <button 
+              onClick={() => setIsLinkModalOpen(true)} 
+              disabled={isProcessing}
+              className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-white text-[#004A74] border border-gray-100 rounded-2xl text-[9px] font-black uppercase shadow-sm disabled:opacity-50"
+            >
                 <LinkIcon size={14} /> Add Links
             </button>
-            <button onClick={() => setIsFileModalOpen(true)} className="flex items-center gap-2 px-5 md:px-6 py-2.5 bg-[#004A74] text-white rounded-2xl text-[9px] font-black uppercase shadow-lg">
+            <button 
+              onClick={() => setIsFileModalOpen(true)} 
+              disabled={isProcessing}
+              className="flex items-center gap-2 px-5 md:px-6 py-2.5 bg-[#004A74] text-white rounded-2xl text-[9px] font-black uppercase shadow-lg disabled:opacity-50"
+            >
                 <Plus size={14} /> Add Evidence
             </button>
          </div>
@@ -206,7 +241,7 @@ const TeachingVault: React.FC = () => {
               }
 
               return (
-                <div key={idx} className={`group relative aspect-square bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 ${isOptimistic ? 'opacity-50' : ''}`}>
+                <div key={idx} className={`group relative aspect-square bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 ${isOptimistic ? 'opacity-60' : ''}`}>
                   <div className="w-full h-full bg-gray-50 flex items-center justify-center relative">
                     {isImage ? (
                       <img src={displayUrl} className="w-full h-full object-cover" alt={item.label} />
@@ -222,20 +257,21 @@ const TeachingVault: React.FC = () => {
                       </div>
                     )}
                     
-                    {/* PER-ITEM LOADER OVERLAY */}
+                    {/* PER-ITEM LOADER OVERLAY (UNIVERSAL) */}
                     {isOptimistic && (
-                      <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] flex flex-col items-center justify-center z-20">
+                      <div className="absolute inset-0 bg-white/60 backdrop-blur-[3px] flex flex-col items-center justify-center z-20">
                         <Loader2 size={32} className="text-[#004A74] animate-spin" />
-                        <span className="text-[7px] font-black uppercase mt-2 text-[#004A74]/60 tracking-widest">Processing</span>
+                        <span className="text-[7px] font-black uppercase mt-2 text-[#004A74] tracking-widest animate-pulse">Syncing...</span>
                       </div>
                     )}
 
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 z-30">
-                      {!isOptimistic && (
+                    {/* ACTIONS: ONLY SHOW IF READY */}
+                    {!isOptimistic && (
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 z-30">
                         <button onClick={() => displayUrl && window.open(displayUrl, '_blank')} className="p-3 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 transition-all shadow-lg"><Eye size={18} /></button>
-                      )}
-                      <button onClick={() => handleRemove(idx)} className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all active:scale-95"><Trash2 size={14} /></button>
-                    </div>
+                        <button onClick={() => handleRemove(idx)} className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all active:scale-95"><Trash2 size={14} /></button>
+                      </div>
+                    )}
                   </div>
                   <div className="absolute inset-x-0 bottom-0 p-3 bg-white/90 backdrop-blur-sm border-t border-gray-100 z-10">
                      <p className="text-[9px] font-black text-[#004A74] truncate uppercase tracking-tight">{item.label}</p>
@@ -256,7 +292,7 @@ const TeachingVault: React.FC = () => {
                     <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><CloudUpload size={24} /></div>
                     <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Batch File Ingestion</h2>
                  </div>
-                 <button onClick={() => setIsFileModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 rounded-full transition-all"><X size={24} /></button>
+                 <button onClick={closeFileModal} className="p-2 hover:bg-red-50 text-gray-400 rounded-full transition-all"><X size={24} /></button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-6">
                  {fileQueue.length === 0 ? (
@@ -280,7 +316,8 @@ const TeachingVault: React.FC = () => {
                  )}
               </div>
               <div className="p-8 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                 <button onClick={handleUploadFiles} disabled={fileQueue.length === 0} className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase shadow-xl">Secure Upload</button>
+                 <button onClick={closeFileModal} className="px-8 py-3 bg-white text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest">Cancel</button>
+                 <button onClick={handleUploadFiles} disabled={fileQueue.length === 0} className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase shadow-xl disabled:opacity-50">Secure Upload</button>
               </div>
            </div>
         </div>
@@ -295,7 +332,7 @@ const TeachingVault: React.FC = () => {
                     <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><LinkIcon size={24} /></div>
                     <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">External References</h2>
                  </div>
-                 <button onClick={() => setIsLinkModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
+                 <button onClick={closeLinkModal} className="p-2 hover:bg-red-50 text-gray-400 rounded-full transition-all"><X size={24} /></button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-6">
                  {linkQueue.map((l, i) => (
@@ -316,6 +353,7 @@ const TeachingVault: React.FC = () => {
                  <button onClick={() => setLinkQueue([...linkQueue, { url: '', label: '' }])} className="w-full py-4 border-2 border-dashed border-gray-100 rounded-2xl text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-[#004A74] hover:bg-white transition-all">+ Add More Links</button>
               </div>
               <div className="p-8 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                 <button onClick={closeLinkModal} className="px-8 py-3 bg-white text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest">Cancel</button>
                  <button onClick={handleSaveLinks} className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase shadow-xl flex items-center gap-2"><Save size={14} /> Synchronize Vault</button>
               </div>
            </div>
