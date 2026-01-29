@@ -113,6 +113,7 @@ const TeachingVault: React.FC = () => {
       await handleSyncVault(final);
     } catch (err) {
       setItems(prevItems);
+      showXeenapsToast('error', 'Batch upload failed');
     } finally {
       setFileQueue([]);
       setIsProcessing(false);
@@ -170,7 +171,7 @@ const TeachingVault: React.FC = () => {
                 <LinkIcon size={14} /> Add Links
             </button>
             <button onClick={() => setIsFileModalOpen(true)} className="flex items-center gap-2 px-5 md:px-6 py-2.5 bg-[#004A74] text-white rounded-2xl text-[9px] font-black uppercase shadow-lg">
-                {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add Evidence
+                <Plus size={14} /> Add Evidence
             </button>
          </div>
       </header>
@@ -197,12 +198,16 @@ const TeachingVault: React.FC = () => {
               } else if (isOptimistic) {
                 displayUrl = item.fileId?.replace('optimistic_', '') || '';
               } else if (item.fileId) {
-                displayUrl = `https://drive.google.com/file/d/${item.fileId}/view`;
+                if (isImage) {
+                  displayUrl = `https://lh3.googleusercontent.com/d/${item.fileId}`;
+                } else {
+                  displayUrl = `https://drive.google.com/file/d/${item.fileId}/view`;
+                }
               }
 
               return (
                 <div key={idx} className={`group relative aspect-square bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 ${isOptimistic ? 'opacity-50' : ''}`}>
-                  <div className="w-full h-full bg-gray-50 flex items-center justify-center">
+                  <div className="w-full h-full bg-gray-50 flex items-center justify-center relative">
                     {isImage ? (
                       <img src={displayUrl} className="w-full h-full object-cover" alt={item.label} />
                     ) : item.type === 'LINK' ? (
@@ -216,14 +221,23 @@ const TeachingVault: React.FC = () => {
                         <span className="text-[8px] font-black uppercase tracking-tighter">Document</span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-[#004A74]/90 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                    
+                    {/* PER-ITEM LOADER OVERLAY */}
+                    {isOptimistic && (
+                      <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] flex flex-col items-center justify-center z-20">
+                        <Loader2 size={32} className="text-[#004A74] animate-spin" />
+                        <span className="text-[7px] font-black uppercase mt-2 text-[#004A74]/60 tracking-widest">Processing</span>
+                      </div>
+                    )}
+
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 z-30">
                       {!isOptimistic && (
                         <button onClick={() => displayUrl && window.open(displayUrl, '_blank')} className="p-3 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 transition-all shadow-lg"><Eye size={18} /></button>
                       )}
                       <button onClick={() => handleRemove(idx)} className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all active:scale-95"><Trash2 size={14} /></button>
                     </div>
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 p-3 bg-white/90 backdrop-blur-sm border-t border-gray-100">
+                  <div className="absolute inset-x-0 bottom-0 p-3 bg-white/90 backdrop-blur-sm border-t border-gray-100 z-10">
                      <p className="text-[9px] font-black text-[#004A74] truncate uppercase tracking-tight">{item.label}</p>
                   </div>
                 </div>
@@ -281,7 +295,7 @@ const TeachingVault: React.FC = () => {
                     <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><LinkIcon size={24} /></div>
                     <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">External References</h2>
                  </div>
-                 <button onClick={() => setIsLinkModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 rounded-full transition-all"><X size={24} /></button>
+                 <button onClick={() => setIsLinkModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-6">
                  {linkQueue.map((l, i) => (

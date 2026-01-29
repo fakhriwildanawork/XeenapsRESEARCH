@@ -96,6 +96,16 @@ const TeachingDashboard: React.FC = () => {
     });
 
     if (label) {
+      // Freeze UI and show loading
+      Swal.fire({
+        title: 'INITIALIZING SESSION...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        ...XEENAPS_SWAL_CONFIG
+      });
+
       const id = crypto.randomUUID();
       const newItem: TeachingItem = {
         id,
@@ -138,6 +148,8 @@ const TeachingDashboard: React.FC = () => {
       };
 
       const success = await saveTeachingItem(newItem);
+      Swal.close();
+      
       if (success) {
         navigate(`/teaching/${id}`, { state: { item: newItem } });
       } else {
@@ -164,12 +176,21 @@ const TeachingDashboard: React.FC = () => {
   };
 
   const filteredItems = useMemo(() => {
-    return items.filter(item => {
+    const filtered = items.filter(item => {
       if (!appliedDateRange.start && !appliedDateRange.end) return true;
       const itemDate = new Date(item.teachingDate);
       if (appliedDateRange.start && itemDate < new Date(appliedDateRange.start)) return false;
       if (appliedDateRange.end && itemDate > new Date(appliedDateRange.end)) return false;
       return true;
+    });
+
+    // Multi-layer Sorting for Card Mode: Date (DESC) -> StartTime (DESC) -> EndTime (DESC)
+    return filtered.sort((a, b) => {
+      const dateCmp = b.teachingDate.localeCompare(a.teachingDate);
+      if (dateCmp !== 0) return dateCmp;
+      const startCmp = b.startTime.localeCompare(a.startTime);
+      if (startCmp !== 0) return startCmp;
+      return b.endTime.localeCompare(a.endTime);
     });
   }, [items, appliedDateRange]);
 
@@ -206,16 +227,18 @@ const TeachingDashboard: React.FC = () => {
       if (!map[dateStr]) map[dateStr] = [];
       map[dateStr].push(item);
     });
-    Object.keys(map).forEach(d => {
-      map[d].sort((a, b) => a.startTime.localeCompare(b.startTime));
-    });
     return map;
   }, [items]);
 
   const dailySessions = useMemo(() => {
     if (!selectedDate) return [];
     const rawSessions = sessionsByDate[selectedDate] || [];
-    return [...rawSessions].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    // Multi-layer Sorting for Calendar Mode: StartTime (ASC) -> EndTime (ASC)
+    return [...rawSessions].sort((a, b) => {
+      const startCmp = a.startTime.localeCompare(b.startTime);
+      if (startCmp !== 0) return startCmp;
+      return a.endTime.localeCompare(b.endTime);
+    });
   }, [selectedDate, sessionsByDate]);
 
   return (
@@ -254,7 +277,7 @@ const TeachingDashboard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-           <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-100 shrink-0 shadow-sm">
+           <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 shrink-0 shadow-sm">
               <button onClick={() => setViewMode('card')} className={`p-2 rounded-xl transition-all ${viewMode === 'card' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400'}`}><LayoutGrid size={18} /></button>
               <button onClick={() => setViewMode('calendar')} className={`p-2 rounded-xl transition-all ${viewMode === 'calendar' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400'}`}><CalendarDays size={18} /></button>
            </div>
