@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -35,13 +34,15 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
-    // NEW: getTeaching
+    // NEW: getTeaching (UPDATED FOR DATE FILTERS)
     if (action === 'getTeaching') {
       const page = parseInt(e.parameter.page || "1");
       const limit = parseInt(e.parameter.limit || "25");
       const search = e.parameter.search || "";
+      const startDate = e.parameter.startDate || "";
+      const endDate = e.parameter.endDate || "";
       const academicYear = e.parameter.academicYear || "";
-      const result = getTeachingFromRegistry(page, limit, search, academicYear);
+      const result = getTeachingFromRegistry(page, limit, search, startDate, endDate, academicYear);
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
