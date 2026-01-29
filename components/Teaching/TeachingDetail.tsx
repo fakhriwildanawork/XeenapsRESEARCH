@@ -60,21 +60,32 @@ const TeachingDetail: React.FC = () => {
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // HTML Input Sanitizers
-  const sanitizeDate = (val: string) => val ? val.substring(0, 10) : '';
-  const sanitizeTime = (val: string) => {
-    if (!val) return '';
-    if (val.includes('T')) return val.split('T')[1].substring(0, 5);
-    return val.substring(0, 5);
+  /**
+   * SMART TIME SANITIZER
+   * Fixes the "1899-12-30" Google Sheets epoch bug and extracts only HH:mm
+   */
+  const sanitizeTime = (val: any) => {
+    if (!val || val === "-") return '';
+    const str = String(val);
+    // If it's a full ISO string (contains T), get the time part after T
+    if (str.includes('T')) {
+      return str.split('T')[1].substring(0, 5);
+    }
+    // Fallback: just take first 5 chars if it looks like HH:mm:ss
+    return str.substring(0, 5);
   };
 
+  const sanitizeDate = (val: string) => val ? val.substring(0, 10) : '';
+
   const calculateDuration = (start?: string, end?: string) => {
-    if (!start || !end) return "-";
+    const s = sanitizeTime(start);
+    const e = sanitizeTime(end);
+    if (!s || !e) return "-";
     try {
-      const [h1, m1] = start.split(':').map(Number);
-      const [h2, m2] = end.split(':').map(Number);
+      const [h1, m1] = s.split(':').map(Number);
+      const [h2, m2] = e.split(':').map(Number);
       let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-      if (diff < 0) diff += 24 * 60; // Handle overnight if any
+      if (diff < 0) diff += 24 * 60; 
       const hours = Math.floor(diff / 60);
       const minutes = diff % 60;
       return `${hours}h ${minutes}m`;
@@ -118,7 +129,6 @@ const TeachingDetail: React.FC = () => {
     load();
   }, [sessionId, location.state, navigate]);
 
-  // Fix: Corrected typo 'key0f' to 'keyof' in handleFieldChange definition
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
     const updated = { ...item, [field]: val, updatedAt: new Date().toISOString() };
@@ -178,7 +188,12 @@ const TeachingDetail: React.FC = () => {
     } else if (pickerType === 'PRESENTATION') {
       const current = item.presentationId || [];
       if (!current.some(p => p.id === data.id)) {
-        handleFieldChange('presentationId', [...current, { id: data.id, title: data.title, gSlidesId: data.gSlidesId }]);
+        // ENHANCED: Save gSlidesId to allow direct opening later
+        handleFieldChange('presentationId', [...current, { 
+          id: data.id, 
+          title: data.title, 
+          gSlidesId: data.gSlidesId 
+        }]);
       }
     } else if (pickerType === 'QUESTION') {
       const current = item.questionBankId || [];
@@ -309,7 +324,7 @@ const TeachingDetail: React.FC = () => {
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                      {/* Library */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
+                     <div className="bg-white border border-gray-200 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><BookOpen size={12} /> Library</span>
                            <button onClick={() => openPicker('LIBRARY')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
@@ -330,7 +345,7 @@ const TeachingDetail: React.FC = () => {
                      </div>
 
                      {/* Slides */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
+                     <div className="bg-white border border-gray-200 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><Presentation size={12} /> Slides</span>
                            <button onClick={() => openPicker('PRESENTATION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
@@ -343,9 +358,11 @@ const TeachingDetail: React.FC = () => {
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                                      <button 
                                        onClick={() => {
+                                         // DIRECT OPENING LOGIC
                                          if ((ppt as any).gSlidesId) {
                                             window.open(`https://docs.google.com/presentation/d/${(ppt as any).gSlidesId}/edit`, '_blank');
                                          } else {
+                                            // Fallback to gallery if ID missing
                                             navigate('/presentations', { state: { reopenPPT: { id: ppt.id, title: ppt.title } } });
                                          }
                                        }} 
