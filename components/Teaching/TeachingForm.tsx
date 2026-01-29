@@ -50,10 +50,12 @@ const TeachingForm: React.FC = () => {
 
   const [formData, setFormData] = useState<TeachingItem>({
     id: crypto.randomUUID(),
+    label: '', // Added missing field
     courseCode: '',
     courseTitle: '',
     institution: '',
     faculty: '',
+    program: '', // Added missing field
     academicYear: '2024/2025',
     semester: 'Ganjil',
     classGroup: '',
@@ -80,6 +82,8 @@ const TeachingForm: React.FC = () => {
     assignmentType: AssignmentType.NONE,
     assessmentCriteria: '',
     status: SessionStatus.COMPLETED,
+    vaultJsonId: '', // Added missing field
+    storageNodeUrl: '', // Added missing field
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { TeachingItem, SessionStatus, SessionMode, TeachingRole } from '../../types';
+import { TeachingItem, SessionStatus, SessionMode, TeachingRole, CourseType, EducationLevel, AssignmentType } from '../../types';
 import { fetchTeachingPaginated, deleteTeachingItem, saveTeachingItem } from '../../services/TeachingService';
 import { 
   Plus, 
@@ -86,13 +86,20 @@ const TeachingDashboard: React.FC = () => {
         meetingNo: 1,
         mode: SessionMode.OFFLINE,
         plannedStudents: 0,
+        location: '', // Added missing field
         courseTitle: '',
         courseCode: '',
         learningOutcomes: '',
         method: 'Lecture',
         theoryCredits: 2,
+        practicalCredits: 0, // Added missing field
+        courseType: CourseType.WAJIB_PRODI, // Added missing field
+        educationLevel: EducationLevel.S1, // Added missing field
+        topic: '', // Added missing field
         role: TeachingRole.MANDIRI,
         referenceLinks: [],
+        assignmentType: AssignmentType.NONE, // Added missing field
+        assessmentCriteria: '', // Added missing field
         status: SessionStatus.COMPLETED,
         vaultJsonId: '',
         storageNodeUrl: '',
