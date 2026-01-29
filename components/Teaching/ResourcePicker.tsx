@@ -30,7 +30,7 @@ export type PickerType = 'LIBRARY' | 'PRESENTATION' | 'QUESTION';
 interface ResourcePickerProps {
   type: PickerType;
   onClose: () => void;
-  onSelect: (id: string, title: string) => void;
+  onSelect: (item: any) => void;
 }
 
 const ResourcePicker: React.FC<ResourcePickerProps> = ({ type, onClose, onSelect }) => {
@@ -147,7 +147,7 @@ const ResourcePicker: React.FC<ResourcePickerProps> = ({ type, onClose, onSelect
                                <StandardTd className="text-[10px] font-mono font-bold text-gray-400 text-center">{date}</StandardTd>
                                <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
                                   <button 
-                                    onClick={() => onSelect(item.id, displayTitle)}
+                                    onClick={() => onSelect(item)}
                                     className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2"
                                   >
                                      <Plus size={12} strokeWidth={4} /> Select

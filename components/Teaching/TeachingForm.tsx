@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -242,13 +243,14 @@ const TeachingForm: React.FC = () => {
                         <BookOpen size={40} className="mx-auto mb-2" />
                         <p className="text-[9px] font-black uppercase tracking-widest">No Library Items Attached</p>
                       </div>
-                    ) : formData.referenceLinks.map((refId, i) => (
+                    /* Fix: ref is an object {id: string, title: string}, so we must use ref.id and updated filter logic */
+                    ) : formData.referenceLinks.map((ref, i) => (
                       <div key={i} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm group">
                          <div className="flex items-center gap-3">
                             <Layers size={14} className="text-[#004A74]" />
-                            <span className="text-[10px] font-bold text-[#004A74] uppercase truncate max-w-sm">Library Item (ID: {refId.substring(0,8)})</span>
+                            <span className="text-[10px] font-bold text-[#004A74] uppercase truncate max-w-sm">Library Item (ID: {ref.id.substring(0,8)})</span>
                          </div>
-                         <button type="button" onClick={() => setFormData({...formData, referenceLinks: formData.referenceLinks.filter(id => id !== refId)})} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                         <button type="button" onClick={() => setFormData({...formData, referenceLinks: formData.referenceLinks.filter(r => r.id !== ref.id)})} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
                             <Trash2 size={14} />
                          </button>
                       </div>
@@ -326,9 +328,10 @@ const TeachingForm: React.FC = () => {
         <ResourcePicker 
           type="LIBRARY"
           onClose={() => setIsResourcePickerOpen(false)}
-          onSelect={(id) => {
-            if (!formData.referenceLinks.includes(id)) {
-              setFormData({...formData, referenceLinks: [...formData.referenceLinks, id]});
+          /* Fix: ResourcePicker onSelect passes an object, so we must store object mapping in referenceLinks */
+          onSelect={(res) => {
+            if (!formData.referenceLinks.some(r => r.id === res.id)) {
+              setFormData({...formData, referenceLinks: [...formData.referenceLinks, { id: res.id, title: res.title }]});
             }
             setIsResourcePickerOpen(false);
           }}

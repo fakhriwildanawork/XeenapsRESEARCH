@@ -9,12 +9,10 @@ import {
   SessionStatus,
   CourseType,
   EducationLevel,
-  AssignmentType
+  AssignmentType,
+  LibraryItem
 } from '../../types';
 import { fetchTeachingPaginated, saveTeachingItem, deleteTeachingItem } from '../../services/TeachingService';
-import { fetchLibraryPaginated } from '../../services/gasService';
-import { fetchPresentationsPaginated } from '../../services/PresentationService';
-import { fetchAllQuestionsPaginated } from '../../services/QuestionService';
 import { 
   ArrowLeft, 
   FolderOpen, 
@@ -27,16 +25,12 @@ import {
   Users,
   Plus,
   Trash2 as TrashIcon,
-  Layers,
-  FileText,
+  Zap,
+  Eye,
+  ExternalLink,
   Presentation,
   GraduationCap,
-  Link as LinkIcon,
-  ChevronRight,
-  ExternalLink,
-  Zap,
-  Save,
-  Eye
+  Link as LinkIcon
 } from 'lucide-react';
 import { 
   FormPageContainer, 
@@ -63,14 +57,6 @@ const TeachingDetail: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<PickerType>('LIBRARY');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Resource Resolver State
-  const [resolvedData, setResolvedData] = useState<{
-    library: Record<string, any>;
-    presentations: Record<string, any>;
-    questions: Record<string, any>;
-  }>({ library: {}, presentations: {}, questions: {} });
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -88,6 +74,7 @@ const TeachingDetail: React.FC = () => {
       if (stateItem && stateItem.id === sessionId) {
         setItem({
           ...stateItem,
+          referenceLinks: Array.isArray(stateItem.referenceLinks) ? stateItem.referenceLinks : [],
           presentationId: Array.isArray(stateItem.presentationId) ? stateItem.presentationId : [],
           questionBankId: Array.isArray(stateItem.questionBankId) ? stateItem.questionBankId : [],
           attachmentLink: Array.isArray(stateItem.attachmentLink) ? stateItem.attachmentLink : []
@@ -100,6 +87,7 @@ const TeachingDetail: React.FC = () => {
       if (found) {
         setItem({
           ...found,
+          referenceLinks: Array.isArray(found.referenceLinks) ? found.referenceLinks : [],
           presentationId: Array.isArray(found.presentationId) ? found.presentationId : [],
           questionBankId: Array.isArray(found.questionBankId) ? found.questionBankId : [],
           attachmentLink: Array.isArray(found.attachmentLink) ? found.attachmentLink : []
@@ -109,35 +97,6 @@ const TeachingDetail: React.FC = () => {
     };
     load();
   }, [sessionId, location.state, navigate]);
-
-  // Effect to resolve IDs to Titles/Texts for the UI
-  useEffect(() => {
-    const resolve = async () => {
-      if (!item) return;
-      
-      // Resolve Library Titles
-      if (Array.isArray(item.referenceLinks) && item.referenceLinks.length > 0) {
-        const res = await fetchLibraryPaginated(1, 1000);
-        const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
-        setResolvedData(prev => ({ ...prev, library: mapping }));
-      }
-      
-      // Resolve PPT Titles
-      if (Array.isArray(item.presentationId) && item.presentationId.length > 0) {
-        const res = await fetchPresentationsPaginated(1, 1000);
-        const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
-        setResolvedData(prev => ({ ...prev, presentations: mapping }));
-      }
-      
-      // Resolve Question Texts
-      if (Array.isArray(item.questionBankId) && item.questionBankId.length > 0) {
-        const res = await fetchAllQuestionsPaginated(1, 1000);
-        const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
-        setResolvedData(prev => ({ ...prev, questions: mapping }));
-      }
-    };
-    resolve();
-  }, [item?.referenceLinks?.length, item?.presentationId?.length, item?.questionBankId?.length]);
 
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
@@ -188,22 +147,26 @@ const TeachingDetail: React.FC = () => {
     setIsPickerOpen(true);
   };
 
-  const handleResourceSelect = (id: string) => {
+  const handleResourceSelect = (data: any) => {
     if (!item) return;
     if (pickerType === 'LIBRARY') {
-      const current = Array.isArray(item.referenceLinks) ? item.referenceLinks : [];
-      if (!current.includes(id)) {
-        handleFieldChange('referenceLinks', [...current, id]);
+      const current = item.referenceLinks || [];
+      if (!current.some(r => r.id === data.id)) {
+        handleFieldChange('referenceLinks', [...current, { id: data.id, title: data.title }]);
       }
     } else if (pickerType === 'PRESENTATION') {
-      const current = Array.isArray(item.presentationId) ? item.presentationId : [];
-      if (!current.includes(id)) {
-        handleFieldChange('presentationId', [...current, id]);
+      const current = item.presentationId || [];
+      if (!current.some(p => p.id === data.id)) {
+        handleFieldChange('presentationId', [...current, { id: data.id, title: data.title }]);
       }
     } else if (pickerType === 'QUESTION') {
-      const current = Array.isArray(item.questionBankId) ? item.questionBankId : [];
-      if (!current.includes(id)) {
-        handleFieldChange('questionBankId', [...current, id]);
+      const current = item.questionBankId || [];
+      if (!current.some(q => q.id === data.id)) {
+        handleFieldChange('questionBankId', [...current, { 
+          id: data.id, 
+          label: data.customLabel || '', 
+          questionText: data.questionText 
+        }]);
       }
     }
     setIsPickerOpen(false);
@@ -242,7 +205,6 @@ const TeachingDetail: React.FC = () => {
       <FormContentArea>
         <div className="max-w-5xl mx-auto space-y-12">
           
-          {/* TAB 1: SCHEDULE (PLANNING) */}
           {activeTab === 'schedule' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
                <FormField label="Ledger Identity / Session Label" required>
@@ -263,15 +225,9 @@ const TeachingDetail: React.FC = () => {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField label="Institution">
-                    <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.institution} onChange={e => handleFieldChange('institution', e.target.value)} placeholder="e.g. Universitas Indonesia" />
-                  </FormField>
-                  <FormField label="Faculty">
-                    <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.faculty} onChange={e => handleFieldChange('faculty', e.target.value)} placeholder="e.g. Teknik" />
-                  </FormField>
-                  <FormField label="Study Program">
-                    <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.program} onChange={e => handleFieldChange('program', e.target.value)} placeholder="e.g. Arsitektur" />
-                  </FormField>
+                  <FormField label="Institution"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.institution} onChange={e => handleFieldChange('institution', e.target.value)} placeholder="e.g. Universitas Indonesia" /></FormField>
+                  <FormField label="Faculty"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.faculty} onChange={e => handleFieldChange('faculty', e.target.value)} placeholder="e.g. Teknik" /></FormField>
+                  <FormField label="Study Program"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.program} onChange={e => handleFieldChange('program', e.target.value)} placeholder="e.g. Arsitektur" /></FormField>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -281,21 +237,13 @@ const TeachingDetail: React.FC = () => {
                   <FormField label="Semester (Numeric)">
                     <FormDropdown value={item.semester} options={['1','2','3','4','5','6','7','8','Short Session']} onChange={v => handleFieldChange('semester', v)} placeholder="Semester" />
                   </FormField>
-                  <FormField label="Class / Group">
-                    <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.classGroup} onChange={e => handleFieldChange('classGroup', e.target.value)} placeholder="e.g. AR-A" />
-                  </FormField>
+                  <FormField label="Class / Group"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.classGroup} onChange={e => handleFieldChange('classGroup', e.target.value)} placeholder="e.g. AR-A" /></FormField>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField label="Meeting Number">
-                    <input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.meetingNo} onChange={e => handleFieldChange('meetingNo', parseInt(e.target.value) || 1)} />
-                  </FormField>
-                  <FormField label="Session Mode">
-                    <FormDropdown value={item.mode} options={Object.values(SessionMode)} onChange={v => handleFieldChange('mode', v as SessionMode)} placeholder="Mode" />
-                  </FormField>
-                  <FormField label="Planned Students">
-                    <input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.plannedStudents} onChange={e => handleFieldChange('plannedStudents', parseInt(e.target.value) || 0)} />
-                  </FormField>
+                  <FormField label="Meeting Number"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.meetingNo} onChange={e => handleFieldChange('meetingNo', parseInt(e.target.value) || 1)} /></FormField>
+                  <FormField label="Session Mode"><FormDropdown value={item.mode} options={Object.values(SessionMode)} onChange={v => handleFieldChange('mode', v as SessionMode)} placeholder="Mode" /></FormField>
+                  <FormField label="Planned Students"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.plannedStudents} onChange={e => handleFieldChange('plannedStudents', parseInt(e.target.value) || 0)} /></FormField>
                </div>
 
                <FormField label="Location / Room / Venue">
@@ -307,16 +255,11 @@ const TeachingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 2: SUBSTANCE (PREPARING) */}
           {activeTab === 'substance' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Course Code" required>
-                    <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold uppercase" value={item.courseCode} onChange={e => handleFieldChange('courseCode', e.target.value.toUpperCase())} placeholder="e.g. AR123" />
-                  </FormField>
-                  <FormField label="Full Course Title" required>
-                    <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.courseTitle} onChange={e => handleFieldChange('courseTitle', e.target.value)} placeholder="e.g. Architectural Design" />
-                  </FormField>
+                  <FormField label="Course Code" required><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold uppercase" value={item.courseCode} onChange={e => handleFieldChange('courseCode', e.target.value.toUpperCase())} placeholder="e.g. AR123" /></FormField>
+                  <FormField label="Full Course Title" required><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.courseTitle} onChange={e => handleFieldChange('courseTitle', e.target.value)} placeholder="e.g. Architectural Design" /></FormField>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -331,116 +274,102 @@ const TeachingDetail: React.FC = () => {
                </FormField>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Teaching Method (IKU-7 Compliance)">
-                    <FormDropdown value={item.method} options={['Lecture', 'Case Method', 'Team-Based Project', 'Discussion', 'Laboratory Work']} onChange={v => handleFieldChange('method', v)} placeholder="Method" />
-                  </FormField>
-                  <FormField label="Lecturer Assigned Role">
-                    <FormDropdown value={item.role} options={Object.values(TeachingRole)} onChange={v => handleFieldChange('role', v as TeachingRole)} placeholder="Role" />
-                  </FormField>
+                  <FormField label="Teaching Method (IKU-7 Compliance)"><FormDropdown value={item.method} options={['Lecture', 'Case Method', 'Team-Based Project', 'Discussion', 'Laboratory Work']} onChange={v => handleFieldChange('method', v)} placeholder="Method" /></FormField>
+                  <FormField label="Lecturer Assigned Role"><FormDropdown value={item.role} options={Object.values(TeachingRole)} onChange={v => handleFieldChange('role', v as TeachingRole)} placeholder="Role" /></FormField>
                </div>
 
                <FormField label="Learning Outcomes (Sub-CPMK)">
                   <textarea className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-[2rem] text-xs font-medium min-h-[120px] leading-relaxed" value={item.learningOutcomes} onChange={e => handleFieldChange('learningOutcomes', e.target.value)} placeholder="What should students achieve after this session?" />
                </FormField>
 
-               {/* ATTACHMENT HUB - 4 COLUMN GRID */}
                <div className="space-y-4 pt-4">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
                      <Zap size={14} className="text-[#FED400] fill-[#FED400]" /> Integrated Resource Attachments
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                     {/* Column 1: Library */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[280px]">
+                     {/* Library */}
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><BookOpen size={12} /> Library</span>
                            <button onClick={() => openPicker('LIBRARY')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
-                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.referenceLinks) || item.referenceLinks.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Library Items</p> : 
-                             item.referenceLinks.map(id => {
-                               const lib = resolvedData.library[id];
-                               return (
-                                 <div key={id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
-                                    <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">
-                                      {lib?.title || `ID: ${id.substring(0, 8)}...`}
-                                    </span>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                       <button onClick={() => lib && navigate('/', { state: { openItem: lib, returnToTeaching: item.id, activeTab: 'substance' } })} className="p-1 text-cyan-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
-                                       <button onClick={() => handleFieldChange('referenceLinks', item.referenceLinks.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
-                                    </div>
-                                 </div>
-                               );
-                             })
+                             item.referenceLinks.map(lib => (
+                               <div key={lib.id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
+                                  <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">{lib.title}</span>
+                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                                     <button onClick={() => navigate('/', { state: { openItem: { id: lib.id, title: lib.title }, returnToTeaching: item.id, activeTab: 'substance' } })} className="p-1 text-cyan-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
+                                     <button onClick={() => handleFieldChange('referenceLinks', item.referenceLinks.filter(i => i.id !== lib.id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
+                                  </div>
+                               </div>
+                             ))
                            }
                         </div>
                      </div>
 
-                     {/* Column 2: Presentations */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[280px]">
+                     {/* Slides */}
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><Presentation size={12} /> Slides</span>
                            <button onClick={() => openPicker('PRESENTATION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
-                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.presentationId) || item.presentationId.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Slides Attached</p> : 
-                             item.presentationId.map(id => {
-                               const ppt = resolvedData.presentations[id];
-                               return (
-                                 <div key={id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
-                                    <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">
-                                      {ppt?.title || `Slide ID: ${id.substring(0, 8)}`}
-                                    </span>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                       <button onClick={() => ppt && window.open(`https://docs.google.com/presentation/d/${ppt.gSlidesId}/edit`, '_blank')} className="p-1 text-emerald-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
-                                       <button onClick={() => handleFieldChange('presentationId', item.presentationId.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
-                                    </div>
-                                 </div>
-                               );
-                             })
+                             item.presentationId.map(ppt => (
+                               <div key={ppt.id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
+                                  <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">{ppt.title}</span>
+                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                                     <button onClick={() => handleFieldChange('presentationId', item.presentationId.filter(i => i.id !== ppt.id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
+                                  </div>
+                               </div>
+                             ))
                            }
                         </div>
                      </div>
 
-                     {/* Column 3: Questions */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[280px]">
+                     {/* Question Bank */}
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><GraduationCap size={12} /> Questions</span>
                            <button onClick={() => openPicker('QUESTION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
-                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
-                           {(!Array.isArray(item.questionBankId) || item.questionBankId.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Question Bank</p> : 
-                             item.questionBankId.map(id => {
-                               const q = resolvedData.questions[id];
-                               return (
-                                 <div key={id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
-                                    <span className="text-[9px] font-bold text-[#004A74] leading-tight line-clamp-2 overflow-hidden flex-1 italic">
-                                      {q?.questionText || `Q-ID: ${id.substring(0, 8)}`}
-                                    </span>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                                       <button onClick={() => q && Swal.fire({ title: 'QUESTION PREVIEW', text: q.questionText, ...XEENAPS_SWAL_CONFIG })} className="p-1 text-cyan-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
-                                       <button onClick={() => handleFieldChange('questionBankId', item.questionBankId.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
-                                    </div>
-                                 </div>
-                               );
-                             })
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[160px] pr-1 custom-scrollbar">
+                           {(!Array.isArray(item.questionBankId) || item.questionBankId.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Questions Bank</p> : 
+                             item.questionBankId.map(q => (
+                               <div key={q.id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
+                                  <span className="text-[9px] font-bold text-[#004A74] leading-tight line-clamp-2 overflow-hidden flex-1 italic">
+                                    {q.label || q.questionText}
+                                  </span>
+                                  <button onClick={() => handleFieldChange('questionBankId', item.questionBankId.filter(i => i.id !== q.id))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-white rounded-md shadow-sm shrink-0"><TrashIcon size={12} /></button>
+                               </div>
+                             ))
                            }
                         </div>
+                        {Array.isArray(item.questionBankId) && item.questionBankId.length > 0 && (
+                          <button 
+                            onClick={() => navigate(`/teaching/${item.id}/questions`, { state: { item } })}
+                            className="mt-3 w-full py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[8px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                          >
+                             <Eye size={12} strokeWidth={3} /> Open Attached Question Bank
+                          </button>
+                        )}
                      </div>
 
-                     {/* Column 4: External Links */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[280px]">
+                     {/* External Links */}
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><LinkIcon size={12} /> External</span>
                            <button onClick={handleAddExternalLink} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
-                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.attachmentLink) || item.attachmentLink.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No External Links</p> : 
                              item.attachmentLink.map((link, idx) => (
                                <div key={idx} className="flex items-center justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
                                   <a href={link.url} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-600 truncate hover:underline flex items-center gap-1 flex-1">
                                     {link.label} <ExternalLink size={8} />
                                   </a>
-                                  <button onClick={() => handleFieldChange('attachmentLink', item.attachmentLink.filter((_, i) => i !== idx))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-white rounded-md shadow-sm"><TrashIcon size={12} /></button>
+                                  <button onClick={() => handleFieldChange('attachmentLink', item.attachmentLink.filter((_, i) => i !== idx))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-white rounded-md shadow-sm shrink-0"><TrashIcon size={12} /></button>
                                </div>
                              ))
                            }
@@ -451,16 +380,11 @@ const TeachingDetail: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 3: REPORT (REPORTING) */}
           {activeTab === 'report' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Actual Student Attendance">
-                    <input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.totalStudentsPresent} onChange={e => handleFieldChange('totalStudentsPresent', parseInt(e.target.value) || 0)} />
-                  </FormField>
-                  <FormField label="Session Realization Status">
-                    <FormDropdown value={item.status} options={Object.values(SessionStatus)} onChange={v => handleFieldChange('status', v as SessionStatus)} placeholder="Status" />
-                  </FormField>
+                  <FormField label="Actual Student Attendance"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.totalStudentsPresent} onChange={e => handleFieldChange('totalStudentsPresent', parseInt(e.target.value) || 0)} /></FormField>
+                  <FormField label="Session Realization Status"><FormDropdown value={item.status} options={Object.values(SessionStatus)} onChange={v => handleFieldChange('status', v as SessionStatus)} placeholder="Status" /></FormField>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -476,21 +400,12 @@ const TeachingDetail: React.FC = () => {
                </FormField>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
-                  <FormField label="Assignment Plan">
-                    <FormDropdown value={item.assignmentType} options={Object.values(AssignmentType)} onChange={v => handleFieldChange('assignmentType', v as AssignmentType)} placeholder="Assignment" />
-                  </FormField>
-                  <FormField label="Assessment Criteria">
-                    <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold" value={item.assessmentCriteria} onChange={e => handleFieldChange('assessmentCriteria', e.target.value)} placeholder="e.g. rubrics, accuracy..." />
-                  </FormField>
+                  <FormField label="Assignment Plan"><FormDropdown value={item.assignmentType} options={Object.values(AssignmentType)} onChange={v => handleFieldChange('assignmentType', v as AssignmentType)} placeholder="Assignment" /></FormField>
+                  <FormField label="Assessment Criteria"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold" value={item.assessmentCriteria} onChange={e => handleFieldChange('assessmentCriteria', e.target.value)} placeholder="e.g. rubrics, accuracy..." /></FormField>
                </div>
 
-               <FormField label="Obstacles & Problems (BKD Requirement)">
-                  <textarea className="w-full px-6 py-4 bg-red-50/30 border border-red-100 rounded-[2rem] text-xs font-medium min-h-[100px] leading-relaxed" value={item.problems} onChange={e => handleFieldChange('problems', e.target.value)} placeholder="Describe constraints (Projector fail, Connection, etc.)..." />
-               </FormField>
-
-               <FormField label="Lecturer Self-Reflection">
-                  <textarea className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-[2rem] text-xs font-medium min-h-[150px] leading-relaxed italic" value={item.reflection} onChange={e => handleFieldChange('reflection', e.target.value)} placeholder="How to improve next session?" />
-               </FormField>
+               <FormField label="Obstacles & Problems (BKD Requirement)"><textarea className="w-full px-6 py-4 bg-red-50/30 border border-red-100 rounded-[2rem] text-xs font-medium min-h-[100px] leading-relaxed" value={item.problems} onChange={e => handleFieldChange('problems', e.target.value)} placeholder="Describe constraints (Projector fail, Connection, etc.)..." /></FormField>
+               <FormField label="Lecturer Self-Reflection"><textarea className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-[2rem] text-xs font-medium min-h-[150px] leading-relaxed italic" value={item.reflection} onChange={e => handleFieldChange('reflection', e.target.value)} placeholder="How to improve next session?" /></FormField>
             </div>
           )}
 

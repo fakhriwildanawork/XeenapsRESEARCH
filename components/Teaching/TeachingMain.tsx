@@ -21,6 +21,7 @@ import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import TeachingDetail from './TeachingDetail';
 import TeachingVault from './TeachingVault';
+import AttachedQuestion from './AttachedQuestion'; // New module
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 
@@ -213,6 +214,7 @@ const TeachingMain: React.FC = () => {
       <Route path="/" element={<TeachingDashboard />} />
       <Route path="/:sessionId" element={<TeachingDetail />} />
       <Route path="/:sessionId/vault" element={<TeachingVault />} />
+      <Route path="/:sessionId/questions" element={<AttachedQuestion />} />
     </Routes>
   );
 };

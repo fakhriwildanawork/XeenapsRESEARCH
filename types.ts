@@ -284,9 +284,9 @@ export interface TeachingItem {
   educationLevel: EducationLevel;
   topic: string;
   role: TeachingRole;
-  referenceLinks: string[]; // Library IDs
-  presentationId: string[]; // Link to Presentation Module (Multiple)
-  questionBankId: string[]; // Link to Question Module (Multiple)
+  referenceLinks: { id: string; title: string }[]; // Updated
+  presentationId: { id: string; title: string }[]; // Updated
+  questionBankId: { id: string; label: string; questionText: string }[]; // Updated
   attachmentLink: ExternalLinkItem[]; // Manual Links
   syllabusLink?: string;
   lectureNotesLink?: string;
