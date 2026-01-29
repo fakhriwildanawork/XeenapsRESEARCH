@@ -246,12 +246,17 @@ export interface TeachingVaultItem {
   nodeUrl?: string;
 }
 
+export interface ExternalLinkItem {
+  label: string;
+  url: string;
+}
+
 export interface TeachingItem {
   // Logic Identity
   id: string;
   label: string; 
   
-  // Phase 1: Planning
+  // Phase 1: Planning (Schedule)
   teachingDate: string;
   startTime: string;
   endTime: string;
@@ -264,29 +269,25 @@ export interface TeachingItem {
   meetingNo: number;
   mode: SessionMode;
   plannedStudents: number;
-  // Added missing location property to resolve compilation errors
   location: string;
-  // Added optional stylistic and formal reference fields
   eventColor?: string;
   skReference?: string;
 
-  // Phase 2: Preparing
+  // Phase 2: Preparing (Substance)
   courseTitle: string;
   courseCode: string;
   learningOutcomes: string;
   method: string;
   theoryCredits: number;
-  // Added missing practical credits and pedagogical classification properties
   practicalCredits: number;
   courseType: CourseType;
   educationLevel: EducationLevel;
   topic: string;
   role: TeachingRole;
   referenceLinks: string[]; // Library IDs
-  presentationId?: string; // Link to Presentation Module
-  questionBankId?: string; // Link to Question Module
-  attachmentLink?: string;
-  // Added optional documentation links
+  presentationIds: string[]; // Link to Presentation Module (Multiple)
+  questionBankIds: string[]; // Link to Question Module (Multiple)
+  externalLinks: ExternalLinkItem[]; // Manual Links
   syllabusLink?: string;
   lectureNotesLink?: string;
 
@@ -299,7 +300,6 @@ export interface TeachingItem {
   attendanceListLink?: string;
   problems?: string;
   reflection?: string;
-  // Added missing reporting and assessment properties
   assignmentType: AssignmentType;
   assessmentCriteria: string;
 

@@ -23,7 +23,7 @@ const CONFIG = {
     LITERATURE_ARCHIVE: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE',
     PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g',
     ACTIVITIES: '1IQ8dzXKfVuAtSnXsU5Wx2JGa5Wkmw_R38HbvH1tXTRU',
-    TEACHING: '1Y-7v_8H_v_8H_v_8H_v_8H_v_8H_v_8H_v_8H_v_8H', // Placeholder User ID
+    TEACHING: '1Y-7v_8H_v_8H_v_8H_v_8H_v_8H_v_8H_v_8H', // Placeholder User ID
     PROFILE: '1Tf9iW9qP8_8X_8vH_8V8H8v_8H8V8H8v_8H8V8H8v8'
   },
   SCHEMAS: {
@@ -31,9 +31,9 @@ const CONFIG = {
       'id', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
     ],
     TEACHING: [
-      'id', 'label', 'teachingDate', 'startTime', 'endTime', 'institution', 'faculty', 'program', 'academicYear', 'semester', 'classGroup', 'meetingNo', 'mode', 'plannedStudents',
-      'courseTitle', 'courseCode', 'learningOutcomes', 'method', 'theoryCredits', 'role', 'referenceLinks', 'presentationId', 'questionBankId', 'attachmentLink',
-      'actualStartTime', 'actualEndTime', 'teachingDuration', 'totalStudentsPresent', 'attendancePercentage', 'attendanceListLink', 'problems', 'reflection',
+      'id', 'label', 'teachingDate', 'startTime', 'endTime', 'institution', 'faculty', 'program', 'academicYear', 'semester', 'classGroup', 'meetingNo', 'mode', 'plannedStudents', 'location', 'eventColor', 'skReference',
+      'courseTitle', 'courseCode', 'learningOutcomes', 'method', 'theoryCredits', 'practicalCredits', 'courseType', 'educationLevel', 'topic', 'role', 'referenceLinks', 'presentationIds', 'questionBankIds', 'externalLinks', 'syllabusLink', 'lectureNotesLink',
+      'actualStartTime', 'actualEndTime', 'teachingDuration', 'totalStudentsPresent', 'attendancePercentage', 'attendanceListLink', 'problems', 'reflection', 'assignmentType', 'assessmentCriteria',
       'vaultJsonId', 'storageNodeUrl', 'status', 'createdAt', 'updatedAt'
     ],
     PRESENTATIONS: [

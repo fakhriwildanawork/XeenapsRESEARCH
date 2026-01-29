@@ -142,27 +142,24 @@ function deleteTeachingFromRegistry(id) {
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     const idIdx = headers.indexOf('id');
-    const journalIdx = headers.indexOf('journalFileId');
-    const photoIdx = headers.indexOf('photoEvidenceId');
-    const nodeIdx = headers.indexOf('journalNodeUrl');
+    const vaultIdx = headers.indexOf('vaultJsonId');
+    const nodeIdx = headers.indexOf('storageNodeUrl');
 
     for (let i = 1; i < data.length; i++) {
       if (data[i][idIdx] === id) {
-        const journalId = data[i][journalIdx];
-        const photoId = data[i][photoIdx];
+        const vaultId = data[i][vaultIdx];
         const nodeUrl = data[i][nodeIdx];
 
-        // Cleanup sharded files
-        const filesToDelete = [journalId, photoId].filter(fid => fid);
-        if (filesToDelete.length > 0 && nodeUrl) {
+        // Cleanup sharded files (Vault JSON)
+        if (vaultId && nodeUrl) {
           const myUrl = ScriptApp.getService().getUrl();
           if (nodeUrl === myUrl || nodeUrl === "") {
-            filesToDelete.forEach(fid => permanentlyDeleteFile(fid));
+             permanentlyDeleteFile(vaultId);
           } else {
             UrlFetchApp.fetch(nodeUrl, {
               method: 'post',
               contentType: 'application/json',
-              payload: JSON.stringify({ action: 'deleteRemoteFiles', fileIds: filesToDelete }),
+              payload: JSON.stringify({ action: 'deleteRemoteFiles', fileIds: [vaultId] }),
               muteHttpExceptions: true
             });
           }

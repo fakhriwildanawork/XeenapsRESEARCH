@@ -48,14 +48,15 @@ const TeachingForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResourcePickerOpen, setIsResourcePickerOpen] = useState(false);
 
+  // Fix: Added missing required fields presentationIds, questionBankIds, and externalLinks to satisfy TeachingItem type
   const [formData, setFormData] = useState<TeachingItem>({
     id: crypto.randomUUID(),
-    label: '', // Added missing field
+    label: '', 
     courseCode: '',
     courseTitle: '',
     institution: '',
     faculty: '',
-    program: '', // Added missing field
+    program: '', 
     academicYear: '2024/2025',
     semester: 'Ganjil',
     classGroup: '',
@@ -77,13 +78,16 @@ const TeachingForm: React.FC = () => {
     topic: '',
     method: 'Lecture',
     referenceLinks: [],
+    presentationIds: [],
+    questionBankIds: [],
+    externalLinks: [],
     syllabusLink: '',
     lectureNotesLink: '',
     assignmentType: AssignmentType.NONE,
     assessmentCriteria: '',
     status: SessionStatus.COMPLETED,
-    vaultJsonId: '', // Added missing field
-    storageNodeUrl: '', // Added missing field
+    vaultJsonId: '', 
+    storageNodeUrl: '', 
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -318,6 +322,8 @@ const TeachingForm: React.FC = () => {
 
       {isResourcePickerOpen && (
         <ResourcePicker 
+          // Fix: Added missing required 'type' prop to ResourcePicker component
+          type="LIBRARY"
           onClose={() => setIsResourcePickerOpen(false)}
           onSelect={(id) => {
             if (!formData.referenceLinks.includes(id)) {

@@ -80,26 +80,29 @@ const TeachingDashboard: React.FC = () => {
         institution: '',
         faculty: '',
         program: '',
-        academicYear: '2024/2025',
-        semester: 'Ganjil',
+        academicYear: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`,
+        semester: '1',
         classGroup: '',
         meetingNo: 1,
         mode: SessionMode.OFFLINE,
         plannedStudents: 0,
-        location: '', // Added missing field
+        location: '',
         courseTitle: '',
         courseCode: '',
         learningOutcomes: '',
         method: 'Lecture',
         theoryCredits: 2,
-        practicalCredits: 0, // Added missing field
-        courseType: CourseType.WAJIB_PRODI, // Added missing field
-        educationLevel: EducationLevel.S1, // Added missing field
-        topic: '', // Added missing field
+        practicalCredits: 0,
+        courseType: CourseType.WAJIB_PRODI,
+        educationLevel: EducationLevel.S1,
+        topic: '',
         role: TeachingRole.MANDIRI,
         referenceLinks: [],
-        assignmentType: AssignmentType.NONE, // Added missing field
-        assessmentCriteria: '', // Added missing field
+        presentationIds: [],
+        questionBankIds: [],
+        externalLinks: [],
+        assignmentType: AssignmentType.NONE,
+        assessmentCriteria: '',
         status: SessionStatus.COMPLETED,
         vaultJsonId: '',
         storageNodeUrl: '',
