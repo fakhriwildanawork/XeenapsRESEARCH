@@ -269,7 +269,28 @@ const TeachingDetail: React.FC = () => {
         subtitle="Teaching Performance Ledger" 
         onBack={() => navigate('/teaching')}
         rightElement={
-          <div className="flex bg-gray-50 p-1.5 rounded-2xl gap-1 mx-auto lg:mx-0">
+          <div className="flex items-center gap-3">
+             <button 
+                onClick={() => navigate(`/teaching/${item.id}/vault`, { state: { item } })}
+                className="p-2.5 bg-white border border-gray-100 text-[#004A74] hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-90"
+                title="Documentation Vault"
+              >
+                <FolderOpen size={20} />
+              </button>
+              <button 
+                onClick={handleDelete}
+                className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90"
+                title="Purge Record"
+              >
+                <Trash2 size={20} />
+              </button>
+          </div>
+        }
+      />
+
+      {/* NEW TABS ROW: DROPPED 1 ROW AS REQUESTED */}
+      <div className="bg-white/95 backdrop-blur-md px-6 md:px-10 py-3 border-b border-gray-50 flex justify-center lg:justify-start overflow-x-auto no-scrollbar shrink-0">
+          <div className="flex bg-gray-50 p-1.5 rounded-2xl gap-1">
             {tabs.map(tab => (
               <button 
                 key={tab.id}
@@ -280,8 +301,7 @@ const TeachingDetail: React.FC = () => {
               </button>
             ))}
           </div>
-        }
-      />
+      </div>
 
       <FormContentArea>
         {/* INVISIBLE SCROLL ANCHOR */}
@@ -380,7 +400,7 @@ const TeachingDetail: React.FC = () => {
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.referenceLinks) || item.referenceLinks.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Library Items</p> : 
                              item.referenceLinks.map(lib => (
-                               <div key={lib.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-200 hover:border-[#004A74]/20 transition-all shadow-sm">
+                               <div key={lib.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-100 hover:border-[#004A74]/20 transition-all shadow-sm">
                                   <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">{lib.title}</span>
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                                      <button onClick={() => navigate('/', { state: { openItem: { id: lib.id, title: lib.title }, returnToTeaching: item.id, activeTab: 'substance' } })} className="p-1 text-cyan-600 hover:bg-gray-50 rounded-md transition-all"><Eye size={12} /></button>
@@ -464,7 +484,7 @@ const TeachingDetail: React.FC = () => {
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.attachmentLink) || item.attachmentLink.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No External Links</p> : 
                              item.attachmentLink.map((link, idx) => (
-                               <div key={idx} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-200 hover:border-[#004A74]/20 transition-all shadow-sm">
+                               <div key={idx} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-100 hover:border-[#004A74]/20 transition-all shadow-sm">
                                   <a href={link.url} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-600 truncate hover:underline flex items-center gap-1 flex-1">
                                     {link.label} <ExternalLink size={8} />
                                   </a>
