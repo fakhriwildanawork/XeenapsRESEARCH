@@ -12,6 +12,9 @@ import {
   AssignmentType
 } from '../../types';
 import { fetchTeachingPaginated, saveTeachingItem, deleteTeachingItem } from '../../services/TeachingService';
+import { fetchLibraryPaginated } from '../../services/gasService';
+import { fetchPresentationsPaginated } from '../../services/PresentationService';
+import { fetchAllQuestionsPaginated } from '../../services/QuestionService';
 import { 
   ArrowLeft, 
   FolderOpen, 
@@ -32,7 +35,8 @@ import {
   ChevronRight,
   ExternalLink,
   Zap,
-  Save
+  Save,
+  Eye
 } from 'lucide-react';
 import { 
   FormPageContainer, 
@@ -59,6 +63,13 @@ const TeachingDetail: React.FC = () => {
   const [pickerType, setPickerType] = useState<PickerType>('LIBRARY');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Resource Resolver State
+  const [resolvedData, setResolvedData] = useState<{
+    library: Record<string, any>;
+    presentations: Record<string, any>;
+    questions: Record<string, any>;
+  }>({ library: {}, presentations: {}, questions: {} });
+
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -88,6 +99,35 @@ const TeachingDetail: React.FC = () => {
     };
     load();
   }, [sessionId, location.state, navigate]);
+
+  // Effect to resolve IDs to Titles/Texts for the UI
+  useEffect(() => {
+    const resolve = async () => {
+      if (!item) return;
+      
+      // Resolve Library Titles
+      if (item.referenceLinks.length > 0) {
+        const res = await fetchLibraryPaginated(1, 1000);
+        const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
+        setResolvedData(prev => ({ ...prev, library: mapping }));
+      }
+      
+      // Resolve PPT Titles
+      if (item.presentationIds.length > 0) {
+        const res = await fetchPresentationsPaginated(1, 1000);
+        const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
+        setResolvedData(prev => ({ ...prev, presentations: mapping }));
+      }
+      
+      // Resolve Question Texts
+      if (item.questionBankIds.length > 0) {
+        const res = await fetchAllQuestionsPaginated(1, 1000);
+        const mapping = res.items.reduce((acc, it) => ({ ...acc, [it.id]: it }), {});
+        setResolvedData(prev => ({ ...prev, questions: mapping }));
+      }
+    };
+    resolve();
+  }, [item?.referenceLinks.length, item?.presentationIds.length, item?.questionBankIds.length]);
 
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
@@ -297,73 +337,97 @@ const TeachingDetail: React.FC = () => {
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                      {/* Column 1: Library */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[250px]">
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[280px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><BookOpen size={12} /> Library</span>
                            <button onClick={() => openPicker('LIBRARY')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
-                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[180px] pr-1 custom-scrollbar">
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
                            {item.referenceLinks.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Library Items</p> : 
-                             item.referenceLinks.map(id => (
-                               <div key={id} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-xl group">
-                                  <span className="text-[8px] font-bold text-[#004A74] truncate">ID: {id.substring(0, 8)}...</span>
-                                  <button onClick={() => handleFieldChange('referenceLinks', item.referenceLinks.filter(i => i !== id))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"><TrashIcon size={12} /></button>
-                               </div>
-                             ))
+                             item.referenceLinks.map(id => {
+                               const lib = resolvedData.library[id];
+                               return (
+                                 <div key={id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
+                                    <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">
+                                      {lib?.title || `ID: ${id.substring(0, 8)}...`}
+                                    </span>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                       <button onClick={() => lib && navigate('/', { state: { openItem: lib } })} className="p-1 text-cyan-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
+                                       <button onClick={() => handleFieldChange('referenceLinks', item.referenceLinks.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
+                                    </div>
+                                 </div>
+                               );
+                             })
                            }
                         </div>
                      </div>
 
                      {/* Column 2: Presentations */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[250px]">
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[280px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><Presentation size={12} /> Slides</span>
                            <button onClick={() => openPicker('PRESENTATION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
-                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[180px] pr-1 custom-scrollbar">
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
                            {item.presentationIds.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Slides Attached</p> : 
-                             item.presentationIds.map(id => (
-                               <div key={id} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-xl group">
-                                  <span className="text-[8px] font-bold text-[#004A74] truncate">Slide ID: {id.substring(0, 8)}</span>
-                                  <button onClick={() => handleFieldChange('presentationIds', item.presentationIds.filter(i => i !== id))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"><TrashIcon size={12} /></button>
-                               </div>
-                             ))
+                             item.presentationIds.map(id => {
+                               const ppt = resolvedData.presentations[id];
+                               return (
+                                 <div key={id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
+                                    <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">
+                                      {ppt?.title || `Slide ID: ${id.substring(0, 8)}`}
+                                    </span>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                       <button onClick={() => ppt && window.open(`https://docs.google.com/presentation/d/${ppt.gSlidesId}/edit`, '_blank')} className="p-1 text-emerald-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
+                                       <button onClick={() => handleFieldChange('presentationIds', item.presentationIds.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
+                                    </div>
+                                 </div>
+                               );
+                             })
                            }
                         </div>
                      </div>
 
                      {/* Column 3: Questions */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[250px]">
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[280px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><GraduationCap size={12} /> Questions</span>
                            <button onClick={() => openPicker('QUESTION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
-                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[180px] pr-1 custom-scrollbar">
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
                            {item.questionBankIds.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Question Bank</p> : 
-                             item.questionBankIds.map(id => (
-                               <div key={id} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-xl group">
-                                  <span className="text-[8px] font-bold text-[#004A74] truncate">Q-ID: {id.substring(0, 8)}</span>
-                                  <button onClick={() => handleFieldChange('questionBankIds', item.questionBankIds.filter(i => i !== id))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"><TrashIcon size={12} /></button>
-                               </div>
-                             ))
+                             item.questionBankIds.map(id => {
+                               const q = resolvedData.questions[id];
+                               return (
+                                 <div key={id} className="flex items-start justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
+                                    <span className="text-[9px] font-bold text-[#004A74] leading-tight line-clamp-2 overflow-hidden flex-1 italic">
+                                      {q?.questionText || `Q-ID: ${id.substring(0, 8)}`}
+                                    </span>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                                       <button onClick={() => q && Swal.fire({ title: 'QUESTION PREVIEW', text: q.questionText, ...XEENAPS_SWAL_CONFIG })} className="p-1 text-cyan-600 hover:bg-white rounded-md transition-all shadow-sm"><Eye size={12} /></button>
+                                       <button onClick={() => handleFieldChange('questionBankIds', item.questionBankIds.filter(i => i !== id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm"><TrashIcon size={12} /></button>
+                                    </div>
+                                 </div>
+                               );
+                             })
                            }
                         </div>
                      </div>
 
                      {/* Column 4: External Links */}
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[250px]">
+                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[280px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><LinkIcon size={12} /> External</span>
                            <button onClick={handleAddExternalLink} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
                         </div>
-                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[180px] pr-1 custom-scrollbar">
+                        <div className="flex-1 space-y-2 overflow-y-auto max-h-[200px] pr-1 custom-scrollbar">
                            {item.externalLinks.length === 0 ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No External Links</p> : 
                              item.externalLinks.map((link, idx) => (
-                               <div key={idx} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-xl group">
-                                  <a href={link.url} target="_blank" rel="noreferrer" className="text-[8px] font-bold text-blue-600 truncate hover:underline flex items-center gap-1">
+                               <div key={idx} className="flex items-center justify-between gap-2 p-2.5 bg-gray-50 rounded-xl group border border-transparent hover:border-[#004A74]/10 transition-all">
+                                  <a href={link.url} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-600 truncate hover:underline flex items-center gap-1 flex-1">
                                     {link.label} <ExternalLink size={8} />
                                   </a>
-                                  <button onClick={() => handleFieldChange('externalLinks', item.externalLinks.filter((_, i) => i !== idx))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"><TrashIcon size={12} /></button>
+                                  <button onClick={() => handleFieldChange('externalLinks', item.externalLinks.filter((_, i) => i !== idx))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-white rounded-md shadow-sm"><TrashIcon size={12} /></button>
                                </div>
                              ))
                            }
