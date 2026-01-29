@@ -282,7 +282,7 @@ const TeachingDetail: React.FC = () => {
               className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}
             >
               <tab.icon size={14} className="shrink-0" />
-              <span className="hidden lg:inline text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
+              <span className="hidden md:inline text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
             </button>
           ))}
         </div>

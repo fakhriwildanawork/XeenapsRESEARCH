@@ -41,20 +41,30 @@ const TeachingDashboard: React.FC = () => {
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   
-  // States: View Mode and Date Filter
-  const [viewMode, setViewMode] = useState<'card' | 'calendar'>('card');
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  // Date Filter States (UI Only vs Applied)
+  const [tempDateRange, setTempDateRange] = useState({ start: '', end: '' });
   const [appliedDateRange, setAppliedDateRange] = useState({ start: '', end: '' });
-  
-  // Calendar States
+
+  // View States
+  const [viewMode, setViewMode] = useState<'card' | 'calendar'>('card');
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const teachingPhrases = [
+    "Search Course Title...",
+    "Search Teaching Topic...",
+    "Search Session Label...",
+    "Search Lecturer Role...",
+    "Search Institution..."
+  ];
+
+  // Helper for safe local ISO date (YYYY-MM-DD)
+  const getLocalDateStr = (d: Date = new Date()) => d.toLocaleDateString('sv');
 
   const loadData = useCallback(() => {
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
-        // We load a larger batch to populate the calendar accurately
         const result = await fetchTeachingPaginated(1, 1000, appliedSearch, "", signal);
         setItems(result.items);
         setTotalCount(result.totalCount);
@@ -88,7 +98,7 @@ const TeachingDashboard: React.FC = () => {
       const newItem: TeachingItem = {
         id,
         label,
-        teachingDate: prefilledDate || new Date().toISOString().substring(0, 10),
+        teachingDate: prefilledDate || getLocalDateStr(),
         startTime: '08:00',
         endTime: '10:00',
         institution: '',
@@ -147,8 +157,8 @@ const TeachingDashboard: React.FC = () => {
   };
 
   const handleApplyRange = () => {
-    setAppliedDateRange({ ...dateRange });
-    showXeenapsToast('success', 'Filter applied');
+    setAppliedDateRange({ ...tempDateRange });
+    showXeenapsToast('success', 'Filter synchronized');
   };
 
   const filteredItems = useMemo(() => {
@@ -170,7 +180,7 @@ const TeachingDashboard: React.FC = () => {
     }
   };
 
-  // --- CALENDAR LOGIC ---
+  // --- CALENDAR ENGINE ---
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -193,7 +203,6 @@ const TeachingDashboard: React.FC = () => {
       if (!map[dateStr]) map[dateStr] = [];
       map[dateStr].push(item);
     });
-    // Sort each day's sessions by start time
     Object.keys(map).forEach(d => {
       map[d].sort((a, b) => a.startTime.localeCompare(b.startTime));
     });
@@ -207,34 +216,43 @@ const TeachingDashboard: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* TOP HEADER: HIDDEN IN CALENDAR MODE */}
+      {/* HEADER SECTION - HIDDEN IN CALENDAR MODE FOR FULL SCREEN FEEL */}
       {viewMode === 'card' && (
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0 animate-in fade-in duration-300">
-          <div className="flex items-center gap-3 w-full lg:w-auto">
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
             <SmartSearchBox 
               value={localSearch} 
               onChange={setLocalSearch} 
               onSearch={() => { setAppliedSearch(localSearch); }} 
-              className="flex-1 lg:w-72"
+              phrases={teachingPhrases}
+              className="w-full lg:max-w-md"
             />
-            <div className="flex bg-gray-50 p-1 rounded-2xl border border-gray-100 shrink-0 shadow-sm">
-              {/* Fix: Added explicit string casting for viewMode comparisons inside narrowed blocks to resolve TypeScript overlap errors */}
-              <button onClick={() => setViewMode('card')} className={`p-2 rounded-xl transition-all ${(viewMode as string) === 'card' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400 hover:text-[#004A74]'}`}><LayoutGrid size={18} /></button>
-              <button onClick={() => setViewMode('calendar')} className={`p-2 rounded-xl transition-all ${(viewMode as string) === 'calendar' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400 hover:text-[#004A74]'}`}><CalendarDays size={18} /></button>
+            {/* DATE RANGE FILTER - PREMIUM STYLE FROM PRESENTATIONS */}
+            <div className="flex flex-col items-stretch md:flex-row md:items-center gap-2 bg-gray-50/80 p-1 rounded-2xl border border-gray-100">
+               <div className="flex items-center gap-2 px-3 py-2 md:py-0">
+                 <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">From</span>
+                 <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.start} onChange={(e) => setTempDateRange({...tempDateRange, start: e.target.value})} />
+               </div>
+               <div className="hidden md:block w-px h-4 bg-gray-200" />
+               <div className="flex items-center gap-2 px-3 py-2 md:py-0">
+                 <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter w-8">Until</span>
+                 <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempDateRange.end} onChange={(e) => setTempDateRange({...tempDateRange, end: e.target.value})} />
+               </div>
+               {(tempDateRange.start || tempDateRange.end) && (
+                 <button onClick={handleApplyRange} className="w-full md:w-auto px-4 py-2 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003859] transition-all shadow-md md:ml-1">APPLY RANGE</button>
+               )}
+               {(appliedDateRange.start || appliedDateRange.end) && (
+                 <button onClick={() => { setTempDateRange({start: '', end: ''}); setAppliedDateRange({start: '', end: ''}); }} className="p-2 hover:bg-gray-200 rounded-lg transition-all flex justify-center text-red-400"><X size={16} /></button>
+               )}
             </div>
           </div>
 
           <div className="flex items-center gap-3 w-full lg:w-auto">
-            <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-100 flex-1 lg:flex-none">
-              <input type="date" className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[#004A74] outline-none p-1.5 w-full cursor-pointer" value={dateRange.start} onChange={(e) => setDateRange({...dateRange, start: e.target.value})} />
-              <span className="text-gray-300">-</span>
-              <input type="date" className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[#004A74] outline-none p-1.5 w-full cursor-pointer" value={dateRange.end} onChange={(e) => setDateRange({...dateRange, end: e.target.value})} />
-              <button onClick={handleApplyRange} className="px-3 py-1.5 bg-[#004A74] text-white text-[9px] font-black uppercase rounded-xl hover:bg-[#003859] transition-all ml-1">APPLY</button>
-              {(dateRange.start || dateRange.end) && (
-                <button onClick={() => { setDateRange({start: '', end: ''}); setAppliedDateRange({start: '', end: ''}); }} className="p-1 hover:bg-gray-200 rounded-lg transition-all text-red-400"><X size={14} /></button>
-              )}
-            </div>
-            <StandardPrimaryButton onClick={() => handleCreateNew()} icon={<Plus size={20} />} className="shrink-0">Record Session</StandardPrimaryButton>
+             <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 shrink-0 shadow-sm">
+                <button onClick={() => setViewMode('card')} className="p-2 bg-[#004A74] text-white rounded-xl shadow-md transition-all"><LayoutGrid size={18} /></button>
+                <button onClick={() => setViewMode('calendar')} className="p-2 text-gray-400 hover:text-[#004A74] transition-all"><CalendarDays size={18} /></button>
+             </div>
+             <StandardPrimaryButton onClick={() => handleCreateNew()} icon={<Plus size={20} />} className="shrink-0">Record Session</StandardPrimaryButton>
           </div>
         </div>
       )}
@@ -244,7 +262,7 @@ const TeachingDashboard: React.FC = () => {
           <CardGridSkeleton count={8} />
         ) : viewMode === 'card' ? (
           /* CARD MODE */
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in duration-500">
             {filteredItems.length === 0 ? (
               <div className="col-span-full py-40 text-center flex flex-col items-center justify-center space-y-4 opacity-30 grayscale">
                 <School size={80} strokeWidth={1} className="text-[#004A74]" />
@@ -279,12 +297,11 @@ const TeachingDashboard: React.FC = () => {
           /* CALENDAR MODE: FULL SCREEN FOCUS */
           <div className="space-y-8 max-w-5xl mx-auto px-1 animate-in zoom-in-95 duration-500">
             <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl overflow-hidden">
-              <div className="p-6 md:p-8 bg-gray-50/80 backdrop-blur-sm flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100">
+              <div className="p-4 md:p-8 bg-gray-50/80 backdrop-blur-sm flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100">
                  <div className="flex items-center gap-4">
                     <h3 className="text-2xl font-black text-[#004A74] uppercase tracking-tighter">
                        {monthNames[selectedMonth.getMonth()]} <span className="text-gray-400 font-bold ml-1">{selectedMonth.getFullYear()}</span>
                     </h3>
-                    {/* View Toggle integrated in calendar header */}
                     <div className="flex bg-white/80 p-1 rounded-xl border border-gray-100 shadow-sm">
                       <button onClick={() => setViewMode('card')} className="p-1.5 text-gray-400 hover:text-[#004A74] transition-all"><LayoutGrid size={16} /></button>
                       <button className="p-1.5 bg-[#004A74] text-white rounded-lg shadow-sm"><CalendarDays size={16} /></button>
@@ -308,9 +325,9 @@ const TeachingDashboard: React.FC = () => {
                     {calendarDays.map((date, idx) => {
                       if (!date) return <div key={`pad-${idx}`} className="bg-white/30 h-24 md:h-32" />;
                       
-                      const dateStr = date.toISOString().split('T')[0];
+                      const dateStr = getLocalDateStr(date);
                       const daySessions = sessionsByDate[dateStr] || [];
-                      const isToday = dateStr === new Date().toISOString().split('T')[0];
+                      const isToday = dateStr === getLocalDateStr();
                       const isSelected = selectedDate === dateStr;
                       
                       return (
@@ -322,9 +339,9 @@ const TeachingDashboard: React.FC = () => {
                            <div className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-black transition-all ${isToday ? 'bg-[#FED400] text-[#004A74] shadow-md' : isSelected ? 'bg-[#004A74] text-white' : 'text-gray-400 group-hover:text-[#004A74]'}`}>
                               {date.getDate()}
                            </div>
-                           <div className="mt-2 flex flex-wrap gap-1">
+                           <div className="mt-2 flex flex-wrap gap-1 max-w-full">
                               {daySessions.map(s => (
-                                <div key={s.id} className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full shadow-sm" style={{ backgroundColor: s.eventColor || '#004A74' }} />
+                                <div key={s.id} className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full shadow-sm shrink-0" style={{ backgroundColor: s.eventColor || '#004A74' }} />
                               ))}
                            </div>
                            {daySessions.length > 0 && (
@@ -339,20 +356,19 @@ const TeachingDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* DAILY SESSION LIST: APPEARS BELOW CALENDAR */}
             {selectedDate && (
               <div className="animate-in slide-in-from-top-4 duration-500 bg-white border border-gray-100 rounded-[2.5rem] shadow-xl overflow-hidden">
-                 <div className="px-8 py-6 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                 <div className="px-6 md:px-8 py-6 bg-gray-50 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                       <CheckCircle2 size={24} className="text-emerald-500" />
-                       <div>
-                          <h4 className="text-lg font-black text-[#004A74] uppercase tracking-tighter">Schedule: {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
+                       <CheckCircle2 size={24} className="text-emerald-500 shrink-0" />
+                       <div className="min-w-0">
+                          <h4 className="text-base md:text-lg font-black text-[#004A74] uppercase tracking-tighter truncate">Schedule: {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dailySessions.length} Sessions Found</p>
                        </div>
                     </div>
                     <button 
                       onClick={() => handleCreateNew(selectedDate)}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
+                      className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all w-full md:w-auto"
                     >
                        <CalendarPlus size={16} /> Add Session
                     </button>
