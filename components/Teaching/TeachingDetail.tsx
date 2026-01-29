@@ -59,6 +59,7 @@ const TeachingDetail: React.FC = () => {
   const [pickerType, setPickerType] = useState<PickerType>('LIBRARY');
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const topRef = useRef<HTMLDivElement>(null); // Specific anchor for scroll-to-top
 
   /**
    * BULLETPROOF TIME SANITIZER - ATOMIC EDITION
@@ -126,12 +127,12 @@ const TeachingDetail: React.FC = () => {
   };
 
   /**
-   * AUTO-SCROLL TO TOP ON TAB SWITCH
+   * FIX: AUTO-SCROLL TO TOP ON TAB SWITCH
+   * Uses a specific Ref anchor to avoid collision with Sidebar scroll.
    */
   useEffect(() => {
-    const container = document.querySelector('.custom-scrollbar');
-    if (container) {
-      container.scrollTo({ top: 0, behavior: 'smooth' });
+    if (topRef.current) {
+      topRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [activeTab]);
 
@@ -283,6 +284,9 @@ const TeachingDetail: React.FC = () => {
       />
 
       <FormContentArea>
+        {/* INVISIBLE SCROLL ANCHOR */}
+        <div ref={topRef} className="h-0 w-0 absolute top-0" aria-hidden="true" />
+        
         <div className="max-w-5xl mx-auto space-y-12">
           
           {activeTab === 'schedule' && (
