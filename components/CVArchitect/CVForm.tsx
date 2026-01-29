@@ -48,11 +48,9 @@ const CVForm: React.FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<CVTemplateType>(CVTemplateType.MODERN_ACADEMIC);
 
-  // Filters for Pubs & Acts
   const [pubFilter, setPubFilter] = useState({ start: '', end: '' });
   const [actFilter, setActFilter] = useState({ start: '', end: '' });
 
-  // Source Data
   const [sourceData, setSourceData] = useState<{
     profile: UserProfile | null,
     education: EducationEntry[],
@@ -61,7 +59,6 @@ const CVForm: React.FC = () => {
     activities: ActivityItem[]
   }>({ profile: null, education: [], career: [], publications: [], activities: [] });
 
-  // Selections
   const [config, setConfig] = useState({
     title: `CV ARCHIVE - ${new Date().getFullYear()}`,
     template: CVTemplateType.MODERN_ACADEMIC,
@@ -77,7 +74,6 @@ const CVForm: React.FC = () => {
     const load = async () => {
       const data = await fetchSourceDataForCV();
       setSourceData(data);
-      // Auto-select Edu & Career initially
       setConfig(prev => ({
         ...prev,
         selectedEducationIds: data.education.map(e => e.id),
@@ -88,7 +84,6 @@ const CVForm: React.FC = () => {
     load();
   }, []);
 
-  // --- FILTERED LISTS ---
   const filteredPubs = useMemo(() => {
     if (!pubFilter.start && !pubFilter.end) return [];
     return sourceData.publications.filter(p => {
@@ -112,7 +107,7 @@ const CVForm: React.FC = () => {
   const handleGenerateSummary = async () => {
     if (!sourceData.profile) return;
     setIsGenerating(true);
-    showXeenapsToast('info', 'AI GROQ is architecting your summary...');
+    showXeenapsToast('info', 'AI is architecting your summary...');
 
     const eduText = sourceData.education
       .filter(e => config.selectedEducationIds.includes(e.id))
@@ -134,7 +129,6 @@ const CVForm: React.FC = () => {
     RULE: RETURN ONLY CLEAN TEXT STRING. NO JSON. NO QUOTES.`;
 
     try {
-      // MODIFIED: Added signal (undefined) and responseType ('text')
       const result = await callAiProxy('groq', prompt, undefined, undefined, 'text');
       if (result) setConfig({ ...config, aiSummary: result });
     } catch (e) {
@@ -184,7 +178,7 @@ const CVForm: React.FC = () => {
         rightElement={
           <div className="flex bg-gray-50 p-1 rounded-2xl">
             {[1, 2, 3].map(i => (
-              <div key={i} className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black transition-all ${step === i ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-300'}`}>{i}</div>
+              <div key={i} className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black transition-all ${step === i ? 'bg-[#004A74] text-white shadow-lg' : 'text-black opacity-20'}`}>{i}</div>
             ))}
           </div>
         }
@@ -192,8 +186,6 @@ const CVForm: React.FC = () => {
 
       <FormContentArea>
         <div className="max-w-6xl mx-auto space-y-12 pb-32">
-          
-          {/* STEP 1: TEMPLATE SELECTION */}
           {step === 1 && (
             <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
                <FormField label="Document Title">
@@ -202,231 +194,148 @@ const CVForm: React.FC = () => {
                </FormField>
 
                <div className="space-y-6">
-                  <label className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 px-4">Blueprints Palette</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.4em] text-black px-4">Blueprints Palette</label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                      {Object.values(CVTemplateType).map((t) => (
                        <div 
                          key={t}
                          onClick={() => setConfig({...config, template: t})}
-                         className={`group relative aspect-[1/1.2] rounded-[3rem] border-2 transition-all duration-700 cursor-pointer overflow-hidden flex flex-col ${config.template === t ? 'border-[#004A74] shadow-2xl scale-105 z-10' : 'border-gray-100 bg-white grayscale hover:grayscale-0'}`}
+                         className={`group relative aspect-[1/1.2] rounded-[3rem] border-2 transition-all duration-700 cursor-pointer overflow-hidden flex flex-col ${config.template === t ? 'border-[#004A74] shadow-2xl scale-105 z-10' : 'border-gray-200 bg-white grayscale hover:grayscale-0'}`}
                        >
                           <div className="flex-1 bg-gray-50 flex items-center justify-center relative">
-                             {/* VISUAL BLUEPRINT THUMBNAILS */}
                              <div className="w-24 h-32 bg-white rounded shadow-sm border border-gray-100 overflow-hidden flex flex-col p-2 space-y-1 group-hover:scale-110 transition-transform">
                                 {t === CVTemplateType.MODERN_ACADEMIC ? (
                                   <>
-                                    <div className="h-4 w-full bg-[#004A74]/10 rounded" />
-                                    <div className="h-1 w-1/2 bg-[#FED400] rounded" />
-                                    <div className="h-2 w-full bg-gray-50 rounded" /><div className="h-2 w-full bg-gray-50 rounded" />
+                                    <div className="h-4 w-full bg-[#004A74] rounded-sm" />
+                                    <div className="h-1 w-1/2 bg-black rounded-sm" />
+                                    <div className="h-2 w-full bg-black opacity-10 rounded-sm" /><div className="h-2 w-full bg-black opacity-10 rounded-sm" />
                                   </>
                                 ) : t === CVTemplateType.EXECUTIVE_BLUE ? (
                                   <div className="flex gap-1 h-full">
-                                    <div className="w-1/3 bg-[#004A74]/20 rounded" />
+                                    <div className="w-1/3 bg-[#004A74] rounded-sm" />
                                     <div className="flex-1 space-y-1">
-                                      <div className="h-2 w-full bg-[#004A74]/10 rounded" />
-                                      <div className="h-1 w-full bg-gray-50 rounded" /><div className="h-1 w-full bg-gray-50 rounded" />
+                                      <div className="h-2 w-full bg-[#004A74] rounded-sm" />
+                                      <div className="h-1 w-full bg-black rounded-sm" /><div className="h-1 w-full bg-black rounded-sm" />
                                     </div>
                                   </div>
                                 ) : (
                                   <div className="space-y-2">
-                                    <div className="h-2 w-1/3 bg-gray-300 rounded" />
-                                    <div className="h-1 w-full bg-gray-50 rounded" />
-                                    <div className="h-1 w-full bg-gray-50 rounded" />
+                                    <div className="h-2 w-1/3 bg-black rounded-sm" />
+                                    <div className="h-1 w-full bg-black opacity-10 rounded-sm" />
+                                    <div className="h-1 w-full bg-black opacity-10 rounded-sm" />
                                   </div>
                                 )}
                              </div>
-
-                             <button 
-                               onClick={(e) => { e.stopPropagation(); setPreviewTemplate(t); setIsPreviewOpen(true); }}
-                               className="absolute bottom-4 right-4 p-2.5 bg-[#004A74] text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-[#FED400] hover:text-[#004A74] active:scale-90"
-                             >
-                                <Eye size={16} />
-                             </button>
+                             <button onClick={(e) => { e.stopPropagation(); setPreviewTemplate(t); setIsPreviewOpen(true); }} className="absolute bottom-4 right-4 p-2.5 bg-[#004A74] text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"><Eye size={16} /></button>
                           </div>
-                          <div className="p-5 bg-white border-t border-gray-50 text-center">
-                             <p className="text-[10px] font-black uppercase tracking-widest text-[#004A74]">{t}</p>
-                          </div>
+                          <div className="p-5 bg-white border-t border-gray-100 text-center"><p className="text-[10px] font-black uppercase tracking-widest text-[#004A74]">{t}</p></div>
                        </div>
                      ))}
                   </div>
                </div>
-
-               <div className="flex justify-end pt-10">
-                  <button onClick={() => setStep(2)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 transition-all">
-                    Proceed to Data <ChevronRight size={18} />
-                  </button>
-               </div>
+               <div className="flex justify-end pt-10"><button onClick={() => setStep(2)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 active:scale-95 transition-all">Proceed to Data <ChevronRight size={18} /></button></div>
             </div>
           )}
 
-          {/* STEP 2: DATA GRID SELECTION */}
           {step === 2 && (
             <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
-               
-               {/* GRID 1: EDUCATION & CAREER */}
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                   <section className="space-y-4">
-                    <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2">
-                       <GraduationCap size={16} /> Education History
-                    </h3>
+                    <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2"><GraduationCap size={16} /> Education History</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                        {sourceData.education.map(edu => (
-                         <div key={edu.id} onClick={() => setConfig({...config, selectedEducationIds: toggleSelection(config.selectedEducationIds, edu.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedEducationIds.includes(edu.id) ? 'border-[#004A74] bg-[#004A74]/5 shadow-sm' : 'border-gray-50 bg-white opacity-60 hover:opacity-100'}`}>
+                         <div key={edu.id} onClick={() => setConfig({...config, selectedEducationIds: toggleSelection(config.selectedEducationIds, edu.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedEducationIds.includes(edu.id) ? 'border-[#004A74] bg-blue-50 shadow-sm' : 'border-gray-100 bg-white opacity-60 hover:opacity-100'}`}>
                             <div className="flex items-center gap-3 min-w-0">
-                               <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedEducationIds.includes(edu.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>
-                                  {config.selectedEducationIds.includes(edu.id) && <Check size={12} strokeWidth={4} />}
-                               </div>
-                               <span className="text-[10px] font-bold text-[#004A74] uppercase truncate">{edu.institution}</span>
+                               <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedEducationIds.includes(edu.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedEducationIds.includes(edu.id) && <Check size={12} strokeWidth={4} />}</div>
+                               <span className="text-[10px] font-bold text-black uppercase truncate">{edu.institution}</span>
                             </div>
-                            <span className="text-[9px] font-black text-gray-400 shrink-0 ml-2">{edu.endYear}</span>
                          </div>
                        ))}
                     </div>
                   </section>
-
                   <section className="space-y-4">
-                    <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2">
-                       <Briefcase size={16} /> Professional Career
-                    </h3>
+                    <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2"><Briefcase size={16} /> Professional Career</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                        {sourceData.career.map(job => (
-                         <div key={job.id} onClick={() => setConfig({...config, selectedCareerIds: toggleSelection(config.selectedCareerIds, job.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedCareerIds.includes(job.id) ? 'border-[#004A74] bg-[#004A74]/5 shadow-sm' : 'border-gray-50 bg-white opacity-60 hover:opacity-100'}`}>
+                         <div key={job.id} onClick={() => setConfig({...config, selectedCareerIds: toggleSelection(config.selectedCareerIds, job.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedCareerIds.includes(job.id) ? 'border-[#004A74] bg-blue-50 shadow-sm' : 'border-gray-100 bg-white opacity-60 hover:opacity-100'}`}>
                             <div className="flex items-center gap-3 min-w-0">
-                               <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedCareerIds.includes(job.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>
-                                  {config.selectedCareerIds.includes(job.id) && <Check size={12} strokeWidth={4} />}
-                               </div>
-                               <span className="text-[10px] font-bold text-[#004A74] uppercase truncate">{job.company}</span>
+                               <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedCareerIds.includes(job.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedCareerIds.includes(job.id) && <Check size={12} strokeWidth={4} />}</div>
+                               <span className="text-[10px] font-bold text-black uppercase truncate">{job.company}</span>
                             </div>
-                            <span className="text-[9px] font-black text-gray-400 shrink-0 ml-2">{job.startDate}</span>
                          </div>
                        ))}
                     </div>
                   </section>
                </div>
-
-               {/* GRID 2: PUBLICATIONS & ACTIVITIES WITH FILTERS */}
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-10 border-t border-gray-100">
                   <section className="space-y-6">
                     <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 space-y-4 shadow-inner">
                        <div className="flex items-center justify-between">
                          <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Share2 size={16} /> Publications</h3>
                          <div className="flex gap-2">
-                            <button onClick={() => bulkSelect('PUB', true)} className="p-1.5 bg-[#004A74] text-[#FED400] rounded-lg hover:scale-110 transition-all shadow-sm"><CheckSquare size={14}/></button>
-                            <button onClick={() => bulkSelect('PUB', false)} className="p-1.5 bg-white text-red-500 rounded-lg border border-red-100 hover:bg-red-50 transition-all shadow-sm"><Square size={14}/></button>
+                            <button onClick={() => bulkSelect('PUB', true)} className="p-1.5 bg-[#004A74] text-white rounded-lg hover:scale-110 transition-all"><CheckSquare size={14}/></button>
+                            <button onClick={() => bulkSelect('PUB', false)} className="p-1.5 bg-white text-black border border-black rounded-lg hover:bg-gray-100 transition-all"><Square size={14}/></button>
                          </div>
                        </div>
                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">From Year</label>
-                            <input type="number" placeholder="2020" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#FED400]" value={pubFilter.start} onChange={e => setPubFilter({...pubFilter, start: e.target.value})} />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">To Year</label>
-                            <input type="number" placeholder="2025" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#FED400]" value={pubFilter.end} onChange={e => setPubFilter({...pubFilter, end: e.target.value})} />
-                          </div>
+                          <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">From Year</label><input type="number" placeholder="2020" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={pubFilter.start} onChange={e => setPubFilter({...pubFilter, start: e.target.value})} /></div>
+                          <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">To Year</label><input type="number" placeholder="2025" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={pubFilter.end} onChange={e => setPubFilter({...pubFilter, end: e.target.value})} /></div>
                        </div>
                     </div>
-                    
                     <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                       {filteredPubs.length === 0 ? (
-                         <p className="text-center py-10 text-[10px] font-bold text-gray-300 italic uppercase">Enter year filter to list publications</p>
-                       ) : filteredPubs.map(p => (
-                          <div key={p.id} onClick={() => setConfig({...config, selectedPublicationIds: toggleSelection(config.selectedPublicationIds, p.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedPublicationIds.includes(p.id) ? 'border-emerald-500 bg-emerald-50 shadow-sm' : 'bg-white border-gray-50 opacity-80 hover:opacity-100'}`}>
-                             <div className="flex items-center gap-3 min-w-0">
-                               <div className={`shrink-0 w-4 h-4 rounded-md border-2 flex items-center justify-center ${config.selectedPublicationIds.includes(p.id) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200'}`}>
-                                  {config.selectedPublicationIds.includes(p.id) && <Check size={10} strokeWidth={4} />}
-                               </div>
-                               <p className="text-[10px] font-bold text-[#004A74] truncate uppercase">{p.title}</p>
-                             </div>
-                             <span className="text-[8px] font-black text-gray-400 ml-2">{p.year}</span>
-                          </div>
+                       {filteredPubs.map(p => (
+                          <div key={p.id} onClick={() => setConfig({...config, selectedPublicationIds: toggleSelection(config.selectedPublicationIds, p.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedPublicationIds.includes(p.id) ? 'border-black bg-black text-white shadow-sm' : 'bg-white border-gray-100'}`}><p className="text-[10px] font-bold truncate uppercase">{p.title}</p></div>
                        ))}
                     </div>
                   </section>
-
                   <section className="space-y-6">
                     <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 space-y-4 shadow-inner">
                        <div className="flex items-center justify-between">
                          <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><ClipboardCheck size={16} /> Activities</h3>
                          <div className="flex gap-2">
-                            <button onClick={() => bulkSelect('ACT', true)} className="p-1.5 bg-[#004A74] text-[#FED400] rounded-lg hover:scale-110 transition-all shadow-sm"><CheckSquare size={14}/></button>
-                            <button onClick={() => bulkSelect('ACT', false)} className="p-1.5 bg-white text-red-500 rounded-lg border border-red-100 hover:bg-red-50 transition-all shadow-sm"><Square size={14}/></button>
+                            <button onClick={() => bulkSelect('ACT', true)} className="p-1.5 bg-[#004A74] text-white rounded-lg hover:scale-110 transition-all"><CheckSquare size={14}/></button>
+                            <button onClick={() => bulkSelect('ACT', false)} className="p-1.5 bg-white text-black border border-black rounded-lg hover:bg-gray-100 transition-all"><Square size={14}/></button>
                          </div>
                        </div>
                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">Start Date</label>
-                            <input type="date" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#FED400]" value={actFilter.start} onChange={e => setActFilter({...actFilter, start: e.target.value})} />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">End Date</label>
-                            <input type="date" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#FED400]" value={actFilter.end} onChange={e => setActFilter({...actFilter, end: e.target.value})} />
-                          </div>
+                          <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">Start Date</label><input type="date" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={actFilter.start} onChange={e => setActFilter({...actFilter, start: e.target.value})} /></div>
+                          <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">End Date</label><input type="date" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={actFilter.end} onChange={e => setActFilter({...actFilter, end: e.target.value})} /></div>
                        </div>
                     </div>
-
                     <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                       {filteredActs.length === 0 ? (
-                         <p className="text-center py-10 text-[10px] font-bold text-gray-300 italic uppercase">Enter date filter to list activities</p>
-                       ) : filteredActs.map(a => (
-                          <div key={a.id} onClick={() => setConfig({...config, selectedActivityIds: toggleSelection(config.selectedActivityIds, a.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedActivityIds.includes(a.id) ? 'border-emerald-500 bg-emerald-50 shadow-sm' : 'bg-white border-gray-50 opacity-80 hover:opacity-100'}`}>
-                             <div className="flex items-center gap-3 min-w-0">
-                               <div className={`shrink-0 w-4 h-4 rounded-md border-2 flex items-center justify-center ${config.selectedActivityIds.includes(a.id) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200'}`}>
-                                  {config.selectedActivityIds.includes(a.id) && <Check size={10} strokeWidth={4} />}
-                               </div>
-                               <p className="text-[10px] font-bold text-[#004A74] truncate uppercase">{a.eventName}</p>
-                             </div>
-                             <span className="text-[8px] font-black text-gray-400 ml-2">{new Date(a.startDate).getFullYear()}</span>
-                          </div>
+                       {filteredActs.map(a => (
+                          <div key={a.id} onClick={() => setConfig({...config, selectedActivityIds: toggleSelection(config.selectedActivityIds, a.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedActivityIds.includes(a.id) ? 'border-black bg-black text-white shadow-sm' : 'bg-white border-gray-100'}`}><p className="text-[10px] font-bold truncate uppercase">{a.eventName}</p></div>
                        ))}
                     </div>
                   </section>
                </div>
-
                <div className="flex justify-between pt-10">
-                  <button onClick={() => setStep(1)} className="flex items-center gap-2 px-8 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 shadow-sm active:scale-95 transition-all">
-                    <ChevronLeft size={16} /> Back
-                  </button>
-                  <button onClick={() => setStep(3)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 active:scale-95 transition-all">
-                    Final Synthesis <ChevronRight size={18} />
-                  </button>
+                  <button onClick={() => setStep(1)} className="flex items-center gap-2 px-8 py-4 bg-gray-100 text-black rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-200 active:scale-95 transition-all"><ChevronLeft size={16} /> Back</button>
+                  <button onClick={() => setStep(3)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 active:scale-95 transition-all">Final Synthesis <ChevronRight size={18} /></button>
                </div>
             </div>
           )}
 
-          {/* STEP 3: SUMMARY */}
           {step === 3 && (
             <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
                <div className="space-y-6">
                   <div className="flex items-center justify-between px-4">
-                     <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Sparkles size={18} className="text-[#FED400]" /> Professional Statement</h3>
-                     <button onClick={handleGenerateSummary} disabled={isGenerating} className="px-6 py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all">
+                     <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Sparkles size={18} /> Professional Statement</h3>
+                     <button onClick={handleGenerateSummary} disabled={isGenerating} className="px-6 py-2.5 bg-black text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all">
                         {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Draft with AI
                      </button>
                   </div>
-                  <textarea 
-                    className="w-full p-10 bg-white border border-gray-100 rounded-[3rem] shadow-inner outline-none text-sm font-medium text-gray-600 leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[250px]"
-                    placeholder="Describe your professional career journey or use AI to draft it based on your selections..."
-                    value={config.aiSummary}
-                    onChange={e => setConfig({...config, aiSummary: e.target.value})}
-                  />
-                  <p className="text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">TIP: AI will analyze your selections to craft a personalized executive summary.</p>
+                  <textarea className="w-full p-10 bg-white border border-gray-100 rounded-[3rem] shadow-inner outline-none text-sm font-medium text-black leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[250px]" placeholder="Awaiting AI Synthesis..." value={config.aiSummary} onChange={e => setConfig({...config, aiSummary: e.target.value})} />
                </div>
-
                <div className="flex flex-col md:flex-row gap-4 pt-10">
-                  <button onClick={() => setStep(2)} disabled={isGenerating} className="flex-1 py-5 bg-gray-100 text-gray-400 rounded-[1.5rem] font-black uppercase text-xs hover:bg-gray-200 active:scale-95 transition-all">Adjust Data</button>
-                  <button onClick={handleFinalSubmit} disabled={isGenerating} className="flex-[2] py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.3em] text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                    {isGenerating ? 'Synthesizing...' : 'Generate CV PDF'}
-                  </button>
+                  <button onClick={() => setStep(2)} disabled={isGenerating} className="flex-1 py-5 bg-gray-100 text-black rounded-[1.5rem] font-black uppercase text-xs active:scale-95 transition-all">Adjust Data</button>
+                  <button onClick={handleFinalSubmit} disabled={isGenerating} className="flex-[2] py-5 bg-[#004A74] text-white rounded-[1.5rem] font-black uppercase tracking-[0.3em] text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all">{isGenerating ? 'Synthesizing PDF...' : 'Generate CV PDF'}</button>
                </div>
             </div>
           )}
         </div>
       </FormContentArea>
-
-      {isPreviewOpen && (
-        <CVPreviewModal template={previewTemplate} onClose={() => setIsPreviewOpen(false)} />
-      )}
+      {isPreviewOpen && <CVPreviewModal template={previewTemplate} onClose={() => setIsPreviewOpen(false)} />}
     </FormPageContainer>
   );
 };
