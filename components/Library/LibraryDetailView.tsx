@@ -267,7 +267,7 @@ const parseJsonField = (field: any, defaultValue: any = {}) => {
     const parsed = typeof field === 'string' ? JSON.parse(field) : field;
     return parsed || defaultValue;
   } catch (e) {
-    return defaultValue;
+    defaultValue;
   }
 };
 
@@ -541,6 +541,12 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
       // SMART REDIRECTION TO TEACHING: Back to the specific session and Substance tab
       navigate(`/teaching/${state.returnToTeaching}`, { 
         state: { activeTab: state.activeTab || 'substance' }, 
+        replace: true 
+      });
+    } else if (state?.returnToAttachedQuestion) {
+      // BACK TO ATTACHED QUESTIONS: Restore proper view and data
+      navigate(`/teaching/${state.returnToAttachedQuestion}/questions`, { 
+        state: { item: state.teachingItem }, 
         replace: true 
       });
     } else if (state?.returnToPPT) {

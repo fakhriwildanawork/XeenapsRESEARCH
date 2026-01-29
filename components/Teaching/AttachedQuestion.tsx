@@ -37,7 +37,7 @@ const AttachedQuestion: React.FC = () => {
   const [teaching, setTeaching] = useState<TeachingItem | null>((location.state as any)?.item || null);
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
-  const [activeBloomFilter, setActiveBloomFilter] = useState<string>('All');
+  const [activeBloomFilter, setSelectedBloomFilter] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
   const [activeSimulation, setActiveSimulation] = useState<'CBT' | 'FLASHCARD' | null>(null);
   const [selectedQuestionDetail, setSelectedQuestionDetail] = useState<QuestionItem | null>(null);
@@ -116,7 +116,8 @@ const AttachedQuestion: React.FC = () => {
           onViewSource={() => {
             const sourceLibItem = libraryItems.find(li => li.id === selectedQuestionDetail.collectionId);
             if (sourceLibItem) {
-              navigate('/', { state: { openItem: sourceLibItem } });
+              // ENHANCED: Pass return flag and teaching state to ensure back button works properly
+              navigate('/', { state: { openItem: sourceLibItem, returnToAttachedQuestion: sessionId, teachingItem: teaching } });
             } else {
               navigate(`/teaching/${sessionId}`);
             }
@@ -153,7 +154,7 @@ const AttachedQuestion: React.FC = () => {
             <StandardFilterButton 
               key={filter} 
               isActive={activeBloomFilter === filter} 
-              onClick={() => setActiveBloomFilter(filter)}
+              onClick={() => setSelectedBloomFilter(filter)}
             >
               {filter}
             </StandardFilterButton>
