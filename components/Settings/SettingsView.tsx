@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Cog6ToothIcon, 
@@ -8,7 +7,8 @@ import {
   ExclamationCircleIcon,
   SparklesIcon,
   ArrowPathIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  IdentificationIcon
 } from '@heroicons/react/24/outline';
 import { GAS_WEB_APP_URL } from '../../constants';
 import { initializeDatabase, initializeBrainstormingDatabase, initializePublicationDatabase } from '../../services/gasService';
@@ -20,13 +20,14 @@ const SettingsView: React.FC = () => {
   const [isInitializingBrain, setIsInitializingBrain] = useState(false);
   const [isInitializingPub, setIsInitializingPub] = useState(false);
   const [isInitializingTeaching, setIsInitializingTeaching] = useState(false);
+  const [isInitializingCV, setIsInitializingCV] = useState(false);
 
   const SPREADSHEET_IDS = {
     LIBRARY: '1ROW4iyHN10DfDWaXL7O54mZi6Da9Xx70vU6oE-YW-I8',
     KEYS: '1Ji8XL2ceTprNa1dYvhfTnMDkWwzC937kpfyP19D7NvI',
     BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM',
     PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g',
-    TEACHING: '1Y-7v_8H_v_8H_v_8H_v_8H_v_8H_v_8H_v_8H_v_8H' // Placeholder
+    CV_REGISTRY: '1-placeholder-cv-registry-id'
   };
 
   const openSheet = (id: string) => {
@@ -51,6 +52,31 @@ const SettingsView: React.FC = () => {
       showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
     } finally {
       setIsInitializing(false);
+    }
+  };
+
+  const handleInitCVDatabase = async () => {
+    setIsInitializingCV(true);
+    try {
+      const response = await fetch(GAS_WEB_APP_URL!, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'setupCVDatabase' })
+      });
+      const result = await response.json();
+      if (result.status === 'success') {
+        showXeenapsAlert({
+          icon: 'success',
+          title: 'CV ARCHITECT READY',
+          text: 'The CV Registry sheet has been successfully initialized.',
+          confirmButtonText: 'EXCELLENT'
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err: any) {
+      showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
+    } finally {
+      setIsInitializingCV(false);
     }
   };
 
@@ -135,7 +161,7 @@ const SettingsView: React.FC = () => {
         </div>
 
         {/* Database Auto-Setup Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
           <div className="p-4 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
             <h3 className="text-[10px] font-black mb-3 flex items-center gap-2 uppercase tracking-widest">
               <TableCellsIcon className="w-4 h-4 text-[#FED400]" />
@@ -162,6 +188,21 @@ const SettingsView: React.FC = () => {
               className="w-full py-2.5 bg-white text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
             >
               {isInitializingTeaching ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
+              Initialize
+            </button>
+          </div>
+
+          <div className="p-4 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
+            <h3 className="text-[10px] font-black mb-3 flex items-center gap-2 uppercase tracking-widest">
+              <IdentificationIcon className="w-4 h-4 text-[#FED400]" />
+              CV Architect
+            </h3>
+            <button 
+              onClick={handleInitCVDatabase}
+              disabled={isInitializingCV || !isConfigured}
+              className="w-full py-2.5 bg-[#FED400] text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
+            >
+              {isInitializingCV ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
               Initialize
             </button>
           </div>
@@ -256,14 +297,14 @@ const SettingsView: React.FC = () => {
             </button>
             
             <button 
-              onClick={() => openSheet(SPREADSHEET_IDS.TEACHING)}
+              onClick={() => openSheet(SPREADSHEET_IDS.CV_REGISTRY)}
               className="group flex items-center justify-between p-6 bg-white/40 hover:bg-[#004A74] rounded-2xl border border-white/60 transition-all duration-500 text-left shadow-sm"
             >
               <div>
-                <h4 className="font-bold text-[#004A74] group-hover:text-white group-hover:scale-105 transition-all origin-left">Teaching Registry</h4>
-                <p className="text-sm text-gray-500 group-hover:text-white/70">Manage teaching logs and BKD reports manually.</p>
+                <h4 className="font-bold text-[#004A74] group-hover:text-white group-hover:scale-105 transition-all origin-left">CV Artifact Registry</h4>
+                <p className="text-sm text-gray-500 group-hover:text-white/70">Manage generated CV documents and metadata.</p>
               </div>
-              <TableCellsIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
+              <IdentificationIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
             </button>
 
             <button 

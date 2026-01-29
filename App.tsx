@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -19,6 +18,7 @@ import ArchivedArticle from './components/Research/Literature/ArchivedArticle';
 // Placeholder for the upcoming modules
 const ActivityMain = React.lazy(() => import('./components/Activities/ActivityMain'));
 const TeachingMain = React.lazy(() => import('./components/Teaching/TeachingMain'));
+const CVMain = React.lazy(() => import('./components/CVArchitect/CVMain'));
 import { BRAND_ASSETS } from './assets';
 import { GlobalAppLoader } from './components/Common/LoadingComponents';
 
@@ -106,6 +106,9 @@ const App: React.FC = () => {
 
                 {/* TEACHING ROUTE */}
                 <Route path="/teaching/*" element={<TeachingMain />} />
+
+                {/* CV ARCHITECT ROUTE */}
+                <Route path="/cv-architect/*" element={<CVMain />} />
                 
                 <Route path="/add" element={isLoading ? <GlobalAppLoader /> : <LibraryForm onComplete={loadData} items={items} />} />
                 <Route path="/edit/:id" element={isLoading ? <GlobalAppLoader /> : <LibraryEditForm onComplete={loadData} items={items} />} />

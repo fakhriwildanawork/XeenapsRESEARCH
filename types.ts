@@ -522,6 +522,30 @@ export interface CareerEntry {
   description: string;
 }
 
+// --- CV ARCHITECT TYPES ---
+
+export enum CVTemplateType {
+  MODERN_ACADEMIC = 'Template A',
+  EXECUTIVE_BLUE = 'Template B',
+  INSTITUTIONAL_CLASSIC = 'Template C'
+}
+
+export interface CVDocument {
+  id: string;
+  title: string;
+  template: CVTemplateType;
+  fileId: string; // PDF in Drive
+  storageNodeUrl: string;
+  selectedEducationIds: string[];
+  selectedCareerIds: string[];
+  selectedPublicationIds: string[];
+  selectedActivityIds: string[];
+  includePhoto: boolean;
+  aiSummary: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface GASResponse<T> {
   status: 'success' | 'error';
   data?: T;
