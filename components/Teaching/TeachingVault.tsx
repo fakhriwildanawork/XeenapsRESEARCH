@@ -40,7 +40,6 @@ const TeachingVault: React.FC = () => {
   const [metadata, setMetadata] = useState<TeachingItem | null>((location.state as any)?.item || null);
   const [items, setItems] = useState<TeachingVaultItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   
   const [isFileModalOpen, setIsFileModalOpen] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -97,22 +96,21 @@ const TeachingVault: React.FC = () => {
 
   const handleUploadFiles = async () => {
     if (fileQueue.length === 0) return;
-    setIsProcessing(true);
     
-    // Close & Reset modal immediately for UX
+    // Copy queue for background processing and clear UI immediately
     const currentQueue = [...fileQueue];
+    const optimisticBatchId = crypto.randomUUID();
     closeFileModal();
 
-    // 1. OPTIMISTIC UI: Add thumbnails with markers
-    const optimisticItems: TeachingVaultItem[] = currentQueue.map(q => ({
+    // 1. OPTIMISTIC UI: Add items with unique processing markers
+    const optimisticItems: TeachingVaultItem[] = currentQueue.map((q, idx) => ({
       type: 'FILE',
       label: q.label,
       mimeType: q.file.type,
-      fileId: q.previewUrl ? `optimistic_${q.previewUrl}` : 'optimistic_file',
+      fileId: `optimistic_${optimisticBatchId}_${idx}_${q.previewUrl || 'no-preview'}`,
       nodeUrl: metadata?.storageNodeUrl
     }));
     
-    const prevItems = [...items];
     setItems(prev => [...prev, ...optimisticItems]);
 
     try {
@@ -120,17 +118,26 @@ const TeachingVault: React.FC = () => {
       for (const q of currentQueue) {
         const res = await uploadVaultFile(q.file);
         if (res) {
-          uploaded.push({ type: 'FILE', fileId: res.fileId, nodeUrl: res.nodeUrl, label: q.label, mimeType: q.file.type });
+          uploaded.push({ 
+            type: 'FILE', 
+            fileId: res.fileId, 
+            nodeUrl: res.nodeUrl, 
+            label: q.label, 
+            mimeType: q.file.type 
+          });
         }
       }
-      const final = [...prevItems, ...uploaded];
-      setItems(final);
-      await handleSyncVault(final);
+      
+      // 2. Finalize: Replace optimistic items in the list and sync
+      setItems(prev => {
+        const filtered = prev.filter(item => !item.fileId?.startsWith(`optimistic_${optimisticBatchId}`));
+        const final = [...filtered, ...uploaded];
+        handleSyncVault(final);
+        return final;
+      });
     } catch (err) {
-      setItems(prevItems);
+      setItems(prev => prev.filter(item => !item.fileId?.startsWith(`optimistic_${optimisticBatchId}`)));
       showXeenapsToast('error', 'Batch upload failed');
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -138,37 +145,19 @@ const TeachingVault: React.FC = () => {
     const validLinks = linkQueue.filter(l => l.url.trim() && l.label.trim());
     if (validLinks.length === 0) return;
 
-    setIsProcessing(true);
     closeLinkModal();
     
-    const prevItems = [...items];
-    
-    // 1. OPTIMISTIC UI: Add link items with markers
-    const optimisticLinks: TeachingVaultItem[] = validLinks.map(l => ({
-      type: 'LINK',
-      url: l.url,
-      label: l.label,
-      fileId: 'optimistic_link' // Marker for spinner
-    }));
-
-    setItems(prev => [...prev, ...optimisticLinks]);
-
-    const cleanNewLinks: TeachingVaultItem[] = validLinks.map(l => ({
+    const newLinks: TeachingVaultItem[] = validLinks.map(l => ({
       type: 'LINK',
       url: l.url,
       label: l.label
     }));
 
-    try {
-      const finalGallery = [...prevItems, ...cleanNewLinks];
-      await handleSyncVault(finalGallery);
-      setItems(finalGallery);
-    } catch (err) {
-      setItems(prevItems);
-      showXeenapsToast('error', 'Link synchronization failed');
-    } finally {
-      setIsProcessing(false);
-    }
+    setItems(prev => {
+      const updated = [...prev, ...newLinks];
+      handleSyncVault(updated);
+      return updated;
+    });
   };
 
   const handleRemove = async (idx: number) => {
@@ -196,15 +185,13 @@ const TeachingVault: React.FC = () => {
          <div className="flex items-center gap-2">
             <button 
               onClick={() => setIsLinkModalOpen(true)} 
-              disabled={isProcessing}
-              className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-white text-[#004A74] border border-gray-100 rounded-2xl text-[9px] font-black uppercase shadow-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-white text-[#004A74] border border-gray-100 rounded-2xl text-[9px] font-black uppercase shadow-sm active:scale-95 transition-all"
             >
                 <LinkIcon size={14} /> Add Links
             </button>
             <button 
               onClick={() => setIsFileModalOpen(true)} 
-              disabled={isProcessing}
-              className="flex items-center gap-2 px-5 md:px-6 py-2.5 bg-[#004A74] text-white rounded-2xl text-[9px] font-black uppercase shadow-lg disabled:opacity-50"
+              className="flex items-center gap-2 px-5 md:px-6 py-2.5 bg-[#004A74] text-white rounded-2xl text-[9px] font-black uppercase shadow-lg active:scale-95 transition-all"
             >
                 <Plus size={14} /> Add Evidence
             </button>
@@ -231,7 +218,9 @@ const TeachingVault: React.FC = () => {
               if (item.type === 'LINK') {
                 displayUrl = item.url || '';
               } else if (isOptimistic) {
-                displayUrl = item.fileId?.replace('optimistic_', '') || '';
+                // Extract preview URL from optimistic ID if available
+                const parts = item.fileId?.split('_') || [];
+                displayUrl = parts.length > 3 ? parts.slice(3).join('_') : '';
               } else if (item.fileId) {
                 if (isImage) {
                   displayUrl = `https://lh3.googleusercontent.com/d/${item.fileId}`;
@@ -257,11 +246,11 @@ const TeachingVault: React.FC = () => {
                       </div>
                     )}
                     
-                    {/* PER-ITEM LOADER OVERLAY (UNIVERSAL) */}
-                    {isOptimistic && (
-                      <div className="absolute inset-0 bg-white/60 backdrop-blur-[3px] flex flex-col items-center justify-center z-20">
+                    {/* PER-ITEM LOADER OVERLAY (ONLY FOR FILES/IMAGES) */}
+                    {isOptimistic && item.type === 'FILE' && (
+                      <div className="absolute inset-0 bg-white/70 backdrop-blur-[3px] flex flex-col items-center justify-center z-20">
                         <Loader2 size={32} className="text-[#004A74] animate-spin" />
-                        <span className="text-[7px] font-black uppercase mt-2 text-[#004A74] tracking-widest animate-pulse">Syncing...</span>
+                        <span className="text-[7px] font-black uppercase mt-2 text-[#004A74] tracking-widest animate-pulse">Processing...</span>
                       </div>
                     )}
 
@@ -292,7 +281,7 @@ const TeachingVault: React.FC = () => {
                     <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><CloudUpload size={24} /></div>
                     <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Batch File Ingestion</h2>
                  </div>
-                 <button onClick={closeFileModal} className="p-2 hover:bg-red-50 text-gray-400 rounded-full transition-all"><X size={24} /></button>
+                 <button onClick={closeFileModal} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-6">
                  {fileQueue.length === 0 ? (
@@ -312,6 +301,8 @@ const TeachingVault: React.FC = () => {
                              <button onClick={() => setFileQueue(prev => prev.filter((_, idx) => idx !== i))} className="p-2 text-red-300"><X size={16} /></button>
                           </div>
                        ))}
+                       <button onClick={() => fileInputRef.current?.click()} className="w-full py-4 border-2 border-dashed border-gray-100 rounded-2xl text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-[#004A74] hover:bg-white transition-all">+ Add More Files</button>
+                       <input type="file" ref={fileInputRef} className="hidden" multiple onChange={onFileSelect} />
                     </div>
                  )}
               </div>
@@ -332,7 +323,7 @@ const TeachingVault: React.FC = () => {
                     <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><LinkIcon size={24} /></div>
                     <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">External References</h2>
                  </div>
-                 <button onClick={closeLinkModal} className="p-2 hover:bg-red-50 text-gray-400 rounded-full transition-all"><X size={24} /></button>
+                 <button onClick={closeLinkModal} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-6">
                  {linkQueue.map((l, i) => (
@@ -354,7 +345,7 @@ const TeachingVault: React.FC = () => {
               </div>
               <div className="p-8 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                  <button onClick={closeLinkModal} className="px-8 py-3 bg-white text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest">Cancel</button>
-                 <button onClick={handleSaveLinks} className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase shadow-xl flex items-center gap-2"><Save size={14} /> Synchronize Vault</button>
+                 <button onClick={handleSaveLinks} className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase shadow-xl flex items-center gap-2"><Save size={14} /> Confirm & Save</button>
               </div>
            </div>
         </div>
