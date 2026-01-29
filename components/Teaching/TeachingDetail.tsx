@@ -30,7 +30,8 @@ import {
   Presentation,
   GraduationCap,
   Link as LinkIcon,
-  Activity
+  Activity,
+  Palette
 } from 'lucide-react';
 import { 
   FormPageContainer, 
@@ -59,48 +60,31 @@ const TeachingDetail: React.FC = () => {
   const [pickerType, setPickerType] = useState<PickerType>('LIBRARY');
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const topRef = useRef<HTMLDivElement>(null); // Specific anchor for scroll-to-top
+  const topRef = useRef<HTMLDivElement>(null);
 
-  /**
-   * BULLETPROOF TIME SANITIZER - ATOMIC EDITION
-   * Strictly extracts HH:mm. Handles 1899 epoch noise and ISO timezone shifts.
-   */
   const sanitizeTime = (val: any) => {
     if (!val || val === "-") return '';
     const str = String(val).trim();
-    // Hunt for HH:mm or H:mm patterns (ignores date/offset noise)
     const match = str.match(/(\d{1,2}:\d{2})/);
     if (match) {
       const parts = match[1].split(':');
-      // Always pad to HH:mm for HTML5 compatibility
       return `${parts[0].padStart(2, '0')}:${parts[1]}`;
     }
     return '';
   };
 
-  /**
-   * BULLETPROOF DATE SANITIZER - REGISTRY EDITION
-   * Converts various spreadsheet/ISO formats to strict YYYY-MM-DD.
-   */
   const sanitizeDate = (val: any) => {
     if (!val || val === "-") return '';
     const str = String(val).trim();
-    
-    // 1. Check strict YYYY-MM-DD first
     if (str.match(/^\d{4}-\d{2}-\d{2}/)) return str.substring(0, 10);
-    
-    // 2. Check DD/MM/YYYY or D/M/YYYY (Common Spreadsheet display values)
     const dmyMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
     if (dmyMatch) {
       return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
     }
-
-    // 3. Fallback to native parsing
     try {
       const d = new Date(str);
       if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
     } catch(e) {}
-    
     return '';
   };
 
@@ -126,10 +110,6 @@ const TeachingDetail: React.FC = () => {
     return `${pct.toFixed(1)}%`;
   };
 
-  /**
-   * FIX: AUTO-SCROLL TO TOP ON TAB SWITCH
-   * Uses a specific Ref anchor to avoid collision with Sidebar scroll.
-   */
   useEffect(() => {
     if (topRef.current) {
       topRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -149,7 +129,6 @@ const TeachingDetail: React.FC = () => {
       }
 
       if (rawFound) {
-        // APPLY DEEP ATOMIC SANITIZATION ON INITIAL LOAD
         setItem({
           ...rawFound,
           teachingDate: sanitizeDate(rawFound.teachingDate),
@@ -157,6 +136,7 @@ const TeachingDetail: React.FC = () => {
           endTime: sanitizeTime(rawFound.endTime),
           actualStartTime: sanitizeTime(rawFound.actualStartTime),
           actualEndTime: sanitizeTime(rawFound.actualEndTime),
+          eventColor: rawFound.eventColor || '#004A74',
           referenceLinks: Array.isArray(rawFound.referenceLinks) ? rawFound.referenceLinks : [],
           presentationId: Array.isArray(rawFound.presentationId) ? rawFound.presentationId : [],
           questionBankId: Array.isArray(rawFound.questionBankId) ? rawFound.questionBankId : [],
@@ -173,7 +153,6 @@ const TeachingDetail: React.FC = () => {
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
     
-    // APPLY REAL-TIME SANITIZATION BEFORE STATE STORAGE
     let cleanVal = val;
     if (['startTime', 'endTime', 'actualStartTime', 'actualEndTime'].includes(field)) {
       cleanVal = sanitizeTime(val);
@@ -183,15 +162,13 @@ const TeachingDetail: React.FC = () => {
 
     let updated = { ...item, [field]: cleanVal, updatedAt: new Date().toISOString() };
 
-    // AUTO-CALCULATE DURATION FOR WRITING TO DATABASE
     if (field === 'actualStartTime' || field === 'actualEndTime') {
       updated.teachingDuration = calculateDuration(updated.actualStartTime, updated.actualEndTime);
     }
 
-    // AUTO-CALCULATE ATTENDANCE PERCENTAGE FOR WRITING TO DATABASE
     if (field === 'plannedStudents' || field === 'totalStudentsPresent') {
       const planned = field === 'plannedStudents' ? (parseInt(cleanVal) || 0) : item.plannedStudents;
-      const present = field === 'totalStudentsPresent' ? (parseInt(cleanVal) || 0) : item.totalStudentsPresent;
+      const present = field === 'totalStudentsPresent' ? (parseInt(cleanVal) || 0) : (item.totalStudentsPresent || 0);
       if (planned > 0) {
         updated.attendancePercentage = parseFloat(((present / planned) * 100).toFixed(2));
       } else {
@@ -277,86 +254,99 @@ const TeachingDetail: React.FC = () => {
     { id: 'schedule', label: 'Schedule', icon: Calendar },
     { id: 'substance', label: 'Substance', icon: BookOpen },
     { id: 'report', label: 'Report', icon: ClipboardCheck }
-  ];
+  ] as const;
 
   return (
     <FormPageContainer>
-      <FormStickyHeader 
-        title={item.label} 
-        subtitle="Teaching Performance Ledger" 
-        onBack={() => navigate('/teaching')}
-        rightElement={
-          <div className="flex items-center gap-4">
-             {/* DESKTOP TABS: HIDDEN ON MOBILE */}
-             <div className="hidden lg:flex bg-gray-50 p-1.5 rounded-2xl gap-1">
-                {tabs.map(tab => (
-                  <button 
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}
-                  >
-                    <tab.icon size={14} /> {tab.label}
-                  </button>
-                ))}
-             </div>
+      {/* UNIFIED ONE-LINE HEADER */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-4 md:px-8 py-4 border-b border-gray-100 flex items-center gap-3 md:gap-6 shrink-0">
+        <button 
+          onClick={() => navigate('/teaching')}
+          className="p-2 md:p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90 shrink-0"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        
+        <div className="min-w-0 flex-1 lg:flex-none">
+          <h2 className="text-sm md:text-base font-black text-[#004A74] uppercase truncate leading-tight">{item.label}</h2>
+          <p className="hidden md:block text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Teaching Ledger</p>
+        </div>
 
-             <div className="flex items-center gap-3">
-               <button 
-                  onClick={() => navigate(`/teaching/${item.id}/vault`, { state: { item } })}
-                  className="p-2.5 bg-white border border-gray-100 text-[#004A74] hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-90"
-                  title="Documentation Vault"
-                >
-                  <FolderOpen size={20} />
-                </button>
-                <button 
-                  onClick={handleDelete}
-                  className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90"
-                  title="Purge Record"
-                >
-                  <Trash2 size={20} />
-                </button>
-             </div>
-          </div>
-        }
-      />
-
-      {/* MOBILE TABS ROW: ONLY VISIBLE ON MOBILE/TABLET */}
-      <div className="lg:hidden bg-white/95 backdrop-blur-md px-6 md:px-10 py-3 border-b border-gray-50 flex justify-center lg:justify-start overflow-x-auto no-scrollbar shrink-0">
-          <div className="flex bg-gray-50 p-1.5 rounded-2xl gap-1">
+        {/* COMPACT NAVIGATION TABS - SCROLLABLE ON MOBILE */}
+        <div className="flex-1 flex justify-center overflow-x-auto no-scrollbar scroll-smooth">
+          <div className="flex bg-gray-100 p-1 rounded-2xl gap-0.5 md:gap-1 whitespace-nowrap">
             {tabs.map(tab => (
               <button 
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-2 rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}
               >
-                <tab.icon size={14} /> {tab.label}
+                <tab.icon size={12} className="md:w-3.5 md:h-3.5" /> {tab.label}
               </button>
             ))}
           </div>
+        </div>
+
+        {/* ACTION BUTTONS */}
+        <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+           <button 
+              onClick={() => navigate(`/teaching/${item.id}/vault`, { state: { item } })}
+              className="p-2 md:p-2.5 bg-white border border-gray-100 text-[#004A74] hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-90"
+              title="Documentation Vault"
+            >
+              <FolderOpen size={18} />
+            </button>
+            <button 
+              onClick={handleDelete}
+              className="p-2 md:p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90"
+              title="Purge Record"
+            >
+              <Trash2 size={18} />
+            </button>
+        </div>
       </div>
 
       <FormContentArea>
-        {/* INVISIBLE SCROLL ANCHOR */}
         <div ref={topRef} className="h-0 w-0 absolute top-0" aria-hidden="true" />
         
         <div className="max-w-5xl mx-auto space-y-12">
           
           {activeTab === 'schedule' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-               <FormField label="Ledger Identity / Session Label" required>
-                 <input className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base font-black text-[#004A74] uppercase transition-all focus:bg-white focus:ring-4 focus:ring-[#004A74]/5" 
-                   value={item.label} onChange={e => handleFieldChange('label', e.target.value)} />
-               </FormField>
+               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                  <div className="md:col-span-3">
+                    <FormField label="Ledger Identity / Session Label" required>
+                      <input className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base font-black text-[#004A74] uppercase transition-all focus:bg-white focus:ring-4 focus:ring-[#004A74]/5" 
+                        value={item.label} onChange={e => handleFieldChange('label', e.target.value)} />
+                    </FormField>
+                  </div>
+                  <div>
+                    <FormField label="Identifier Color">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-2xl">
+                         <div 
+                           className="w-8 h-8 rounded-full border-2 border-white shadow-sm shrink-0" 
+                           style={{ backgroundColor: item.eventColor || '#004A74' }}
+                         />
+                         <input 
+                           type="color" 
+                           className="w-full h-8 p-0 border-none bg-transparent cursor-pointer"
+                           value={item.eventColor || '#004A74'}
+                           onChange={e => handleFieldChange('eventColor', e.target.value)}
+                         />
+                      </div>
+                    </FormField>
+                  </div>
+               </div>
 
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormField label="Session Date" required>
-                    <input type="date" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.teachingDate} onChange={e => handleFieldChange('teachingDate', e.target.value)} />
+                    <input type="date" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74]" value={item.teachingDate} onChange={e => handleFieldChange('teachingDate', e.target.value)} />
                   </FormField>
                   <FormField label="Start Time" required>
-                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.startTime} onChange={e => handleFieldChange('startTime', e.target.value)} />
+                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74]" value={item.startTime} onChange={e => handleFieldChange('startTime', e.target.value)} />
                   </FormField>
                   <FormField label="End Time" required>
-                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.endTime} onChange={e => handleFieldChange('endTime', e.target.value)} />
+                    <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74]" value={item.endTime} onChange={e => handleFieldChange('endTime', e.target.value)} />
                   </FormField>
                </div>
 
@@ -432,7 +422,7 @@ const TeachingDetail: React.FC = () => {
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.referenceLinks) || item.referenceLinks.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No Library Items</p> : 
                              item.referenceLinks.map(lib => (
-                               <div key={lib.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-200 hover:border-[#004A74]/20 transition-all shadow-sm">
+                               <div key={lib.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-100 hover:border-[#004A74]/20 transition-all shadow-sm">
                                   <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">{lib.title}</span>
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                                      <button onClick={() => navigate('/', { state: { openItem: { id: lib.id, title: lib.title }, returnToTeaching: item.id, activeTab: 'substance' } })} className="p-1 text-cyan-600 hover:bg-gray-50 rounded-md transition-all"><Eye size={12} /></button>
@@ -516,7 +506,7 @@ const TeachingDetail: React.FC = () => {
                         <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
                            {(!Array.isArray(item.attachmentLink) || item.attachmentLink.length === 0) ? <p className="text-[8px] font-bold text-gray-300 uppercase italic py-10 text-center">No External Links</p> : 
                              item.attachmentLink.map((link, idx) => (
-                               <div key={idx} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-200 hover:border-[#004A74]/20 transition-all shadow-sm">
+                               <div key={idx} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-100 hover:border-[#004A74]/20 transition-all shadow-sm">
                                   <a href={link.url} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-600 truncate hover:underline flex items-center gap-1 flex-1">
                                     {link.label} <ExternalLink size={8} />
                                   </a>
