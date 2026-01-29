@@ -695,7 +695,12 @@ function doPost(e) {
     }
 
     if (action === 'searchByIdentifier') return createJsonResponse(handleIdentifierSearch(body.idValue));
-    if (action === 'aiProxy') return createJsonResponse(handleAiRequest(body.provider, body.prompt, body.modelOverride));
+    
+    // MODIFIED: Injeksi parameter responseType ke handleAiRequest
+    if (action === 'aiProxy') {
+      const { provider, prompt, modelOverride, responseType } = body;
+      return createJsonResponse(handleAiRequest(provider, prompt, modelOverride, responseType));
+    }
     
     // NEW: fetchImageProxy (Bypass CORS via Server-side fetch)
     if (action === 'fetchImageProxy') {

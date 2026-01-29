@@ -130,14 +130,23 @@ export const fetchFileContent = async (fileId: string, nodeUrl?: string): Promis
   }
 };
 
-export const callAiProxy = async (provider: 'groq' | 'gemini', prompt: string, modelOverride?: string, signal?: AbortSignal): Promise<string> => {
+/**
+ * MODIFIED: callAiProxy now supports responseType parameter for flexible output formatting.
+ */
+export const callAiProxy = async (
+  provider: 'groq' | 'gemini', 
+  prompt: string, 
+  modelOverride?: string, 
+  signal?: AbortSignal,
+  responseType: 'json' | 'text' = 'json'
+): Promise<string> => {
   try {
     if (!GAS_WEB_APP_URL) throw new Error('GAS_WEB_APP_URL not configured');
     const response = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       mode: 'cors',
       redirect: 'follow',
-      body: JSON.stringify({ action: 'aiProxy', provider, prompt, modelOverride }),
+      body: JSON.stringify({ action: 'aiProxy', provider, prompt, modelOverride, responseType }),
       signal
     });
     const result = await response.json();
@@ -145,7 +154,7 @@ export const callAiProxy = async (provider: 'groq' | 'gemini', prompt: string, m
     throw new Error(result?.message || 'AI Proxy failed.');
   } catch (error: any) {
     console.error("callAiProxy Exception:", error);
-    throw error; // Changed from returning '' to throw error for better tracing
+    throw error;
   }
 };
 
