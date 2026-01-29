@@ -61,28 +61,30 @@ const TeachingDetail: React.FC = () => {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
-   * SMART TIME SANITIZER - DEEP EDITION
-   * Fixes the "1899-12-30" Google Sheets epoch bug and ensures HH:mm format.
+   * SMART TIME SANITIZER - DEEP ATOMIC EDITION
+   * Fixes the "1899-12-30" Google Sheets epoch bug and ensures strict HH:mm format for HTML inputs.
    */
   const sanitizeTime = (val: any) => {
     if (!val || val === "-") return '';
     const str = String(val);
     
-    // Pattern detection: if it contains 'T', extract only the HH:mm part after 'T'
+    // Attempt to extract HH:mm using regex (ignores date and timezone noise)
+    const match = str.match(/(\d{2}:\d{2})/);
+    if (match) return match[1];
+    
+    // Fallback split if regex fails but ISO 'T' is present
     if (str.includes('T')) {
       return str.split('T')[1].substring(0, 5);
     }
     
-    // Fallback: If it's already HH:mm or HH:mm:ss, just take first 5
-    const match = str.match(/(\d{2}:\d{2})/);
-    return match ? match[1] : str.substring(0, 5);
+    return str.substring(0, 5);
   };
 
   /**
-   * DATE SANITIZER - Ensures YYYY-MM-DD for HTML input
+   * DATE SANITIZER - Ensures strict YYYY-MM-DD for HTML input
    */
   const sanitizeDate = (val: any) => {
-    if (!val) return '';
+    if (!val || val === "-") return '';
     const str = String(val);
     return str.substring(0, 10);
   };
@@ -110,9 +112,10 @@ const TeachingDetail: React.FC = () => {
   };
 
   /**
-   * AUTO-SCROLL TO TOP ON TAB SWITCH
+   * AUTO-SCROLL TO TOP ON TAB SWITCH (Requirement 2)
    */
   useEffect(() => {
+    // We target the main content area by its class
     const container = document.querySelector('.custom-scrollbar');
     if (container) {
       container.scrollTo({ top: 0, behavior: 'smooth' });
@@ -132,7 +135,7 @@ const TeachingDetail: React.FC = () => {
       }
 
       if (rawFound) {
-        // APPLY DEEP CLEANING ON LOAD
+        // APPLY ATOMIC CLEANING ON LOAD (Requirement 3)
         setItem({
           ...rawFound,
           teachingDate: sanitizeDate(rawFound.teachingDate),
@@ -156,7 +159,7 @@ const TeachingDetail: React.FC = () => {
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
     
-    // APPLY DEEP CLEANING ON CHANGE BEFORE STATE & SYNC
+    // APPLY ATOMIC CLEANING ON CHANGE BEFORE STATE & SYNC (Requirement 3)
     let cleanVal = val;
     if (['startTime', 'endTime', 'actualStartTime', 'actualEndTime'].includes(field)) {
       cleanVal = sanitizeTime(val);

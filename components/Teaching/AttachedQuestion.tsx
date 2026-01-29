@@ -118,7 +118,7 @@ const AttachedQuestion: React.FC = () => {
               // ENHANCED: Pass return flag and teaching state to ensure back button works properly
               navigate('/', { state: { openItem: sourceLibItem, returnToAttachedQuestion: sessionId, teachingItem: teaching } });
             } else {
-              // Redirection Fix: Ensure return state is passed
+              // Redirection Fix: Ensure return state is passed back to substance tab
               navigate(`/teaching/${sessionId}`, { state: { activeTab: 'substance', item: teaching } });
             }
             setSelectedQuestionDetail(null);
@@ -130,7 +130,7 @@ const AttachedQuestion: React.FC = () => {
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 bg-white shrink-0 sticky top-0 z-40">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            {/* Redirection Fix: Ensure return state is passed to substance tab */}
+            {/* Redirection Fix: Ensure return state is passed back to substance tab */}
             <button onClick={() => navigate(`/teaching/${sessionId}`, { state: { activeTab: 'substance', item: teaching } })} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm">
               <ArrowLeftIcon className="w-[18px] h-[18px]" />
             </button>
