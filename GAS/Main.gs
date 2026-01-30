@@ -1,3 +1,4 @@
+
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -31,6 +32,17 @@ function doGet(e) {
       const sortDir = e.parameter.sortDir || "desc";
       
       const result = getPaginatedItems(CONFIG.SPREADSHEETS.LIBRARY, "Collections", page, limit, search, type, path, sortKey, sortDir);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
+    // NEW: getColleagues (SERVER-SIDE SEARCH & PAGINATION)
+    if (action === 'getColleagues') {
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "20");
+      const search = e.parameter.search || "";
+      const sortKey = e.parameter.sortKey || "name";
+      const sortDir = e.parameter.sortDir || "asc";
+      const result = getColleaguesFromRegistry(page, limit, search, sortKey, sortDir);
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
@@ -208,6 +220,7 @@ function doPost(e) {
   
   try {
     if (action === 'setupDatabase') return createJsonResponse(setupDatabase());
+    if (action === 'setupColleagueDatabase') return createJsonResponse(setupColleagueDatabase());
     if (action === 'setupTeachingDatabase') return createJsonResponse(setupTeachingDatabase());
     if (action === 'setupResearchDatabase') return createJsonResponse(setupResearchDatabase());
     if (action === 'setupBrainstormingDatabase') return createJsonResponse(setupBrainstormingDatabase());
@@ -216,6 +229,15 @@ function doPost(e) {
     if (action === 'setupActivitiesDatabase') return createJsonResponse(setupActivitiesDatabase());
     if (action === 'setupCVDatabase') return createJsonResponse(setupCVDatabase());
     
+    // NEW ACTION: saveColleague
+    if (action === 'saveColleague') {
+      return createJsonResponse(saveColleagueToRegistry(body.item));
+    }
+    // NEW ACTION: deleteColleague
+    if (action === 'deleteColleague') {
+      return createJsonResponse(deleteColleagueFromRegistry(body.id));
+    }
+
     // NEW ACTION: saveTeaching
     if (action === 'saveTeaching') {
       return createJsonResponse(saveTeachingToRegistry(body.item));

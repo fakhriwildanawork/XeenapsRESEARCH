@@ -1,3 +1,4 @@
+
 export enum SourceType {
   LINK = 'LINK',
   FILE = 'FILE',
@@ -542,6 +543,24 @@ export interface CVDocument {
   selectedActivityIds: string[];
   includePhoto: boolean;
   aiSummary: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- COLLEAGUE MODULE TYPES ---
+
+export interface ColleagueItem {
+  id: string;
+  name: string; // Mandatory
+  uniqueAppId: string; // Mandatory
+  affiliation?: string;
+  email?: string;
+  phone?: string;
+  socialMedia?: string;
+  photoUrl?: string;
+  photoFileId?: string;
+  photoNodeUrl?: string;
+  isFavorite: boolean;
   createdAt: string;
   updatedAt: string;
 }

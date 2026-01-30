@@ -1,3 +1,4 @@
+
 import { LibraryItem, GASResponse, ExtractionResult } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 import Swal from 'sweetalert2';
@@ -18,6 +19,24 @@ export const initializeDatabase = async (): Promise<{ status: string; message: s
       mode: 'cors',
       redirect: 'follow',
       body: JSON.stringify({ action: 'setupDatabase' }),
+    });
+    return await response.json();
+  } catch (error: any) {
+    return { status: 'error', message: error.toString() };
+  }
+};
+
+/**
+ * NEW: Initialize Colleague Database Structure
+ */
+export const initializeColleagueDatabase = async (): Promise<{ status: string; message: string }> => {
+  try {
+    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify({ action: 'setupColleagueDatabase' }),
     });
     return await response.json();
   } catch (error: any) {
