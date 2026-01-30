@@ -138,8 +138,9 @@ const ColleagueMain: React.FC = () => {
   }, [selectedIds, items]);
 
   return (
-    <div className="flex flex-col animate-in fade-in duration-500">
-      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8 shrink-0">
+    <div className="flex flex-col h-full overflow-y-auto custom-scrollbar animate-in fade-in duration-500">
+      {/* Search & Header Section - Mengalir mengikuti scroll */}
+      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8 shrink-0 px-1">
         <div className="flex items-center gap-4">
            <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
               <Users size={24} />
@@ -163,16 +164,20 @@ const ColleagueMain: React.FC = () => {
         </div>
       </div>
 
-      <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>
-        <StandardQuickActionButton variant="danger" onClick={handleMassDelete} title="Mass Delete">
-          <Trash2 size={18} />
-        </StandardQuickActionButton>
-        <StandardQuickActionButton variant="warning" onClick={handleMassFavorite} title="Mass Favorite">
-          <Star size={18} className={anyUnfavSelected ? "text-gray-300" : "text-[#FED400] fill-[#FED400]"} />
-        </StandardQuickActionButton>
-        <button onClick={() => setSelectedIds([])} className="text-[9px] font-black uppercase tracking-widest text-[#004A74]/50 hover:text-[#004A74] px-2 transition-all">Clear</button>
-      </StandardQuickAccessBar>
+      {/* Mass Action Bar - Mengalir mengikuti scroll */}
+      <div className="px-1">
+        <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>
+          <StandardQuickActionButton variant="danger" onClick={handleMassDelete} title="Mass Delete">
+            <Trash2 size={18} />
+          </StandardQuickActionButton>
+          <StandardQuickActionButton variant="warning" onClick={handleMassFavorite} title="Mass Favorite">
+            <Star size={18} className={anyUnfavSelected ? "text-gray-300" : "text-[#FED400] fill-[#FED400]"} />
+          </StandardQuickActionButton>
+          <button onClick={() => setSelectedIds([])} className="text-[9px] font-black uppercase tracking-widest text-[#004A74]/50 hover:text-[#004A74] px-2 transition-all">Clear</button>
+        </StandardQuickAccessBar>
+      </div>
 
+      {/* List Container - Mengalir mengikuti scroll */}
       <div className="pb-10 mt-2">
         {isLoading ? (
           <CardGridSkeleton count={8} />
@@ -244,13 +249,16 @@ const ColleagueMain: React.FC = () => {
         )}
       </div>
 
-      <StandardTableFooter 
-        totalItems={totalCount} 
-        currentPage={currentPage} 
-        itemsPerPage={itemsPerPage} 
-        totalPages={Math.ceil(totalCount / itemsPerPage)} 
-        onPageChange={setCurrentPage} 
-      />
+      {/* Pagination Footer - Mengalir mengikuti scroll */}
+      <div className="px-1 pb-10">
+        <StandardTableFooter 
+          totalItems={totalCount} 
+          currentPage={currentPage} 
+          itemsPerPage={itemsPerPage} 
+          totalPages={Math.ceil(totalCount / itemsPerPage)} 
+          onPageChange={setCurrentPage} 
+        />
+      </div>
 
       {isFormOpen && (
         <ColleagueForm 
@@ -262,6 +270,13 @@ const ColleagueMain: React.FC = () => {
           }} 
         />
       )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
+      `}</style>
     </div>
   );
 };
