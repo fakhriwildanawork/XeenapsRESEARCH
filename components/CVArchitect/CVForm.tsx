@@ -32,7 +32,6 @@ import {
   X,
   FileText,
   ExternalLink,
-  // Fix: Added missing icons to resolve name errors on lines 324 and 336
   Save,
   CheckCircle2
 } from 'lucide-react';
@@ -366,7 +365,7 @@ const CVForm: React.FC = () => {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
       `}</style>
-    </div>
+    </FormPageContainer>
   );
 };
 
