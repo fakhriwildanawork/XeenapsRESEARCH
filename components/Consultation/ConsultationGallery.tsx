@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ConsultationItem, LibraryItem, ConsultationAnswerContent } from '../../types';
-import { fetchRelatedConsultations, deleteConsultation } from '../../services/ConsultationService';
+import { fetchRelatedConsultations, deleteConsultation, saveConsultation } from '../../services/ConsultationService';
 import { 
   ArrowLeftIcon, 
   ChatBubbleLeftRightIcon, 
@@ -9,15 +9,19 @@ import {
   TrashIcon,
   SparklesIcon,
   ClockIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  StarIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import ConsultationInputModal from './ConsultationInputModal';
 import ConsultationResultView from './ConsultationResultView';
 import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { SmartSearchBox } from '../Common/SearchComponents';
+import { StandardQuickAccessBar, StandardQuickActionButton } from '../Common/ButtonComponents';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
+import { fetchFileContent } from '../../services/gasService';
 
 interface ConsultationGalleryProps {
   collection: LibraryItem;
@@ -28,8 +32,10 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
   const [items, setItems] = useState<ConsultationItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   // Navigation States
   const [view, setView] = useState<'gallery' | 'result'>('gallery');
@@ -39,15 +45,40 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
 
   const loadConsultations = useCallback(async () => {
     setIsLoading(true);
-    const result = await fetchRelatedConsultations(collection.id, currentPage, 20, search);
+    const result = await fetchRelatedConsultations(collection.id, currentPage, 20, appliedSearch);
     setItems(result.items);
     setTotalCount(result.totalCount);
     setIsLoading(false);
-  }, [collection.id, currentPage, search]);
+  }, [collection.id, currentPage, appliedSearch]);
 
   useEffect(() => {
     loadConsultations();
   }, [loadConsultations]);
+
+  const handleSearchTrigger = () => {
+    setAppliedSearch(localSearch);
+    setCurrentPage(1);
+  };
+
+  const toggleSelectItem = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const toggleFavorite = async (e: React.MouseEvent, item: ConsultationItem) => {
+    e.stopPropagation();
+    const newVal = !item.isFavorite;
+    
+    // Optimistic Update
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, isFavorite: newVal } : i));
+    
+    // Fetch content first because saveConsultation requires it for sharding logic
+    const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
+    if (content) {
+      await saveConsultation({ ...item, isFavorite: newVal }, content);
+      showXeenapsToast('success', newVal ? 'Marked as Favorite' : 'Removed from Favorites');
+    }
+  };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -61,6 +92,36 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     }
   };
 
+  const handleMassDelete = async () => {
+    const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
+    if (confirmed) {
+      setIsLoading(true);
+      for (const id of selectedIds) {
+        await deleteConsultation(id);
+      }
+      showXeenapsToast('success', `${selectedIds.length} Sessions Deleted`);
+      setSelectedIds([]);
+      loadConsultations();
+    }
+  };
+
+  const handleMassFavorite = async () => {
+    const selectedItems = items.filter(i => selectedIds.includes(i.id));
+    const anyUnfav = selectedItems.some(i => !i.isFavorite);
+    const newValue = anyUnfav;
+
+    setIsLoading(true);
+    for (const item of selectedItems) {
+       const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
+       if (content) {
+         await saveConsultation({ ...item, isFavorite: newValue }, content);
+       }
+    }
+    showXeenapsToast('success', `Bulk Update Complete`);
+    setSelectedIds([]);
+    loadConsultations();
+  };
+
   const handleOpenConsult = (item: ConsultationItem) => {
     setSelectedConsult(item);
     setActiveAnswer(null);
@@ -72,6 +133,10 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   };
+
+  const anyUnfavSelected = useMemo(() => {
+    return items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite);
+  }, [items, selectedIds]);
 
   if (view === 'result' && selectedConsult) {
     return (
@@ -129,9 +194,9 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
 
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
            <SmartSearchBox 
-            value={search} 
-            onChange={setSearch} 
-            onSearch={() => setCurrentPage(1)}
+            value={localSearch} 
+            onChange={setLocalSearch} 
+            onSearch={handleSearchTrigger}
             phrases={["Search by question topic...", "Filter reasoning logs..."]}
             className="w-full lg:max-w-xl"
            />
@@ -139,6 +204,19 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
              {totalCount} Sessions Stored
            </div>
         </div>
+      </div>
+
+      {/* MASS ACTION BAR */}
+      <div className="px-6 md:px-10">
+        <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>
+          <StandardQuickActionButton variant="danger" onClick={handleMassDelete} title="Mass Delete">
+            <TrashIcon className="w-5 h-5" />
+          </StandardQuickActionButton>
+          <StandardQuickActionButton variant="warning" onClick={handleMassFavorite} title="Mass Favorite">
+            {anyUnfavSelected ? <StarIcon className="w-5 h-5" /> : <StarSolid className="w-5 h-5 text-[#FED400]" />}
+          </StandardQuickActionButton>
+          <button onClick={() => setSelectedIds([])} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#004A74] px-2 transition-all">Clear</button>
+        </StandardQuickAccessBar>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 pb-32">
@@ -152,38 +230,53 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {items.map((item) => (
-              <div 
-                key={item.id}
-                onClick={() => handleOpenConsult(item)}
-                className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full ${item.isFavorite ? 'border-l-[6px] border-l-[#FED400]' : ''}`}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-md">
-                       <SparklesIcon className="w-4 h-4" />
+            {items.map((item) => {
+              const isSelected = selectedIds.includes(item.id);
+              return (
+                <div 
+                  key={item.id}
+                  onClick={() => handleOpenConsult(item)}
+                  className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full ${isSelected ? 'ring-2 ring-[#004A74] border-[#004A74]' : ''}`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      {/* CIRCLE CHECKBOX */}
+                      <button 
+                        onClick={(e) => toggleSelectItem(e, item.id)}
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]'}`}
+                      >
+                         {isSelected && <CheckIcon className="w-4 h-4 stroke-[4]" />}
+                      </button>
+                      <div className="w-8 h-8 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-md">
+                         <SparklesIcon className="w-4 h-4" />
+                      </div>
                     </div>
-                    {item.isFavorite && <StarSolid className="w-4 h-4 text-[#FED400]" />}
+                    
+                    <div className="flex items-center gap-1">
+                      <button onClick={(e) => toggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform">
+                        {item.isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
+                      </button>
+                      <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
-                  <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                </div>
 
-                <h3 className="text-sm font-black text-[#004A74] leading-relaxed line-clamp-3 mb-6 flex-1">"{item.question}"</h3>
+                  <h3 className="text-sm font-black text-[#004A74] leading-relaxed line-clamp-3 mb-6 flex-1">"{item.question}"</h3>
 
-                <div className="pt-4 border-t border-gray-50 flex items-center justify-between text-gray-400">
-                  <div className="flex items-center gap-1.5">
-                    <ClockIcon className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-black uppercase tracking-tight">{formatTimeAgo(item.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[#004A74] opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-[9px] font-black uppercase">View Analysis</span>
-                    <ChevronRightIcon className="w-4 h-4 stroke-[3]" />
+                  <div className="pt-4 border-t border-gray-50 flex items-center justify-between text-gray-400">
+                    <div className="flex items-center gap-1.5">
+                      <ClockIcon className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-black uppercase tracking-tight">{formatTimeAgo(item.createdAt)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[#004A74] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[9px] font-black uppercase">View Analysis</span>
+                      <ChevronRightIcon className="w-4 h-4 stroke-[3]" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

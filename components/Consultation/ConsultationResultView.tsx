@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ConsultationItem, LibraryItem, ConsultationAnswerContent } from '../../types';
-import { saveConsultation, callAiConsult } from '../../services/ConsultationService';
+import { saveConsultation, callAiConsult, deleteConsultation } from '../../services/ConsultationService';
 import { fetchFileContent } from '../../services/gasService';
 import { 
   ArrowLeftIcon, 
@@ -12,10 +12,12 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   ArrowPathIcon,
-  PaperAirplaneIcon
+  PaperAirplaneIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { showXeenapsToast } from '../../utils/toastUtils';
+import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 
 interface ConsultationResultViewProps {
   collection: LibraryItem;
@@ -95,6 +97,17 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     }
   };
 
+  const handleDelete = async () => {
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (confirmed) {
+      const success = await deleteConsultation(consultation.id);
+      if (success) {
+        showXeenapsToast('success', 'Consultation deleted');
+        onBack();
+      }
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden">
       
@@ -113,6 +126,9 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
          <div className="flex items-center gap-3">
             <button onClick={toggleFavorite} className="p-3 bg-gray-50 text-[#FED400] hover:bg-[#FED400]/10 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100">
                {isFavorite ? <StarSolid className="w-6 h-6" /> : <StarIcon className="w-6 h-6" />}
+            </button>
+            <button onClick={handleDelete} className="p-3 bg-gray-50 text-red-400 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100">
+               <TrashIcon className="w-6 h-6" />
             </button>
          </div>
       </div>
