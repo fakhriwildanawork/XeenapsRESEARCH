@@ -40,6 +40,17 @@ import { showXeenapsToast } from '../../utils/toastUtils';
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 
+/**
+ * Internal Skeleton Component for selection cards
+ */
+const SelectionSkeleton: React.FC<{ count?: number, height?: string }> = ({ count = 3, height = "72px" }) => (
+  <div className="space-y-3">
+    {[...Array(count)].map((_, i) => (
+      <div key={i} style={{ height }} className="w-full skeleton rounded-2xl border border-gray-100/50" />
+    ))}
+  </div>
+);
+
 const CVForm: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -168,8 +179,6 @@ const CVForm: React.FC = () => {
     setConfig({ ...config, [listKey]: isAll ? items.map(i => i.id) : [] });
   };
 
-  if (isLoading) return null; // Make it immediate
-
   return (
     <FormPageContainer>
       <FormStickyHeader 
@@ -188,6 +197,7 @@ const CVForm: React.FC = () => {
               value={config.title} 
               onChange={e => setConfig({...config, title: e.target.value})} 
               placeholder="e.g. CV PROFESSIONAL 2024" 
+              disabled={isLoading}
             />
           </FormField>
 
@@ -197,24 +207,32 @@ const CVForm: React.FC = () => {
             <section className="space-y-4">
               <div className="flex items-center justify-between px-2">
                 <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><GraduationCap size={16} /> Education</h3>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => bulkToggle('selectedEducationIds', sourceData.education, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
-                  <span className="text-gray-300">|</span>
-                  <button type="button" onClick={() => bulkToggle('selectedEducationIds', sourceData.education, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
-                </div>
+                {!isLoading && (
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => bulkToggle('selectedEducationIds', sourceData.education, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" onClick={() => bulkToggle('selectedEducationIds', sourceData.education, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-1 gap-3">
-                {sourceData.education.map(edu => (
-                  <div key={edu.id} onClick={() => toggleSelection('selectedEducationIds', edu.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedEducationIds.includes(edu.id) ? 'border-[#004A74] bg-blue-50' : 'border-gray-100 opacity-60'}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedEducationIds.includes(edu.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedEducationIds.includes(edu.id) && <Check size={12} strokeWidth={4} />}</div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-black text-[#004A74] uppercase truncate">{edu.institution}</p>
-                        <p className="text-[8px] font-bold text-gray-400 uppercase">{edu.level} • {edu.startYear}-{edu.endYear}</p>
+                {isLoading ? (
+                  <SelectionSkeleton count={3} height="76px" />
+                ) : sourceData.education.length === 0 ? (
+                  <p className="text-[10px] font-bold text-gray-300 uppercase italic p-4 text-center">No education records found</p>
+                ) : (
+                  sourceData.education.map(edu => (
+                    <div key={edu.id} onClick={() => toggleSelection('selectedEducationIds', edu.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedEducationIds.includes(edu.id) ? 'border-[#004A74] bg-blue-50' : 'border-gray-100 opacity-60'}`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedEducationIds.includes(edu.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedEducationIds.includes(edu.id) && <Check size={12} strokeWidth={4} />}</div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-black text-[#004A74] uppercase truncate">{edu.institution}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">{edu.level} • {edu.startYear}-{edu.endYear}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </section>
 
@@ -222,24 +240,32 @@ const CVForm: React.FC = () => {
             <section className="space-y-4">
               <div className="flex items-center justify-between px-2">
                 <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Briefcase size={16} /> Experience</h3>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => bulkToggle('selectedCareerIds', sourceData.career, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
-                  <span className="text-gray-300">|</span>
-                  <button type="button" onClick={() => bulkToggle('selectedCareerIds', sourceData.career, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
-                </div>
+                {!isLoading && (
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => bulkToggle('selectedCareerIds', sourceData.career, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" onClick={() => bulkToggle('selectedCareerIds', sourceData.career, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-1 gap-3">
-                {sourceData.career.map(job => (
-                  <div key={job.id} onClick={() => toggleSelection('selectedCareerIds', job.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedCareerIds.includes(job.id) ? 'border-[#004A74] bg-blue-50' : 'border-gray-100 opacity-60'}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedCareerIds.includes(job.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedCareerIds.includes(job.id) && <Check size={12} strokeWidth={4} />}</div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-black text-[#004A74] uppercase truncate">{job.company}</p>
-                        <p className="text-[8px] font-bold text-gray-400 uppercase">{job.position} • {job.startDate}-{job.endDate}</p>
+                {isLoading ? (
+                  <SelectionSkeleton count={3} height="76px" />
+                ) : sourceData.career.length === 0 ? (
+                  <p className="text-[10px] font-bold text-gray-300 uppercase italic p-4 text-center">No career records found</p>
+                ) : (
+                  sourceData.career.map(job => (
+                    <div key={job.id} onClick={() => toggleSelection('selectedCareerIds', job.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedCareerIds.includes(job.id) ? 'border-[#004A74] bg-blue-50' : 'border-gray-100 opacity-60'}`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedCareerIds.includes(job.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedCareerIds.includes(job.id) && <Check size={12} strokeWidth={4} />}</div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-black text-[#004A74] uppercase truncate">{job.company}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">{job.position} • {job.startDate}-{job.endDate}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </section>
           </div>
@@ -250,31 +276,39 @@ const CVForm: React.FC = () => {
             <section className="space-y-4">
               <div className="flex items-center justify-between px-2">
                 <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Share2 size={16} /> Publications</h3>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-xl border border-gray-100 mr-2">
-                    <input type="number" placeholder="From" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={pubFilter.start} onChange={e => setPubFilter({...pubFilter, start: e.target.value})} />
-                    <span className="text-gray-300 text-[9px]">-</span>
-                    <input type="number" placeholder="To" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={pubFilter.end} onChange={e => setPubFilter({...pubFilter, end: e.target.value})} />
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => bulkToggle('selectedPublicationIds', filteredPubs, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">All</button>
-                    <span className="text-gray-300">|</span>
-                    <button type="button" onClick={() => bulkToggle('selectedPublicationIds', filteredPubs, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                {filteredPubs.map(p => (
-                  <div key={p.id} onClick={() => toggleSelection('selectedPublicationIds', p.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedPublicationIds.includes(p.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 opacity-60'}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.selectedPublicationIds.includes(p.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedPublicationIds.includes(p.id) && <Check size={10} strokeWidth={4} />}</div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-[#004A74] uppercase truncate">{p.title}</p>
-                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">YEAR: {p.year}</p>
-                      </div>
+                {!isLoading && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-xl border border-gray-100 mr-2">
+                      <input type="number" placeholder="From" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={pubFilter.start} onChange={e => setPubFilter({...pubFilter, start: e.target.value})} />
+                      <span className="text-gray-300 text-[9px]">-</span>
+                      <input type="number" placeholder="To" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={pubFilter.end} onChange={e => setPubFilter({...pubFilter, end: e.target.value})} />
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => bulkToggle('selectedPublicationIds', filteredPubs, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">All</button>
+                      <span className="text-gray-300">|</span>
+                      <button type="button" onClick={() => bulkToggle('selectedPublicationIds', filteredPubs, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
                     </div>
                   </div>
-                ))}
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                {isLoading ? (
+                  <SelectionSkeleton count={4} height="64px" />
+                ) : filteredPubs.length === 0 ? (
+                  <p className="text-[10px] font-bold text-gray-300 uppercase italic p-4 text-center">No publications matching filters</p>
+                ) : (
+                  filteredPubs.map(p => (
+                    <div key={p.id} onClick={() => toggleSelection('selectedPublicationIds', p.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedPublicationIds.includes(p.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 opacity-60'}`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.selectedPublicationIds.includes(p.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedPublicationIds.includes(p.id) && <Check size={10} strokeWidth={4} />}</div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-[#004A74] uppercase truncate">{p.title}</p>
+                          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">YEAR: {p.year}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
 
@@ -282,31 +316,39 @@ const CVForm: React.FC = () => {
             <section className="space-y-4">
               <div className="flex items-center justify-between px-2">
                 <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><ClipboardCheck size={16} /> Activities</h3>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-xl border border-gray-100 mr-2">
-                    <input type="number" placeholder="From" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={actFilter.start} onChange={e => setActFilter({...actFilter, start: e.target.value})} />
-                    <span className="text-gray-300 text-[9px]">-</span>
-                    <input type="number" placeholder="To" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={actFilter.end} onChange={e => setActFilter({...actFilter, end: e.target.value})} />
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => bulkToggle('selectedActivityIds', filteredActs, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">All</button>
-                    <span className="text-gray-300">|</span>
-                    <button type="button" onClick={() => bulkToggle('selectedActivityIds', filteredActs, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                {filteredActs.map(a => (
-                  <div key={a.id} onClick={() => toggleSelection('selectedActivityIds', a.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedActivityIds.includes(a.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 opacity-60'}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.selectedActivityIds.includes(a.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedActivityIds.includes(a.id) && <Check size={10} strokeWidth={4} />}</div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-[#004A74] uppercase truncate">{a.eventName}</p>
-                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">YEAR: {new Date(a.startDate).getFullYear()}</p>
-                      </div>
+                {!isLoading && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-xl border border-gray-100 mr-2">
+                      <input type="number" placeholder="From" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={actFilter.start} onChange={e => setActFilter({...actFilter, start: e.target.value})} />
+                      <span className="text-gray-300 text-[9px]">-</span>
+                      <input type="number" placeholder="To" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={actFilter.end} onChange={e => setActFilter({...actFilter, end: e.target.value})} />
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => bulkToggle('selectedActivityIds', filteredActs, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">All</button>
+                      <span className="text-gray-300">|</span>
+                      <button type="button" onClick={() => bulkToggle('selectedActivityIds', filteredActs, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
                     </div>
                   </div>
-                ))}
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                {isLoading ? (
+                  <SelectionSkeleton count={4} height="64px" />
+                ) : filteredActs.length === 0 ? (
+                  <p className="text-[10px] font-bold text-gray-300 uppercase italic p-4 text-center">No activities matching filters</p>
+                ) : (
+                  filteredActs.map(a => (
+                    <div key={a.id} onClick={() => toggleSelection('selectedActivityIds', a.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedActivityIds.includes(a.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 opacity-60'}`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.selectedActivityIds.includes(a.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedActivityIds.includes(a.id) && <Check size={10} strokeWidth={4} />}</div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-[#004A74] uppercase truncate">{a.eventName}</p>
+                          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">YEAR: {new Date(a.startDate).getFullYear()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
           </div>
@@ -315,31 +357,37 @@ const CVForm: React.FC = () => {
           <div className="space-y-6 pt-10 border-t border-gray-100">
             <div className="flex items-center justify-between px-4">
               <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Sparkles size={18} className="text-[#FED400]" /> Professional Statement</h3>
-              <button 
-                onClick={handleGenerateSummary} 
-                disabled={isGenerating} 
-                className="px-6 py-2.5 bg-black text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
-              >
-                {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Draft with AI
-              </button>
+              {!isLoading && (
+                <button 
+                  onClick={handleGenerateSummary} 
+                  disabled={isGenerating} 
+                  className="px-6 py-2.5 bg-black text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
+                >
+                  {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Draft with AI
+                </button>
+              )}
             </div>
-            <textarea 
-              className="w-full p-10 bg-white border border-gray-200 rounded-[3rem] shadow-inner outline-none text-sm font-medium text-[#004A74] leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[250px]" 
-              placeholder="Draft your executive summary or use the AI Architect..." 
-              value={config.aiSummary} 
-              onChange={e => setConfig({...config, aiSummary: e.target.value})} 
-            />
+            {isLoading ? (
+              <div className="w-full h-[250px] skeleton rounded-[3rem]" />
+            ) : (
+              <textarea 
+                className="w-full p-10 bg-white border border-gray-200 rounded-[3rem] shadow-inner outline-none text-sm font-medium text-[#004A74] leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[250px]" 
+                placeholder="Draft your executive summary or use the AI Architect..." 
+                value={config.aiSummary} 
+                onChange={e => setConfig({...config, aiSummary: e.target.value})} 
+              />
+            )}
           </div>
 
           {/* SUBMIT BUTTON */}
           <div className="flex justify-center pt-10">
             <button 
               onClick={handleFinalSubmit} 
-              disabled={isGenerating} 
-              className="w-full max-w-2xl py-6 bg-[#004A74] text-[#FED400] rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+              disabled={isGenerating || isLoading} 
+              className={`w-full max-w-2xl py-6 bg-[#004A74] text-[#FED400] rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-sm shadow-2xl transition-all flex items-center justify-center gap-4 ${isGenerating || isLoading ? 'opacity-50 grayscale' : 'hover:scale-105 active:scale-95'}`}
             >
               {isGenerating ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
-              {isGenerating ? 'Architecting PDF...' : 'Synchronize & Generate CV'}
+              {isGenerating ? 'Architecting PDF...' : isLoading ? 'Synchronizing Intelligence...' : 'Synchronize & Generate CV'}
             </button>
           </div>
         </div>
