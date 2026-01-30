@@ -110,14 +110,15 @@ const ConsultationChatModal: React.FC<ConsultationChatModalProps> = ({ collectio
               </div>
               <div>
                  <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight">AI Knowledge Partner</h3>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">DeepSeek-R1 • Rational Synthesis Engine</p>
+                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Groq AI • Rational Synthesis Engine</p>
               </div>
            </div>
            <div className="flex items-center gap-2">
               <button onClick={toggleFavorite} className="p-2 hover:scale-125 transition-transform">
                 {isFavorite ? <StarSolid className="w-6 h-6 text-[#FED400]" /> : <StarIcon className="w-6 h-6 text-gray-300" />}
               </button>
-              <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
+              {/* Fix: Removed invalid onClose prop from button element */}
+              <button className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all" onClick={onClose}>
                  <XMarkIcon className="w-8 h-8" />
               </button>
            </div>
@@ -210,7 +211,7 @@ const ConsultationChatModal: React.FC<ConsultationChatModalProps> = ({ collectio
                  </div>
                  <input 
                    className="w-full pl-16 pr-6 py-5 bg-white border border-gray-200 rounded-[2rem] outline-none text-sm font-bold text-[#004A74] shadow-sm focus:ring-4 focus:ring-[#004A74]/5 focus:border-[#004A74]/30 transition-all placeholder:text-gray-300"
-                   placeholder="Ask DeepSeek anything about this document..."
+                   placeholder="Ask Groq AI anything about this document..."
                    value={question}
                    onChange={(e) => setQuestion(e.target.value)}
                    disabled={isThinking}

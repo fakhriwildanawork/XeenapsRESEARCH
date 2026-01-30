@@ -1,0 +1,95 @@
+/**
+ * XEENAPS PKM - GROQ AI CONSULTATION SERVICE
+ * Specialized for Reasoning and Contextual Deep Analysis via Groq Engine.
+ */
+
+function handleAiConsultRequest(collectionId, question) {
+  return callGroqConsultant(question, collectionId);
+}
+
+function callGroqConsultant(prompt, collectionId) {
+  const keys = getKeysFromSheet('Groq', 2); // Ambil dari Spreadsheet KEYS, Sheet 'Groq', Kolom B
+  if (!keys || keys.length === 0) return { status: 'error', message: 'No Groq keys found in database.' };
+  
+  // 1. GET SOURCE CONTEXT FROM LIBRARY (Maksimal 100rb karakter untuk kedalaman analisis)
+  let context = "";
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.LIBRARY);
+    const sheet = ss.getSheetByName("Collections");
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idIdx = headers.indexOf('id');
+    const extractedIdx = headers.indexOf('extractedJsonId');
+    const nodeIdx = headers.indexOf('storageNodeUrl');
+    
+    let extractedId, nodeUrl;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idIdx] === collectionId) {
+        extractedId = data[i][extractedIdx];
+        nodeUrl = data[i][nodeIdx];
+        break;
+      }
+    }
+
+    if (extractedId) {
+      const myUrl = ScriptApp.getService().getUrl();
+      const isLocal = !nodeUrl || nodeUrl === "" || nodeUrl === myUrl;
+      let fullText = "";
+
+      if (isLocal) {
+        const file = DriveApp.getFileById(extractedId);
+        fullText = JSON.parse(file.getBlob().getDataAsString()).fullText;
+      } else {
+        const remoteRes = UrlFetchApp.fetch(nodeUrl + (nodeUrl.indexOf('?') === -1 ? '?' : '&') + "action=getFileContent&fileId=" + extractedId);
+        fullText = JSON.parse(JSON.parse(remoteRes.getContentText()).content).fullText;
+      }
+      context = fullText.substring(0, 100000); 
+    }
+  } catch (e) {
+    console.warn("Could not retrieve context for Groq: " + e.toString());
+  }
+
+  // Ambil model dari Spreadsheet AI_CONFIG, Sheet 'AI', Baris 'Groq', Kolom B
+  const config = getProviderModel('Groq');
+  const model = config.model;
+
+  // 2. CALL GROQ API (OpenAI Compatible)
+  for (let key of keys) {
+    try {
+      const url = "https://api.groq.com/openai/v1/chat/completions";
+      const payload = {
+        model: model,
+        messages: [
+          { 
+            role: "system", 
+            content: "You are the Xeenaps Knowledge Consultant. Use the following [DOCUMENT_CONTEXT] as your primary intellectual source. If a user asks something outside the document, you MUST link it logically to the document's concepts or methodology. Be highly analytical and structural. Use <b> for key terms and <span class='xeenaps-highlight' style='background-color: #FED40030; color: #004A74; padding: 0 4px; border-radius: 4px;'> for critical insights. \n\n [DOCUMENT_CONTEXT]: \n" + context 
+          },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.1
+      };
+      
+      const res = UrlFetchApp.fetch(url, {
+        method: "post",
+        contentType: "application/json",
+        headers: { "Authorization": "Bearer " + key },
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+      
+      const responseData = JSON.parse(res.getContentText());
+      if (responseData.choices && responseData.choices.length > 0) {
+        const choice = responseData.choices[0].message;
+        // Mendukung field reasoning_content jika menggunakan model berbasis R1
+        return { 
+          status: 'success', 
+          data: choice.content,
+          reasoning: choice.reasoning_content || "" 
+        };
+      }
+    } catch (err) {
+      console.log("Groq rotation: key failed, trying next...");
+    }
+  }
+  return { status: 'error', message: 'Groq Consultation Service is currently overloaded.' };
+}

@@ -88,7 +88,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
             </button>
             <div className="min-w-0">
               <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Deep Consultation</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">AI Partner: DeepSeek-R1 (Reasoner)</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">AI Partner: Groq Reasoner</p>
             </div>
           </div>
 
@@ -122,7 +122,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
           <div className="flex flex-col items-center justify-center py-24 text-center opacity-30">
             <ChatBubbleLeftRightIcon className="w-20 h-20 mb-4 text-[#004A74]" />
             <h3 className="text-lg font-black uppercase tracking-widest">No Consultations Yet</h3>
-            <p className="text-sm font-medium mt-2">DeepSeek is waiting to analyze this document with you.</p>
+            <p className="text-sm font-medium mt-2">Groq AI is waiting to analyze this document with you.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
