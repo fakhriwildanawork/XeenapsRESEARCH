@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -32,8 +31,7 @@ import {
   PencilIcon,
   TrashIcon,
   CheckIcon,
-  LanguageIcon,
-  ChatBubbleLeftRightIcon
+  LanguageIcon
 } from '@heroicons/react/24/outline';
 import { 
   BookmarkIcon as BookmarkSolid, 
@@ -46,7 +44,6 @@ import { FormDropdown } from '../Common/FormComponents';
 import Header from '../Layout/Header';
 import RelatedPresentations from '../Presenter/RelatedPresentations';
 import RelatedQuestion from '../QuestionBank/RelatedQuestion';
-import ConsultationGallery from '../Consultation/ConsultationGallery';
 
 interface LibraryDetailViewProps {
   item: LibraryItem;
@@ -349,8 +346,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const [showTips, setShowTips] = useState(false);
   const [showCiteModal, setShowCiteModal] = useState(false);
   const [showPresentations, setShowPresentations] = useState(false); 
-  const [showQuestions, setShowQuestions] = useState(false); 
-  const [showConsultations, setShowConsultations] = useState(false);
+  const [showQuestions, setShowQuestions] = useState(false); // New state for Question Bank
   const [dummySearch, setDummySearch] = useState('');
   
   const [isBookmarked, setIsBookmarked] = useState(!!item.isBookmarked);
@@ -541,20 +537,25 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const handleBack = () => {
     const state = location.state as any;
     if (state?.returnToTeaching) {
+      // SMART REDIRECTION TO TEACHING: Back to the specific session and Substance tab
       navigate(`/teaching/${state.returnToTeaching}`, { 
         state: { activeTab: state.activeTab || 'substance' }, 
         replace: true 
       });
     } else if (state?.returnToAttachedQuestion) {
+      // BACK TO ATTACHED QUESTIONS: Restore proper view and data
       navigate(`/teaching/${state.returnToAttachedQuestion}/questions`, { 
         state: { item: state.teachingItem }, 
         replace: true 
       });
     } else if (state?.returnToPPT) {
+      // SMART REDIRECTION: Kembali ke halaman presentasi dan perintahkan buka modal detail
       navigate('/presentations', { state: { reopenPPT: state.returnToPPT }, replace: true });
     } else if (state?.returnToAudit) {
+      // SMART REDIRECTION: Kembali ke halaman Audit Project yang tepat
       navigate(`/research/work/${state.returnToAudit.id}`, { replace: true });
     } else if (state?.returnToQuestion) {
+      // REDIRECTION: Kembali ke modul Question Bank
       navigate('/questions', { state: { reopenQuestion: state.returnToQuestion }, replace: true });
     } else {
       onClose();
@@ -618,7 +619,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         isMobileSidebarOpen ? 'blur-[15px] opacity-40 pointer-events-none scale-[0.98]' : ''
       } ${
         isExternalTransition 
-          ? 'animate-in fade-in duration-200' 
+          ? 'animate-in fade-in duration-200' // Faster if route-based entry
           : 'animate-in fade-in zoom-in-95 slide-in-from-bottom-10 duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]'
       }`}
       style={{ 
@@ -642,7 +643,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         </div>
 
         {/* 2. DETAIL NAVIGATION BAR: HIDDEN IF IN PRESENTATION/QUESTION GALLERY */}
-        {(!showPresentations && !showQuestions && !showConsultations) && (
+        {(!showPresentations && !showQuestions) && (
           <nav className="px-4 md:px-8 py-3 flex items-center justify-between border-t border-gray-50/50">
             <button onClick={handleBack} className="flex items-center gap-2 text-[#004A74] font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 px-3 py-2 rounded-xl transition-all">
               <ArrowLeftIcon className="w-4 h-4 stroke-[3]" /> Back
@@ -695,13 +696,13 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     <button onClick={handleUpdate} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
                       <PencilIcon className="w-4 h-4" /> Update
                     </button>
-                    <button onClick={() => { setShowConsultations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-[#004A74] bg-[#FED400]/10 hover:bg-[#FED400]/20 rounded-xl transition-all">
-                      <ChatBubbleLeftRightIcon className="w-4 h-4" /> Knowledge Partner
-                    </button>
                     <button onClick={() => { setShowPresentations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><PresentationChartBarIcon className="w-4 h-4" /> Presentation Mode</button>
-                    <button onClick={() => { setShowQuestions(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
+                    <button onClick={() => { setShowQuestions(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-[#004A74] bg-[#FED400]/10 hover:bg-[#FED400]/20 rounded-xl transition-all">
                       <AcademicCapIcon className="w-4 h-4" /> AI Question Bank
                     </button>
+                    <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ClipboardDocumentListIcon className="w-4 h-4" /> To-Do List</button>
+                    <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><AcademicCapIcon className="w-4 h-4" /> Export Metadata</button>
+                    <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share Entry</button>
                     <div className="h-px bg-gray-50 my-1 mx-2" />
                     <button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all">
                       <TrashIcon className="w-4 h-4" /> Delete
@@ -714,22 +715,19 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         )}
       </div>
 
-      {/* 3. CONTENT AREA: DYNAMIC SWITCH */}
+      {/* 3. CONTENT AREA: DYNAMIC SWITCH BETWEEN GALLERY AND DETAILS */}
       <div className="flex-1 overflow-hidden flex flex-col bg-white">
         {showPresentations ? (
+          /* PRESENTATION GALLERY MODE */
           <RelatedPresentations 
             collection={currentItem} 
             onBack={() => setShowPresentations(false)} 
           />
         ) : showQuestions ? (
+          /* QUESTION BANK MODE */
           <RelatedQuestion 
             collection={currentItem}
             onBack={() => setShowQuestions(false)}
-          />
-        ) : showConsultations ? (
-          <ConsultationGallery 
-            collection={currentItem}
-            onBack={() => setShowConsultations(false)}
           />
         ) : (
           /* DETAIL MODE */
@@ -915,6 +913,71 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     ) : (
                       <ElegantList text={currentItem.unfamiliarTerminology || currentItem.quickTipsForYou} isLoading={isAnyLoading} />
                     )}
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
+                <div className="space-y-4">
+                  <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                    <LinkIcon className="w-3.5 h-3.5" /> Supporting References
+                  </h3>
+                  <div className="space-y-3">
+                    {isLoading && !isSyncing ? [...Array(2)].map((_, i) => <div key={i} className="h-20 w-full skeleton rounded-3xl" />) : (
+                      supportingData.references?.length > 0 ? supportingData.references.map((ref: string, idx: number) => {
+                        const urlMatch = ref.match(/https?:\/\/[^\s<]+/);
+                        const url = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : null;
+                        return (
+                          <div key={idx} className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 flex flex-col gap-3 transition-all hover:scale-[1.02] hover:shadow-md hover:bg-white group">
+                            <div className="flex gap-3">
+                              <span className="shrink-0 w-6 h-6 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center shadow-sm">
+                                {idx + 1}
+                              </span>
+                              <p className="text-xs font-semibold text-[#004A74]/80 leading-relaxed flex-1" dangerouslySetInnerHTML={{ __html: ref }} />
+                            </div>
+                            <div className="flex items-center justify-end gap-2">
+                              <button 
+                                onClick={(e) => handleCopy(e, ref.replace(/<[^>]*>/g, ''))}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#004A74] rounded-lg border border-gray-100 text-[9px] font-black uppercase tracking-tight shadow-sm hover:bg-[#FED400] transition-all"
+                              >
+                                <DocumentDuplicateIcon className="w-3 h-3" /> Copy
+                              </button>
+                              {url && (
+                                <button 
+                                  onClick={() => handleOpenLink(url)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#004A74] text-white rounded-lg text-[9px] font-black uppercase tracking-tight shadow-sm hover:bg-[#003859] hover:scale-105 transition-all"
+                                >
+                                  <ArrowTopRightOnSquareIcon className="w-3 h-3" /> Visit
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }) : <div className="py-6 text-center text-gray-300 text-[10px] font-bold uppercase italic">No supporting links.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-[#004A74] p-6 rounded-[2.5rem] shadow-xl space-y-4 flex flex-col">
+                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
+                    <VideoCameraIcon className="w-3.5 h-3.5" /> Visual Insights
+                  </h3>
+                  <div className="1-flex flex-col justify-center">
+                    {isLoading && !isSyncing ? <div className="aspect-video w-full skeleton rounded-2xl" /> : (
+                      supportingData.videoUrl ? (
+                        <div className="aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl border-4 border-white/10 group transition-all hover:scale-[1.01]">
+                          <iframe className="w-full h-full" src={supportingData.videoUrl} frameBorder="0" allowFullScreen></iframe>
+                        </div>
+                      ) : (
+                        <div className="aspect-video rounded-2xl bg-white/5 flex flex-col items-center justify-center border-2 border-dashed border-white/10">
+                          <VideoCameraIcon className="w-10 h-10 text-white/10 mb-2" />
+                          <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Video stream unavailable</p>
+                        </div>
+                      )
+                    )}
+                    <p className="mt-4 text-[10px] text-[#FED400]/80 font-bold italic text-center px-4 leading-relaxed">
+                      "Conceptual visualization facilitates faster knowledge anchoring."
+                    </p>
                   </div>
                 </div>
               </section>
