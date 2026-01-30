@@ -35,6 +35,16 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: getConsultations
+    if (action === 'getConsultations') {
+      const collectionId = e.parameter.collectionId;
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "20");
+      const search = e.parameter.search || "";
+      const result = getConsultationsFromRegistry(collectionId, page, limit, search);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
     // NEW: getColleagues (SERVER-SIDE SEARCH & PAGINATION)
     if (action === 'getColleagues') {
       const page = parseInt(e.parameter.page || "1");
@@ -228,7 +238,21 @@ function doPost(e) {
     if (action === 'setupProfileDatabase') return createJsonResponse(setupProfileDatabase());
     if (action === 'setupActivitiesDatabase') return createJsonResponse(setupActivitiesDatabase());
     if (action === 'setupCVDatabase') return createJsonResponse(setupCVDatabase());
+    if (action === 'setupConsultationDatabase') return createJsonResponse(setupConsultationDatabase());
     
+    // NEW ACTION: saveConsultation
+    if (action === 'saveConsultation') {
+      return createJsonResponse(saveConsultationToRegistry(body.item, body.answerContent));
+    }
+    // NEW ACTION: deleteConsultation
+    if (action === 'deleteConsultation') {
+      return createJsonResponse(deleteConsultationFromRegistry(body.id));
+    }
+    // NEW ACTION: aiConsultProxy
+    if (action === 'aiConsultProxy') {
+      return createJsonResponse(handleAiConsultRequest(body.collectionId, body.question));
+    }
+
     // NEW ACTION: saveColleague
     if (action === 'saveColleague') {
       return createJsonResponse(saveColleagueToRegistry(body.item));

@@ -27,6 +27,24 @@ export const initializeDatabase = async (): Promise<{ status: string; message: s
 };
 
 /**
+ * NEW: Initialize Consultation Database Structure
+ */
+export const initializeConsultationDatabase = async (): Promise<{ status: string; message: string }> => {
+  try {
+    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify({ action: 'setupConsultationDatabase' }),
+    });
+    return await response.json();
+  } catch (error: any) {
+    return { status: 'error', message: error.toString() };
+  }
+};
+
+/**
  * NEW: Initialize Colleague Database Structure
  */
 export const initializeColleagueDatabase = async (): Promise<{ status: string; message: string }> => {

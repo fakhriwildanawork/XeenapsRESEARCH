@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Cog6ToothIcon, 
@@ -8,10 +9,11 @@ import {
   SparklesIcon,
   ArrowPathIcon,
   BookOpenIcon,
-  IdentificationIcon
+  IdentificationIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { GAS_WEB_APP_URL } from '../../constants';
-import { initializeDatabase, initializeBrainstormingDatabase, initializePublicationDatabase } from '../../services/gasService';
+import { initializeDatabase, initializeBrainstormingDatabase, initializePublicationDatabase, initializeConsultationDatabase } from '../../services/gasService';
 import { showXeenapsAlert } from '../../utils/swalUtils';
 
 const SettingsView: React.FC = () => {
@@ -21,12 +23,14 @@ const SettingsView: React.FC = () => {
   const [isInitializingPub, setIsInitializingPub] = useState(false);
   const [isInitializingTeaching, setIsInitializingTeaching] = useState(false);
   const [isInitializingCV, setIsInitializingCV] = useState(false);
+  const [isInitializingConsult, setIsInitializingConsult] = useState(false);
 
   const SPREADSHEET_IDS = {
     LIBRARY: '1ROW4iyHN10DfDWaXL7O54mZi6Da9Xx70vU6oE-YW-I8',
     KEYS: '1Ji8XL2ceTprNa1dYvhfTnMDkWwzC937kpfyP19D7NvI',
     BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM',
     PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g',
+    CONSULTATION: '1tWeM09na8DY0pjU5wwnLNvzl_BIK6pB90m2WToF98Ts',
     CV_REGISTRY: '1-placeholder-cv-registry-id'
   };
 
@@ -147,6 +151,27 @@ const SettingsView: React.FC = () => {
     }
   };
 
+  const handleInitConsultDatabase = async () => {
+    setIsInitializingConsult(true);
+    try {
+      const result = await initializeConsultationDatabase();
+      if (result.status === 'success') {
+        showXeenapsAlert({
+          icon: 'success',
+          title: 'CONSULTATION READY',
+          text: 'The Consultation registry sheet has been successfully initialized.',
+          confirmButtonText: 'GREAT'
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err: any) {
+      showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
+    } finally {
+      setIsInitializingConsult(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
       <div className="glass p-8 rounded-[2rem] border-white/40 shadow-2xl">
@@ -233,6 +258,21 @@ const SettingsView: React.FC = () => {
               className="w-full py-2.5 bg-white text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
             >
               {isInitializingPub ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
+              Initialize
+            </button>
+          </div>
+
+          <div className="p-4 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
+            <h3 className="text-[10px] font-black mb-3 flex items-center gap-2 uppercase tracking-widest">
+              <ChatBubbleLeftRightIcon className="w-4 h-4 text-[#FED400]" />
+              Consultation
+            </h3>
+            <button 
+              onClick={handleInitConsultDatabase}
+              disabled={isInitializingConsult || !isConfigured}
+              className="w-full py-2.5 bg-[#FED400] text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
+            >
+              {isInitializingConsult ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
               Initialize
             </button>
           </div>
@@ -327,6 +367,17 @@ const SettingsView: React.FC = () => {
                 <p className="text-sm text-gray-500 group-hover:text-white/70">Access publication tracking and output showcase.</p>
               </div>
               <TableCellsIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
+            </button>
+
+            <button 
+              onClick={() => openSheet(SPREADSHEET_IDS.CONSULTATION)}
+              className="group flex items-center justify-between p-6 bg-white/40 hover:bg-[#004A74] rounded-2xl border border-white/60 transition-all duration-500 text-left shadow-sm"
+            >
+              <div>
+                <h4 className="font-bold text-[#004A74] group-hover:text-white group-hover:scale-105 transition-all origin-left">Knowledge Consult Log</h4>
+                <p className="text-sm text-gray-500 group-hover:text-white/70">Access deep reasoning history and consultation sharding.</p>
+              </div>
+              <ChatBubbleLeftRightIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
             </button>
           </div>
         </div>

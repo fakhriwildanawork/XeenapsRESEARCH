@@ -565,6 +565,24 @@ export interface ColleagueItem {
   updatedAt: string;
 }
 
+// --- CONSULTATION MODULE TYPES ---
+
+export interface ConsultationItem {
+  id: string;
+  collectionId: string;
+  question: string;
+  answerJsonId: string;
+  nodeUrl: string;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConsultationAnswerContent {
+  answer: string;
+  reasoning?: string;
+}
+
 export interface GASResponse<T> {
   status: 'success' | 'error';
   data?: T;

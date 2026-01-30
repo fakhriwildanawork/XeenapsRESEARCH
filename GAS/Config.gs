@@ -26,7 +26,8 @@ const CONFIG = {
     TEACHING: '18630rhA5D_JDuCMcQ5XT3pVii1VYAhC7ixUnTcN8gHU',
     PROFILE: '1aGnFF7Tr8nnq69Qk6EjJXZb6yJb-OJBMZkOPZpBOexo',
     CV_REGISTRY: '1w_-GyH_gTansPBt_6tSR9twcAV0tQi4dan9rUfKdyKw',
-    COLLEAGUES: '1GDSVHc2-IuvMs7-GqopfYu2L8UZKRH5-I_a1GbDL9UA'
+    COLLEAGUES: '1GDSVHc2-IuvMs7-GqopfYu2L8UZKRH5-I_a1GbDL9UA',
+    CONSULTATION: '1tWeM09na8DY0pjU5wwnLNvzl_BIK6pB90m2WToF98Ts'
   },
   SCHEMAS: {
     LIBRARY: [
@@ -76,6 +77,9 @@ const CONFIG = {
     ],
     COLLEAGUES: [
       'id', 'name', 'affiliation', 'uniqueAppId', 'email', 'phone', 'socialMedia', 'photoUrl', 'photoFileId', 'photoNodeUrl', 'isFavorite', 'createdAt', 'updatedAt'
+    ],
+    CONSULTATIONS: [
+      'id', 'collectionId', 'question', 'answerJsonId', 'nodeUrl', 'isFavorite', 'createdAt', 'updatedAt'
     ]
   }
 };
