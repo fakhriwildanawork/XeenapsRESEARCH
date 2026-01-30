@@ -13,7 +13,7 @@ import {
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { StandardPrimaryButton, StandardQuickAccessBar, StandardQuickActionButton } from '../Common/ButtonComponents';
 import { CardGridSkeleton } from '../Common/LoadingComponents';
-import { StandardTableFooter, StandardCheckbox } from '../Common/TableComponents';
+import { StandardTableFooter } from '../Common/TableComponents';
 import { useAsyncWorkflow } from '../../hooks/useAsyncWorkflow';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
@@ -138,7 +138,7 @@ const ColleagueMain: React.FC = () => {
   }, [selectedIds, items]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden animate-in fade-in duration-500">
+    <div className="flex flex-col animate-in fade-in duration-500">
       <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8 shrink-0">
         <div className="flex items-center gap-4">
            <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
@@ -173,7 +173,7 @@ const ColleagueMain: React.FC = () => {
         <button onClick={() => setSelectedIds([])} className="text-[9px] font-black uppercase tracking-widest text-[#004A74]/50 hover:text-[#004A74] px-2 transition-all">Clear</button>
       </StandardQuickAccessBar>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar pb-10 mt-2">
+      <div className="pb-10 mt-2">
         {isLoading ? (
           <CardGridSkeleton count={8} />
         ) : items.length === 0 ? (
@@ -188,13 +188,17 @@ const ColleagueMain: React.FC = () => {
                 key={item.id}
                 className={`group relative bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col ${selectedIds.includes(item.id) ? 'ring-2 ring-[#004A74] border-[#004A74]' : ''}`}
               >
-                {/* TOP LEFT: CHECKBOX */}
+                {/* TOP LEFT: CIRCLE CHECKBOX */}
                 <div className="flex justify-between items-start mb-3">
-                   <div onClick={(e) => e.stopPropagation()}>
-                      <StandardCheckbox 
-                        checked={selectedIds.includes(item.id)} 
-                        onChange={() => toggleSelectItem(item.id)} 
-                      />
+                   <div 
+                     onClick={(e) => { e.stopPropagation(); toggleSelectItem(item.id); }}
+                     className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer ${
+                       selectedIds.includes(item.id) 
+                         ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' 
+                         : 'bg-white border-gray-200 hover:border-[#004A74]/30'
+                     }`}
+                   >
+                      {selectedIds.includes(item.id) && <Check size={12} strokeWidth={4} />}
                    </div>
                    {/* TOP RIGHT: FAVORITE STAR */}
                    <button onClick={(e) => handleToggleFavorite(e, item)} className="p-1 hover:scale-125 transition-transform">
@@ -258,13 +262,6 @@ const ColleagueMain: React.FC = () => {
           }} 
         />
       )}
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
-      `}</style>
     </div>
   );
 };
