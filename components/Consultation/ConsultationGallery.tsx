@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ConsultationItem, LibraryItem } from '../../types';
+import { ConsultationItem, LibraryItem, ConsultationAnswerContent } from '../../types';
 import { fetchRelatedConsultations, deleteConsultation } from '../../services/ConsultationService';
 import { 
   ArrowLeftIcon, 
@@ -9,12 +9,11 @@ import {
   TrashIcon,
   SparklesIcon,
   ClockIcon,
-  MagnifyingGlassIcon,
-  EyeIcon,
-  StarIcon
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
-import ConsultationChatModal from './ConsultationChatModal';
+import ConsultationInputModal from './ConsultationInputModal';
+import ConsultationResultView from './ConsultationResultView';
 import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -31,8 +30,12 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Navigation States
+  const [view, setView] = useState<'gallery' | 'result'>('gallery');
   const [selectedConsult, setSelectedConsult] = useState<ConsultationItem | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isInputOpen, setIsInputOpen] = useState(false);
+  const [activeAnswer, setActiveAnswer] = useState<ConsultationAnswerContent | null>(null);
 
   const loadConsultations = useCallback(async () => {
     setIsLoading(true);
@@ -60,7 +63,8 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
 
   const handleOpenConsult = (item: ConsultationItem) => {
     setSelectedConsult(item);
-    setIsChatOpen(true);
+    setActiveAnswer(null);
+    setView('result');
   };
 
   const formatTimeAgo = (dateStr: string) => {
@@ -69,13 +73,35 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   };
 
+  if (view === 'result' && selectedConsult) {
+    return (
+      <ConsultationResultView 
+        collection={collection}
+        consultation={selectedConsult}
+        initialAnswer={activeAnswer}
+        onBack={() => {
+          setView('gallery');
+          setSelectedConsult(null);
+          setActiveAnswer(null);
+          loadConsultations();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden relative">
-      {isChatOpen && (
-        <ConsultationChatModal 
-          collection={collection} 
-          existingConsult={selectedConsult} 
-          onClose={() => { setIsChatOpen(false); setSelectedConsult(null); loadConsultations(); }} 
+      
+      {isInputOpen && (
+        <ConsultationInputModal 
+          collection={collection}
+          onClose={() => setIsInputOpen(false)}
+          onSuccess={(item, content) => {
+            setActiveAnswer(content);
+            setSelectedConsult(item);
+            setIsInputOpen(false);
+            setView('result');
+          }}
         />
       )}
 
@@ -93,7 +119,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
           </div>
 
           <button 
-            onClick={() => { setSelectedConsult(null); setIsChatOpen(true); }}
+            onClick={() => setIsInputOpen(true)}
             className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-white rounded-2xl font-bold hover:shadow-lg hover:bg-[#003859] transition-all transform active:scale-95 shadow-lg shadow-[#004A74]/10"
           >
             <PlusIcon className="w-5 h-5" />
@@ -152,8 +178,8 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
                     <span className="text-[9px] font-black uppercase tracking-tight">{formatTimeAgo(item.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-[#004A74] opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-[9px] font-black uppercase">Re-Consult</span>
-                    <ChevronRightIcon className="w-4 h-4" />
+                    <span className="text-[9px] font-black uppercase">View Analysis</span>
+                    <ChevronRightIcon className="w-4 h-4 stroke-[3]" />
                   </div>
                 </div>
               </div>
@@ -166,16 +192,9 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
       `}</style>
     </div>
   );
 };
 
 export default ConsultationGallery;
-
-const ChevronRightIcon = (props: any) => (
-  <svg fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-  </svg>
-);

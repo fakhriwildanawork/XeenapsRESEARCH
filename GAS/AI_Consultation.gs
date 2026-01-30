@@ -1,6 +1,7 @@
 /**
  * XEENAPS PKM - GROQ AI CONSULTATION SERVICE
  * Specialized for Reasoning and Contextual Deep Analysis via Groq Engine.
+ * VERSION: 2.0 (Strict HTML Formatting)
  */
 
 function handleAiConsultRequest(collectionId, question) {
@@ -8,10 +9,10 @@ function handleAiConsultRequest(collectionId, question) {
 }
 
 function callGroqConsultant(prompt, collectionId) {
-  const keys = getKeysFromSheet('Groq', 2); // Ambil dari Spreadsheet KEYS, Sheet 'Groq', Kolom B
+  const keys = getKeysFromSheet('Groq', 2); 
   if (!keys || keys.length === 0) return { status: 'error', message: 'No Groq keys found in database.' };
   
-  // 1. GET SOURCE CONTEXT FROM LIBRARY (Maksimal 100rb karakter untuk kedalaman analisis)
+  // 1. GET SOURCE CONTEXT FROM LIBRARY
   let context = "";
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.LIBRARY);
@@ -46,14 +47,13 @@ function callGroqConsultant(prompt, collectionId) {
       context = fullText.substring(0, 100000); 
     }
   } catch (e) {
-    console.warn("Could not retrieve context for Groq: " + e.toString());
+    console.warn("Could not retrieve context: " + e.toString());
   }
 
-  // Ambil model dari Spreadsheet AI_CONFIG, Sheet 'AI', Baris 'Groq', Kolom B
   const config = getProviderModel('Groq');
   const model = config.model;
 
-  // 2. CALL GROQ API (OpenAI Compatible)
+  // 2. CALL GROQ API
   for (let key of keys) {
     try {
       const url = "https://api.groq.com/openai/v1/chat/completions";
@@ -62,7 +62,15 @@ function callGroqConsultant(prompt, collectionId) {
         messages: [
           { 
             role: "system", 
-            content: "You are the Xeenaps Knowledge Consultant. Use the following [DOCUMENT_CONTEXT] as your primary intellectual source. If a user asks something outside the document, you MUST link it logically to the document's concepts or methodology. Be highly analytical and structural. Use <b> for key terms and <span class='xeenaps-highlight' style='background-color: #FED40030; color: #004A74; padding: 0 4px; border-radius: 4px;'> for critical insights. \n\n [DOCUMENT_CONTEXT]: \n" + context 
+            content: "You are the Xeenaps Knowledge Consultant. \n\n" +
+                     "STRICT FORMATTING RULES:\n" +
+                     "1. NEVER use Markdown symbols like **, *, #, or -. Use HTML tags instead.\n" +
+                     "2. Use <b> for key terms and labels.\n" +
+                     "3. Use <span class='xeenaps-highlight' style='background-color: #FED40030; color: #004A74; padding: 0 4px; border-radius: 4px; font-weight: 700;'> for critical insights.\n" +
+                     "4. Use <br/> for line breaks and paragraph spacing.\n" +
+                     "5. For lists, use format like: 1. <b>Point Name</b>:<br/>Description<br/><br/>\n" +
+                     "6. Be highly analytical and link all answers to the provided [DOCUMENT_CONTEXT].\n\n" +
+                     "[DOCUMENT_CONTEXT]: \n" + context 
           },
           { role: "user", content: prompt }
         ],
@@ -80,7 +88,6 @@ function callGroqConsultant(prompt, collectionId) {
       const responseData = JSON.parse(res.getContentText());
       if (responseData.choices && responseData.choices.length > 0) {
         const choice = responseData.choices[0].message;
-        // Mendukung field reasoning_content jika menggunakan model berbasis R1
         return { 
           status: 'success', 
           data: choice.content,
