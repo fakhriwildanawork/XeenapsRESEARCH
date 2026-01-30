@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ConsultationItem, LibraryItem, ConsultationAnswerContent } from '../../types';
-import { saveConsultation } from '../../services/ConsultationService';
+import { saveConsultation, callAiConsult } from '../../services/ConsultationService';
 import { fetchFileContent } from '../../services/gasService';
 import { 
   ArrowLeftIcon, 
@@ -10,9 +10,12 @@ import {
   CpuChipIcon,
   BookOpenIcon,
   ChevronDownIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  ArrowPathIcon,
+  PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
+import { showXeenapsToast } from '../../utils/toastUtils';
 
 interface ConsultationResultViewProps {
   collection: LibraryItem;
@@ -23,11 +26,14 @@ interface ConsultationResultViewProps {
 
 const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack }) => {
   const [answerContent, setAnswerContent] = useState<ConsultationAnswerContent | null>(initialAnswer || null);
+  const [localQuestion, setLocalQuestion] = useState(consultation.question);
   const [showReasoning, setShowReasoning] = useState(true);
   const [isFavorite, setIsFavorite] = useState(consultation.isFavorite || false);
   const [isLoading, setIsLoading] = useState(!initialAnswer);
+  const [isThinking, setIsThinking] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const loadStoredAnswer = async () => {
@@ -41,6 +47,46 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     loadStoredAnswer();
   }, [consultation, initialAnswer]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [localQuestion]);
+
+  const handleReConsult = async () => {
+    if (!localQuestion.trim() || isThinking) return;
+
+    setIsThinking(true);
+    showXeenapsToast('info', 'Re-architecting knowledge synthesis...');
+
+    try {
+      const result = await callAiConsult(collection.id, localQuestion);
+      if (result) {
+        setAnswerContent(result);
+        
+        // Update Registry & Shard (Total Rewrite Logic)
+        const updatedItem: ConsultationItem = {
+          ...consultation,
+          question: localQuestion,
+          updatedAt: new Date().toISOString()
+        };
+
+        const success = await saveConsultation(updatedItem, result);
+        if (success) {
+          showXeenapsToast('success', 'Synthesis Re-synchronized');
+        }
+      } else {
+        showXeenapsToast('error', 'AI Synthesis Interrupted');
+      }
+    } catch (e) {
+      showXeenapsToast('error', 'Connection lost');
+    } finally {
+      setIsThinking(false);
+    }
+  };
+
   const toggleFavorite = () => {
     const newVal = !isFavorite;
     setIsFavorite(newVal);
@@ -50,7 +96,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   };
 
   return (
-    <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden">
       
       {/* HEADER BAR */}
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
@@ -75,7 +121,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
          <div className="max-w-4xl mx-auto space-y-10">
             
             {/* SOURCE BANNER */}
-            <div className="bg-[#004A74] rounded-[2.5rem] p-8 md:p-10 shadow-xl relative overflow-hidden group">
+            <div className="bg-[#004A74] rounded-[2.5rem] p-8 md:p-10 shadow-xl relative overflow-hidden group shrink-0">
                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 -translate-y-24 translate-x-24 rounded-full" />
                <div className="relative z-10 space-y-4">
                   <div className="flex items-center gap-3 text-[#FED400]">
@@ -94,17 +140,55 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                </div>
             </div>
 
-            {/* QUESTION DISPLAY */}
-            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
+            {/* EDITABLE QUESTION DISPLAY */}
+            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group/question">
                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FED400]" />
-               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">User Inquiry</p>
-               <h4 className="text-lg md:text-xl font-bold text-[#004A74] leading-relaxed italic">"{consultation.question}"</h4>
+               <div className="flex items-center justify-between mb-4">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                     <CpuChipIcon className="w-3 h-3" /> Inquiry Context (Editable)
+                  </p>
+                  {localQuestion !== consultation.question && (
+                    <span className="text-[8px] font-black text-[#FED400] bg-[#004A74] px-2 py-0.5 rounded-full uppercase animate-pulse">Modified</span>
+                  )}
+               </div>
+               
+               <div className="space-y-6">
+                  <textarea 
+                    ref={textareaRef}
+                    className="w-full bg-transparent border-none outline-none text-lg md:text-xl font-bold text-[#004A74] leading-relaxed italic placeholder:text-gray-200 resize-none overflow-hidden"
+                    value={localQuestion}
+                    onChange={(e) => setLocalQuestion(e.target.value)}
+                    placeholder="Enter your inquiry for analysis..."
+                    disabled={isThinking}
+                    rows={1}
+                  />
+
+                  <div className="flex justify-end pt-2">
+                    <button 
+                      onClick={handleReConsult}
+                      disabled={isThinking || !localQuestion.trim()}
+                      className="flex items-center gap-3 px-8 py-3.5 bg-[#004A74] text-[#FED400] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:grayscale"
+                    >
+                      {isThinking ? (
+                        <>
+                          <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <PaperAirplaneIcon className="w-4 h-4 -rotate-45" />
+                          Re-Analyze Knowledge
+                        </>
+                      )}
+                    </button>
+                  </div>
+               </div>
             </div>
 
-            {isLoading ? (
-              <div className="space-y-4 animate-pulse">
-                <div className="h-40 w-full bg-gray-100 rounded-[2rem]" />
-                <div className="h-64 w-full bg-gray-100 rounded-[2rem]" />
+            {(isLoading || isThinking) ? (
+              <div className="space-y-6 animate-pulse">
+                <div className="h-24 w-full bg-gray-100 rounded-[2rem]" />
+                <div className="h-96 w-full bg-gray-100 rounded-[2.5rem]" />
               </div>
             ) : answerContent && (
               <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
@@ -155,6 +239,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
         
         .consultation-result-body b {
