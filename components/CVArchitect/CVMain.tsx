@@ -31,7 +31,9 @@ const CVGallery: React.FC = () => {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     const data = await fetchCVList();
-    setCvs(data);
+    // Ensure descendant order (Newest first)
+    const sortedData = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    setCvs(sortedData);
     setIsLoading(false);
   }, []);
 
@@ -51,11 +53,6 @@ const CVGallery: React.FC = () => {
     }
   };
 
-  const handleDownload = (e: React.MouseEvent, fileId: string) => {
-    e.stopPropagation();
-    window.open(`https://drive.google.com/uc?export=download&id=${fileId}`, '_blank');
-  };
-
   const handleView = (e: React.MouseEvent, fileId: string) => {
     e.stopPropagation();
     window.open(`https://drive.google.com/file/d/${fileId}/view`, '_blank');
@@ -65,17 +62,23 @@ const CVGallery: React.FC = () => {
     cv.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const formatShortDate = (dateStr: string) => {
+  const formatFullDateTime = (dateStr: string) => {
     if (!dateStr) return "-";
     try {
       const d = new Date(dateStr);
-      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      const day = d.getDate().toString().padStart(2, '0');
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = months[d.getMonth()];
+      const year = d.getFullYear();
+      const hours = d.getHours().toString().padStart(2, '0');
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      return `${day} ${month} ${year} ${hours}:${minutes}`;
     } catch { return "-"; }
   };
 
   return (
     <div className="flex flex-col h-full overflow-hidden p-1 animate-in fade-in duration-500">
-      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8 shrink-0">
+      <div className="flex flex-col lg:flex-row gap-6 items-center justify-between mb-10 shrink-0">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
             <FileUser size={24} />
@@ -86,14 +89,17 @@ const CVGallery: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1 max-w-2xl">
-          <SmartSearchBox 
-            value={searchQuery} 
-            onChange={setSearchQuery} 
-            phrases={["Search by CV Title...", "Search by Template..."]}
-          />
+        <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto flex-1 max-w-3xl items-center">
+          <div className="flex-1 w-full">
+            <SmartSearchBox 
+              value={searchQuery} 
+              onChange={setSearchQuery} 
+              phrases={["Search by CV Title...", "Find your generated CVs..."]}
+              className="w-full"
+            />
+          </div>
           <StandardPrimaryButton onClick={() => navigate('/cv-architect/new')} icon={<Plus size={20} />}>
-            Architect New CV
+            Create CV
           </StandardPrimaryButton>
         </div>
       </div>
@@ -105,40 +111,30 @@ const CVGallery: React.FC = () => {
           <div className="py-40 text-center flex flex-col items-center justify-center space-y-4 opacity-30 grayscale">
             <FileUser size={80} strokeWidth={1} className="text-[#004A74]" />
             <p className="text-sm font-black uppercase tracking-[0.4em]">No CV Documents Found</p>
-            <p className="text-xs font-bold text-gray-400 italic">Click "Architect New CV" to initialize synthesis.</p>
+            <p className="text-xs font-bold text-gray-400 italic">Click "Create CV" to initialize synthesis.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-1">
             {filteredCvs.map(cv => (
               <div 
                 key={cv.id}
                 onClick={(e) => handleView(e, cv.fileId)}
-                className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer flex flex-col h-full"
+                className="group relative bg-white border border-gray-100 rounded-[2rem] p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 cursor-pointer flex flex-col"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <span className="px-3 py-1 bg-[#004A74]/5 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">{cv.template}</span>
-                  <button onClick={(e) => handleDelete(e, cv.id)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all"><Trash2 size={16} /></button>
-                </div>
-
-                <div className="w-full aspect-[1/1.4] bg-gray-50 rounded-2xl mb-4 flex items-center justify-center relative overflow-hidden border border-gray-100 group-hover:border-[#004A74]/20 transition-all">
-                   <FileText size={48} className="text-gray-200 group-hover:scale-110 transition-transform duration-700" />
-                   <div className="absolute inset-0 bg-[#004A74]/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4">
-                      <button onClick={(e) => handleView(e, cv.fileId)} className="p-3 bg-[#FED400] text-[#004A74] rounded-full shadow-lg hover:scale-110 transition-all"><Eye size={20} /></button>
-                      <button onClick={(e) => handleDownload(e, cv.fileId)} className="p-3 bg-white text-[#004A74] rounded-full shadow-lg hover:scale-110 transition-all"><Download size={20} /></button>
-                   </div>
-                </div>
-
-                <h3 className="text-sm font-black text-[#004A74] leading-tight mb-2 uppercase line-clamp-2 flex-1">{cv.title}</h3>
-                
-                <div className="pt-4 border-t border-gray-50 flex items-center justify-between text-gray-400">
-                   <div className="flex items-center gap-1.5">
-                      <Clock size={12} />
-                      <span className="text-[9px] font-black uppercase tracking-tighter">{formatShortDate(cv.createdAt)}</span>
-                   </div>
-                   <div className="flex items-center gap-1 text-[#FED400]">
-                      <span className="text-[7px] font-black uppercase tracking-widest">PDF Ready</span>
-                      <ExternalLink size={10} />
-                   </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-black text-[#004A74] leading-tight uppercase line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">{cv.title}</h3>
+                    <div className="flex items-center gap-1.5 text-gray-400">
+                      <Clock size={10} />
+                      <span className="text-[9px] font-bold uppercase tracking-tighter">{formatFullDateTime(cv.createdAt)}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={(e) => handleDelete(e, cv.id)} 
+                    className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all ml-2"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             ))}

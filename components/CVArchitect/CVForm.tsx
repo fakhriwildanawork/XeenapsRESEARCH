@@ -18,11 +18,7 @@ import {
   FormField 
 } from '../Common/FormComponents';
 import { 
-  Layout, 
-  CheckCircle2, 
   Sparkles, 
-  ChevronRight, 
-  ChevronLeft, 
   Loader2, 
   Check,
   Eye,
@@ -30,23 +26,25 @@ import {
   Briefcase,
   Share2,
   ClipboardCheck,
-  Calendar,
-  Filter,
   CheckSquare,
   Square,
-  FileText
+  FileUser,
+  X,
+  FileText,
+  ExternalLink,
+  // Fix: Added missing icons to resolve name errors on lines 324 and 336
+  Save,
+  CheckCircle2
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
-import CVPreviewModal from './CVPreviewModal';
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 
 const CVForm: React.FC = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [generatedCv, setGeneratedCv] = useState<any>(null);
 
   const [pubFilter, setPubFilter] = useState({ start: '', end: '' });
   const [actFilter, setActFilter] = useState({ start: '', end: '' });
@@ -61,7 +59,7 @@ const CVForm: React.FC = () => {
 
   const [config, setConfig] = useState({
     title: `CV ARCHIVE - ${new Date().getFullYear()}`,
-    template: CVTemplateType.MODERN_ACADEMIC, // Internal identifier maintained for legacy backend support
+    template: CVTemplateType.MODERN_ACADEMIC,
     selectedEducationIds: [] as string[],
     selectedCareerIds: [] as string[],
     selectedPublicationIds: [] as string[],
@@ -77,7 +75,9 @@ const CVForm: React.FC = () => {
       setConfig(prev => ({
         ...prev,
         selectedEducationIds: data.education.map(e => e.id),
-        selectedCareerIds: data.career.map(c => c.id)
+        selectedCareerIds: data.career.map(c => c.id),
+        selectedPublicationIds: data.publications.map(p => p.id),
+        selectedActivityIds: data.activities.map(a => a.id)
       }));
       setIsLoading(false);
     };
@@ -146,7 +146,7 @@ const CVForm: React.FC = () => {
       Swal.close();
       if (result) {
         showXeenapsToast('success', 'PDF Synchronized');
-        navigate('/cv-architect');
+        setGeneratedCv(result);
       } else throw new Error("Backend failed");
     } catch (e) {
       Swal.fire({ icon: 'error', title: 'SYNTHESIS FAILED', text: 'Cloud Engine Timeout.', ...XEENAPS_SWAL_CONFIG });
@@ -155,156 +155,218 @@ const CVForm: React.FC = () => {
     }
   };
 
-  const toggleSelection = (list: string[], id: string) => {
-    return list.includes(id) ? list.filter(i => i !== id) : [...list, id];
+  const toggleSelection = (listKey: 'selectedEducationIds' | 'selectedCareerIds' | 'selectedPublicationIds' | 'selectedActivityIds', id: string) => {
+    setConfig(prev => ({
+      ...prev,
+      [listKey]: prev[listKey].includes(id) 
+        ? prev[listKey].filter(i => i !== id) 
+        : [...prev[listKey], id]
+    }));
   };
 
-  const bulkSelect = (type: 'PUB' | 'ACT', isAll: boolean) => {
-    if (type === 'PUB') {
-      setConfig({ ...config, selectedPublicationIds: isAll ? filteredPubs.map(p => p.id) : [] });
-    } else {
-      setConfig({ ...config, selectedActivityIds: isAll ? filteredActs.map(a => a.id) : [] });
-    }
+  const bulkToggle = (listKey: 'selectedEducationIds' | 'selectedCareerIds' | 'selectedPublicationIds' | 'selectedActivityIds', items: any[], isAll: boolean) => {
+    setConfig({ ...config, [listKey]: isAll ? items.map(i => i.id) : [] });
   };
 
-  if (isLoading) return <div className="p-20 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Entering Architecture Studio...</div>;
+  if (isLoading) return null; // Make it immediate
 
   return (
     <FormPageContainer>
       <FormStickyHeader 
-        title="CV Architect" 
-        subtitle="Standard Professional Synthesis" 
+        title="Create CV" 
+        subtitle="Professional Synthesis Workspace" 
         onBack={() => navigate('/cv-architect')}
-        rightElement={
-          <div className="flex bg-gray-50 p-1 rounded-2xl">
-            {[1, 2].map(i => (
-              <div key={i} className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black transition-all ${step === i ? 'bg-[#004A74] text-white shadow-lg' : 'text-black opacity-20'}`}>{i}</div>
-            ))}
-          </div>
-        }
       />
 
       <FormContentArea>
-        <div className="max-w-6xl mx-auto space-y-12 pb-32">
+        <div className="max-w-6xl mx-auto space-y-12 pb-32 animate-in fade-in duration-500">
           
-          {step === 1 && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
-               <div className="bg-[#004A74]/5 border border-[#004A74]/10 p-8 rounded-[3rem] flex items-center gap-6 mb-10">
-                  <div className="w-14 h-14 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><FileText size={28} /></div>
-                  <div>
-                    <h3 className="text-lg font-black text-[#004A74] uppercase tracking-tighter">Xeenaps Standard Professional</h3>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Chronological Timeline • Zero-Gray Design • Aligned Profile Matrix</p>
+          {/* FULL WIDTH TITLE */}
+          <FormField label="Document Title">
+            <input 
+              className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-lg font-black text-[#004A74] uppercase outline-none focus:ring-4 focus:ring-[#004A74]/5 transition-all" 
+              value={config.title} 
+              onChange={e => setConfig({...config, title: e.target.value})} 
+              placeholder="e.g. CV PROFESSIONAL 2024" 
+            />
+          </FormField>
+
+          {/* GRID 1: EDUCATION | CAREER */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {/* Education Selection */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><GraduationCap size={16} /> Education</h3>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => bulkToggle('selectedEducationIds', sourceData.education, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
+                  <span className="text-gray-300">|</span>
+                  <button type="button" onClick={() => bulkToggle('selectedEducationIds', sourceData.education, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                {sourceData.education.map(edu => (
+                  <div key={edu.id} onClick={() => toggleSelection('selectedEducationIds', edu.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedEducationIds.includes(edu.id) ? 'border-[#004A74] bg-blue-50' : 'border-gray-100 opacity-60'}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedEducationIds.includes(edu.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedEducationIds.includes(edu.id) && <Check size={12} strokeWidth={4} />}</div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black text-[#004A74] uppercase truncate">{edu.institution}</p>
+                        <p className="text-[8px] font-bold text-gray-400 uppercase">{edu.level} • {edu.startYear}-{edu.endYear}</p>
+                      </div>
+                    </div>
                   </div>
-                  <button onClick={() => setIsPreviewOpen(true)} className="ml-auto px-6 py-2 bg-white text-[#004A74] border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all shadow-sm">Preview Layout</button>
-               </div>
+                ))}
+              </div>
+            </section>
 
-               <FormField label="Document / Project Title">
-                  <input className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base font-bold text-[#004A74] uppercase outline-none focus:ring-4 focus:ring-[#004A74]/5" 
-                    value={config.title} onChange={e => setConfig({...config, title: e.target.value})} placeholder="e.g. CV PROFESSIONAL 2024" />
-               </FormField>
-
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <section className="space-y-4">
-                    <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2"><GraduationCap size={16} /> Education History</h3>
-                    <div className="grid grid-cols-1 gap-3">
-                       {sourceData.education.map(edu => (
-                         <div key={edu.id} onClick={() => setConfig({...config, selectedEducationIds: toggleSelection(config.selectedEducationIds, edu.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedEducationIds.includes(edu.id) ? 'border-[#004A74] bg-blue-50 shadow-sm' : 'border-gray-100 bg-white opacity-60 hover:opacity-100'}`}>
-                            <div className="flex items-center gap-3 min-w-0">
-                               <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedEducationIds.includes(edu.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedEducationIds.includes(edu.id) && <Check size={12} strokeWidth={4} />}</div>
-                               <div className="min-w-0">
-                                  <p className="text-[10px] font-black text-black uppercase truncate">{edu.institution}</p>
-                                  <p className="text-[8px] font-bold text-gray-400 uppercase">{edu.level} • {edu.startYear}-{edu.endYear}</p>
-                               </div>
-                            </div>
-                         </div>
-                       ))}
+            {/* Career Selection */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Briefcase size={16} /> Experience</h3>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => bulkToggle('selectedCareerIds', sourceData.career, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
+                  <span className="text-gray-300">|</span>
+                  <button type="button" onClick={() => bulkToggle('selectedCareerIds', sourceData.career, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                {sourceData.career.map(job => (
+                  <div key={job.id} onClick={() => toggleSelection('selectedCareerIds', job.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedCareerIds.includes(job.id) ? 'border-[#004A74] bg-blue-50' : 'border-gray-100 opacity-60'}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedCareerIds.includes(job.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedCareerIds.includes(job.id) && <Check size={12} strokeWidth={4} />}</div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black text-[#004A74] uppercase truncate">{job.company}</p>
+                        <p className="text-[8px] font-bold text-gray-400 uppercase">{job.position} • {job.startDate}-{job.endDate}</p>
+                      </div>
                     </div>
-                  </section>
-                  <section className="space-y-4">
-                    <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2 px-2"><Briefcase size={16} /> Professional Career</h3>
-                    <div className="grid grid-cols-1 gap-3">
-                       {sourceData.career.map(job => (
-                         <div key={job.id} onClick={() => setConfig({...config, selectedCareerIds: toggleSelection(config.selectedCareerIds, job.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedCareerIds.includes(job.id) ? 'border-[#004A74] bg-blue-50 shadow-sm' : 'border-gray-100 bg-white opacity-60 hover:opacity-100'}`}>
-                            <div className="flex items-center gap-3 min-w-0">
-                               <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${config.selectedCareerIds.includes(job.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedCareerIds.includes(job.id) && <Check size={12} strokeWidth={4} />}</div>
-                               <div className="min-w-0">
-                                  <p className="text-[10px] font-black text-black uppercase truncate">{job.company}</p>
-                                  <p className="text-[8px] font-bold text-gray-400 uppercase">{job.position}</p>
-                               </div>
-                            </div>
-                         </div>
-                       ))}
-                    </div>
-                  </section>
-               </div>
-
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-10 border-t border-gray-100">
-                  <section className="space-y-6">
-                    <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 space-y-4 shadow-inner">
-                       <div className="flex items-center justify-between">
-                         <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Share2 size={16} /> Publications</h3>
-                         <div className="flex gap-2">
-                            <button onClick={() => bulkSelect('PUB', true)} className="p-1.5 bg-[#004A74] text-white rounded-lg hover:scale-110 transition-all"><CheckSquare size={14}/></button>
-                            <button onClick={() => bulkSelect('PUB', false)} className="p-1.5 bg-white text-black border border-black rounded-lg hover:bg-gray-100 transition-all"><Square size={14}/></button>
-                         </div>
-                       </div>
-                       <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">From Year</label><input type="number" placeholder="2020" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={pubFilter.start} onChange={e => setPubFilter({...pubFilter, start: e.target.value})} /></div>
-                          <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">To Year</label><input type="number" placeholder="2025" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={pubFilter.end} onChange={e => setPubFilter({...pubFilter, end: e.target.value})} /></div>
-                       </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                       {filteredPubs.map(p => (
-                          <div key={p.id} onClick={() => setConfig({...config, selectedPublicationIds: toggleSelection(config.selectedPublicationIds, p.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedPublicationIds.includes(p.id) ? 'border-black bg-black text-white shadow-sm' : 'bg-white border-gray-100'}`}><p className="text-[10px] font-bold truncate uppercase">{p.title}</p></div>
-                       ))}
-                    </div>
-                  </section>
-                  <section className="space-y-6">
-                    <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 space-y-4 shadow-inner">
-                       <div className="flex items-center justify-between">
-                         <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><ClipboardCheck size={16} /> Activities</h3>
-                         <div className="flex gap-2">
-                            <button onClick={() => bulkSelect('ACT', true)} className="p-1.5 bg-[#004A74] text-white rounded-lg hover:scale-110 transition-all"><CheckSquare size={14}/></button>
-                            <button onClick={() => bulkSelect('ACT', false)} className="p-1.5 bg-white text-black border border-black rounded-lg hover:bg-gray-100 transition-all"><Square size={14}/></button>
-                         </div>
-                       </div>
-                       <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">Start Date</label><input type="date" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={actFilter.start} onChange={e => setActFilter({...actFilter, start: e.target.value})} /></div>
-                          <div className="space-y-1"><label className="text-[8px] font-black text-black uppercase tracking-widest ml-1">End Date</label><input type="date" className="w-full px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 outline-none focus:border-[#004A74]" value={actFilter.end} onChange={e => setActFilter({...actFilter, end: e.target.value})} /></div>
-                       </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                       {filteredActs.map(a => (
-                          <div key={a.id} onClick={() => setConfig({...config, selectedActivityIds: toggleSelection(config.selectedActivityIds, a.id)})} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedActivityIds.includes(a.id) ? 'border-black bg-black text-white shadow-sm' : 'bg-white border-gray-100'}`}><p className="text-[10px] font-bold truncate uppercase">{a.eventName}</p></div>
-                       ))}
-                    </div>
-                  </section>
-               </div>
-               <div className="flex justify-end pt-10"><button onClick={() => setStep(2)} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-105 active:scale-95 transition-all">Proceed to AI Summary <ChevronRight size={18} /></button></div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
-               <div className="space-y-6">
-                  <div className="flex items-center justify-between px-4">
-                     <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Sparkles size={18} /> Professional Statement</h3>
-                     <button onClick={handleGenerateSummary} disabled={isGenerating} className="px-6 py-2.5 bg-black text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all">
-                        {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Draft with AI
-                     </button>
                   </div>
-                  <textarea className="w-full p-10 bg-white border border-gray-200 rounded-[3rem] shadow-inner outline-none text-sm font-medium text-black leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[250px]" placeholder="Awaiting AI Synthesis..." value={config.aiSummary} onChange={e => setConfig({...config, aiSummary: e.target.value})} />
-               </div>
-               <div className="flex flex-col md:flex-row gap-4 pt-10">
-                  <button onClick={() => setStep(1)} disabled={isGenerating} className="flex-1 py-5 bg-gray-100 text-black rounded-[1.5rem] font-black uppercase text-xs active:scale-95 transition-all">Adjust Data</button>
-                  <button onClick={handleFinalSubmit} disabled={isGenerating} className="flex-[2] py-5 bg-[#004A74] text-white rounded-[1.5rem] font-black uppercase tracking-[0.3em] text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all">{isGenerating ? 'Synthesizing PDF...' : 'Generate CV PDF'}</button>
-               </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* GRID 2: PUBLICATIONS | ACTIVITIES */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {/* Publication Selection */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Share2 size={16} /> Publications</h3>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => bulkToggle('selectedPublicationIds', sourceData.publications, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
+                  <span className="text-gray-300">|</span>
+                  <button type="button" onClick={() => bulkToggle('selectedPublicationIds', sourceData.publications, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                {sourceData.publications.map(p => (
+                  <div key={p.id} onClick={() => toggleSelection('selectedPublicationIds', p.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedPublicationIds.includes(p.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 opacity-60'}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.selectedPublicationIds.includes(p.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedPublicationIds.includes(p.id) && <Check size={10} strokeWidth={4} />}</div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-[#004A74] uppercase truncate">{p.title}</p>
+                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">YEAR: {p.year}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Activities Selection */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><ClipboardCheck size={16} /> Activities</h3>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => bulkToggle('selectedActivityIds', sourceData.activities, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
+                  <span className="text-gray-300">|</span>
+                  <button type="button" onClick={() => bulkToggle('selectedActivityIds', sourceData.activities, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                {sourceData.activities.map(a => (
+                  <div key={a.id} onClick={() => toggleSelection('selectedActivityIds', a.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedActivityIds.includes(a.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 opacity-60'}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.selectedActivityIds.includes(a.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedActivityIds.includes(a.id) && <Check size={10} strokeWidth={4} />}</div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-[#004A74] uppercase truncate">{a.eventName}</p>
+                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">YEAR: {new Date(a.startDate).getFullYear()}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* PROFESSIONAL STATEMENT */}
+          <div className="space-y-6 pt-10 border-t border-gray-100">
+            <div className="flex items-center justify-between px-4">
+              <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Sparkles size={18} className="text-[#FED400]" /> Professional Statement</h3>
+              <button 
+                onClick={handleGenerateSummary} 
+                disabled={isGenerating} 
+                className="px-6 py-2.5 bg-black text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
+              >
+                {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Draft with AI
+              </button>
             </div>
-          )}
+            <textarea 
+              className="w-full p-10 bg-white border border-gray-200 rounded-[3rem] shadow-inner outline-none text-sm font-medium text-[#004A74] leading-relaxed italic text-center resize-none transition-all focus:ring-4 focus:ring-[#004A74]/5 min-h-[250px]" 
+              placeholder="Draft your executive summary or use the AI Architect..." 
+              value={config.aiSummary} 
+              onChange={e => setConfig({...config, aiSummary: e.target.value})} 
+            />
+          </div>
+
+          {/* SUBMIT BUTTON */}
+          <div className="flex justify-center pt-10">
+            <button 
+              onClick={handleFinalSubmit} 
+              disabled={isGenerating} 
+              className="w-full max-w-2xl py-6 bg-[#004A74] text-[#FED400] rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+            >
+              {isGenerating ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
+              {isGenerating ? 'Architecting PDF...' : 'Synchronize & Generate CV'}
+            </button>
+          </div>
         </div>
       </FormContentArea>
-      {isPreviewOpen && <CVPreviewModal template={config.template} onClose={() => setIsPreviewOpen(false)} />}
-    </FormPageContainer>
+
+      {/* SUCCESS MODAL */}
+      {generatedCv && (
+        <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-xl flex items-center justify-center p-6 animate-in zoom-in-95 duration-300">
+          <div className="bg-white rounded-[3.5rem] p-12 w-full max-w-md shadow-2xl border border-gray-100 text-center space-y-8">
+            <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-3xl flex items-center justify-center mx-auto shadow-xl border border-emerald-100">
+              <CheckCircle2 size={40} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-[#004A74] uppercase tracking-tighter mb-2">CV Generated!</h2>
+              <p className="text-xs font-medium text-gray-400">Your synthesis is ready and archived in the cloud.</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => window.open(`https://drive.google.com/file/d/${generatedCv.fileId}/view`, '_blank')}
+                className="w-full py-5 bg-[#004A74] text-[#FED400] rounded-3xl font-black uppercase tracking-[0.2em] text-xs shadow-xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
+              >
+                <ExternalLink size={18} /> Open CV
+              </button>
+              <button 
+                onClick={() => navigate('/cv-architect')}
+                className="w-full py-4 bg-gray-50 text-gray-400 rounded-3xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all"
+              >
+                Go to Gallery
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
+      `}</style>
+    </div>
   );
 };
 

@@ -1,5 +1,7 @@
 /**
- * XEENAPS CV ARCHITECT - PDF ENGINE V4 (SINGLE PREMIUM TEMPLATE)
+ * XEENAPS CV ARCHITECT - HTML-TO-PDF ENGINE V6.3
+ * Optimized for speed, reliability, and refined Aesthetics.
+ * Fix: Page break prevention and consistent year alignment.
  */
 
 function handleGenerateCV_PDF(config) {
@@ -15,6 +17,11 @@ function handleGenerateCV_PDF(config) {
       return { status: 'error', message: 'Storage capacity reached. Please register a new storage node.' };
     }
 
+    // 1. IMAGE HARVESTING
+    const photoBase64 = profile.photoFileId ? getAsBase64(profile.photoFileId) : null;
+    const logoBase64 = getAsBase64("1ZpVAXWGLDP2C42Fct0bisloaQLf2095_"); // Xeenaps Logo Icon ID
+
+    // 2. DATA HARVESTING
     const allEdu = getEducationFromRegistry();
     const allCareer = getCareerFromRegistry();
     const allPubsResult = getPublicationFromRegistry(1, 1000); 
@@ -43,26 +50,17 @@ function handleGenerateCV_PDF(config) {
       return dateB - dateA;
     });
 
-    let photoBase64 = "";
-    if (profile.photoFileId) {
-      try {
-        const bytes = DriveApp.getFileById(profile.photoFileId).getBlob().getBytes();
-        photoBase64 = "data:image/jpeg;base64," + Utilities.base64Encode(bytes);
-      } catch (e) { console.warn("Failed to fetch profile photo"); }
-    }
-    
-    if (!photoBase64) {
-      photoBase64 = "https://lh3.googleusercontent.com/d/1wYTtwTX8m7X273W5f-oAR__fZj9bZsAS";
-    }
+    // 3. BUILD HTML CONTENT
+    const htmlContent = createCVHTML(profile, sortedEdu, sortedCareer, sortedPubs, sortedActs, config.aiSummary, photoBase64, logoBase64);
 
-    const htmlContent = buildCVHtml(profile, photoBase64, sortedEdu, sortedCareer, sortedPubs, sortedActs, config.aiSummary);
-
-    const blob = HtmlService.createHtmlOutput(htmlContent).getAs('application/pdf').setName(`${profile.fullName} - CV.pdf`);
+    // 4. GENERATE PDF BLOB
+    const pdfBlob = Utilities.newBlob(htmlContent, 'text/html', 'CV.html').getAs('application/pdf').setName(`${profile.fullName} - CV.pdf`);
     
+    // 5. SAVE TO STORAGE TARGET
     let fileId;
     if (storageTarget.isLocal) {
       const folder = DriveApp.getFolderById(storageTarget.folderId);
-      const file = folder.createFile(blob);
+      const file = folder.createFile(pdfBlob);
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
       fileId = file.getId();
     } else {
@@ -73,7 +71,7 @@ function handleGenerateCV_PDF(config) {
           action: 'saveFileDirect', 
           fileName: `${profile.fullName} - CV.pdf`, 
           mimeType: 'application/pdf', 
-          fileData: Utilities.base64Encode(blob.getBytes()), 
+          fileData: Utilities.base64Encode(pdfBlob.getBytes()), 
           folderId: storageTarget.folderId 
         })
       });
@@ -83,7 +81,7 @@ function handleGenerateCV_PDF(config) {
     const cvDoc = {
       id: Utilities.getUuid(),
       title: config.title,
-      template: "Standard Professional",
+      template: "Premium Standard",
       fileId: fileId,
       storageNodeUrl: storageTarget.url,
       selectedEducationIds: config.selectedEducationIds,
@@ -100,10 +98,28 @@ function handleGenerateCV_PDF(config) {
     return { status: 'success', data: cvDoc };
   } catch (e) {
     console.error("CV Architect Engine Crash: " + e.toString());
-    return { status: 'error', message: 'PDF Engine Failed: ' + e.toString() };
+    return { status: 'error', message: 'Document Engine Failed: ' + e.toString() };
   }
 }
 
+/**
+ * Helper: Drive File to Base64 (Intact)
+ */
+function getAsBase64(fileId) {
+  try {
+    const file = DriveApp.getFileById(fileId);
+    const blob = file.getBlob();
+    const base64 = Utilities.base64Encode(blob.getBytes());
+    const mimeType = blob.getContentType();
+    return `data:${mimeType};base64,${base64}`;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Format Date Helper (Intact)
+ */
 function formatDateSafe(dateStr) {
   if (!dateStr || dateStr === 'N/A' || dateStr === 'Unknown' || dateStr === '-') return null;
   try {
@@ -122,160 +138,239 @@ function formatDateSafe(dateStr) {
   }
 }
 
-function buildCVHtml(profile, photo, edu, career, pubs, acts, summary) {
+/**
+ * CORE HTML BUILDER: Xeenaps Premium Style V6.3
+ */
+function createCVHTML(profile, edu, career, pubs, acts, summary, photoBase64, logoBase64) {
   const navy = "#004A74";
-  const black = "#000000";
-  const logoUrl = "https://lh3.googleusercontent.com/d/1ZpVAXWGLDP2C42Fct0bisloaQLf2095_";
+  const yellow = "#FED400";
+  const grey = "#4B5563";
   
-  const displayBirth = formatDateSafe(profile.birthDate);
+  const hasData = (list) => Array.isArray(list) && list.length > 0;
 
-  let styles = `
-    @page { margin: 0; }
-    body { font-family: 'Helvetica', 'Arial', sans-serif; color: ${black}; line-height: 1.5; margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact; }
-    .container { padding: 60px 45px 45px 45px; }
-    
-    /* Header Grid */
-    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 35px; }
-    .photo-cell { width: 130px; vertical-align: top; }
-    .photo-frame { width: 120px; height: 160px; object-fit: cover; border: 1.5pt solid ${navy}; border-radius: 4px; background: #f8fafc; }
-    .profile-cell { vertical-align: top; padding-left: 30px; }
-    .name { font-size: 24pt; font-weight: 900; color: ${navy}; margin: 0 0 12px 0; line-height: 1.1; }
-    
-    .info-table { border-collapse: collapse; }
-    .info-table td { font-size: 10pt; padding: 2pt 0; vertical-align: top; }
-    .info-label { font-weight: bold; color: ${black}; width: 90px; }
-    .info-colon { font-weight: bold; color: ${black}; width: 15px; text-align: center; }
-    .info-value { font-weight: bold; color: ${navy}; }
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      @page { size: A4; margin: 1.5cm; }
+      body { 
+        font-family: 'Inter', sans-serif; 
+        line-height: 1.5; 
+        color: #1F2937; 
+        margin: 0; 
+        padding: 0; 
+        font-size: 10pt;
+      }
+      .container { max-width: 800px; margin: 0 auto; }
+      
+      /* HEADER */
+      .header { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        border-bottom: 3px solid ${navy};
+        padding-bottom: 20px;
+        margin-bottom: 25px;
+      }
+      .header h1 { 
+        margin: 0; 
+        color: ${navy}; 
+        font-weight: 800; 
+        font-size: 28pt; 
+        letter-spacing: -1px; 
+        text-transform: uppercase;
+      }
+      .logo img { width: 45px; height: 45px; object-fit: contain; }
+      
+      /* PROFILE SECTION */
+      .profile { 
+        display: flex; 
+        gap: 35px; 
+        align-items: center; 
+        margin-bottom: 30px;
+      }
+      .profile-photo { 
+        width: 150px; 
+        height: 150px; 
+        object-fit: cover; 
+        border-radius: 50%; 
+        border: 5px solid ${navy};
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0; 
+      }
+      .profile-info { flex: 1; }
+      .profile-info h2 { 
+        margin: 0 0 10px 0; 
+        color: ${navy}; 
+        font-weight: 800; 
+        font-size: 18pt; 
+        text-transform: uppercase;
+      }
+      .profile-details { 
+        display: grid; 
+        grid-template-columns: auto 1fr; 
+        gap: 4px 15px; 
+        font-size: 9pt; 
+      }
+      .label { font-weight: 700; color: ${grey}; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.5px; }
+      .value { font-weight: 500; color: #374151; }
+      
+      /* SUMMARY */
+      .summary-box {
+        background: #F9FAFB;
+        padding: 15px 20px;
+        border-left: 4px solid ${navy};
+        margin-bottom: 30px;
+        font-style: italic;
+        font-size: 9.5pt;
+        color: #374151;
+      }
 
-    /* Section Styles */
-    .section { margin-bottom: 30px; }
-    .section-title { font-size: 11pt; font-weight: 900; color: ${navy}; border-bottom: 2.5pt solid ${navy}; padding-bottom: 4px; margin-bottom: 18px; text-transform: uppercase; letter-spacing: 1.5px; }
-    
-    .summary-box { font-size: 10.5pt; font-style: italic; border-left: 5pt solid ${navy}; padding: 15px 20px; margin-bottom: 30px; color: ${black}; background: #fdfdfd; border-top: 0.5pt solid ${navy}; border-bottom: 0.5pt solid ${navy}; border-right: 0.5pt solid ${navy}; text-align: justify; }
+      /* SECTIONS */
+      .section { margin-bottom: 25px; }
+      .section-title { 
+        font-size: 12pt; 
+        font-weight: 800; 
+        color: ${navy}; 
+        margin-bottom: 12px; 
+        padding-bottom: 5px; 
+        border-bottom: 1.5px solid ${navy};
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      /* FIX: Prevent items from splitting across pages */
+      .item { 
+        margin-bottom: 15px; 
+        position: relative; 
+        page-break-inside: avoid;
+        display: block;
+      }
+      .item-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+      .item-title { font-weight: 800; font-size: 10.5pt; color: #111827; }
+      .item-date { font-weight: 800; font-size: 9pt; color: ${navy}; background: ${yellow}30; padding: 1px 8px; border-radius: 4px; }
+      .item-sub { font-weight: 600; font-size: 9.5pt; color: ${grey}; margin-bottom: 4px; }
+      .item-desc { font-size: 9pt; color: #4B5563; text-align: justify; line-height: 1.4; }
+      
+      .separator { margin: 0 8px; color: ${navy}; font-weight: 900; }
+      .highlight { font-weight: 800; color: ${navy}; }
 
-    /* Timeline Rail */
-    .timeline-area { position: relative; padding-left: 22px; margin-left: 10px; border-left: 1.5pt solid ${navy}; }
-    .timeline-dot { position: absolute; left: -26.5px; top: 5px; width: 9px; height: 9px; background: ${navy}; border-radius: 50%; border: 2pt solid white; }
-    
-    .entry { position: relative; margin-bottom: 20px; }
-    .entry-header { display: table; width: 100%; }
-    .entry-title { display: table-cell; font-size: 11pt; font-weight: 900; color: ${navy}; }
-    .entry-year { display: table-cell; text-align: right; font-size: 10pt; font-weight: 900; color: ${black}; width: 120px; }
-    .entry-meta { font-size: 9.5pt; font-weight: bold; color: ${black}; margin-top: 2px; }
-    .entry-desc { font-size: 9pt; color: ${black}; margin-top: 6px; text-align: justify; line-height: 1.4; }
-
-    .id-badge { display: inline-block; padding: 3px 10px; border: 1.2pt solid ${navy}; color: ${navy}; font-size: 8.5pt; font-weight: 900; border-radius: 4px; margin: 0 8px 8px 0; }
-    
-    .footer { position: fixed; bottom: 25px; left: 45px; right: 45px; border-top: 1.2pt solid ${black}; padding-top: 12px; text-align: center; font-size: 8pt; font-weight: 900; color: ${black}; text-transform: uppercase; letter-spacing: 2.5px; }
-  `;
-
-  // Render profile data rows
-  const profileRows = [
-    { label: 'Birth', value: displayBirth },
-    { label: 'Job', value: profile.jobTitle },
-    { label: 'Affiliation', value: profile.affiliation },
-    { label: 'Email', value: profile.email },
-    { label: 'Phone', value: profile.phone },
-    { label: 'Address', value: profile.address },
-    { label: 'Social', value: profile.socialMedia }
-  ].filter(r => r.value && r.value !== '-');
-
-  const renderSection = (title, data, renderer, useTimeline = false) => {
-    if (!data || data.length === 0) return '';
-    return `
-      <div class="section">
-        <div class="section-title">${title}</div>
-        <div class="${useTimeline ? 'timeline-area' : ''}">
-          ${data.map(renderer).join('')}
+      /* FOOTER */
+      .footer { 
+        margin-top: 40px; 
+        text-align: center; 
+        font-size: 8pt; 
+        color: #9CA3AF; 
+        border-top: 1px solid #E5E7EB;
+        padding-top: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      .footer-brand { color: ${navy}; font-weight: 800; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Curriculum Vitae</h1>
+        <div class="logo">
+          ${logoBase64 ? `<img src="${logoBase64}">` : ''}
         </div>
       </div>
-    `;
-  };
-
-  const eduRenderer = e => `
-    <div class="entry">
-      <div class="timeline-dot"></div>
-      <div class="entry-header">
-        <div class="entry-title">${e.institution}</div>
-        <div class="entry-year">${e.startYear} - ${e.endYear}</div>
-      </div>
-      <div class="entry-meta">${e.level} in ${e.major} • ${e.degree}</div>
-    </div>`;
-
-  const careerRenderer = c => `
-    <div class="entry">
-      <div class="timeline-dot"></div>
-      <div class="entry-header">
-        <div class="entry-title">${c.position}</div>
-        <div class="entry-year">${c.startDate} - ${c.endDate}</div>
-      </div>
-      <div class="entry-meta">${c.company} • ${c.location}</div>
-      ${c.description ? `<div class="entry-desc">${c.description}</div>` : ''}
-    </div>`;
-
-  const pubRenderer = p => `
-    <div class="entry">
-      <div class="entry-header">
-        <div class="entry-title">${p.title}</div>
-        <div class="entry-year">${p.year}</div>
-      </div>
-      <div class="entry-meta">${[p.publisherName, p.researchDomain, p.doi ? 'DOI: ' + p.doi : ''].filter(Boolean).join(' • ')}</div>
-    </div>`;
-
-  const actRenderer = a => `
-    <div class="entry">
-      <div class="entry-header">
-        <div class="entry-title">${a.eventName}</div>
-        <div class="entry-year">${a.startDate ? new Date(a.startDate).getFullYear() : ''}</div>
-      </div>
-      <div class="entry-meta">${[a.organizer, a.level, 'Role: ' + a.role].filter(Boolean).join(' • ')}</div>
-    </div>`;
-
-  return `<html><head><style>${styles}</style></head><body>
-    <div class="container">
-      <table class="header-table">
-        <tr>
-          <td class="photo-cell">
-            <img src="${photo}" class="photo-frame" />
-          </td>
-          <td class="profile-cell">
-            <h1 class="name">${profile.fullName}</h1>
-            <table class="info-table">
-              ${profileRows.map(row => `
-                <tr>
-                  <td class="info-label">${row.label}</td>
-                  <td class="info-colon">:</td>
-                  <td class="info-value">${row.value}</td>
-                </tr>
-              `).join('')}
-            </table>
-          </td>
-        </tr>
-      </table>
-
-      ${summary ? `<div class="summary-box">${summary}</div>` : ''}
-
-      ${(profile.sintaId || profile.scopusId || profile.wosId || profile.googleScholarId) ? `
-        <div class="section">
-          <div class="section-title">Academic Identifiers</div>
-          <div style="display: block;">
-            ${profile.sintaId ? `<span class="id-badge">SINTA: ${profile.sintaId}</span>` : ''}
-            ${profile.scopusId ? `<span class="id-badge">SCOPUS: ${profile.scopusId}</span>` : ''}
-            ${profile.wosId ? `<span class="id-badge">WoS: ${profile.wosId}</span>` : ''}
-            ${profile.googleScholarId ? `<span class="id-badge">SCHOLAR: ${profile.googleScholarId}</span>` : ''}
+      
+      <div class="profile">
+        ${photoBase64 ? `<img src="${photoBase64}" class="profile-photo">` : '<div class="profile-photo" style="background:#eee; display:flex; align-items:center; justify-content:center; color:#ccc;">NO PHOTO</div>'}
+        <div class="profile-info">
+          <h2>${profile.fullName}</h2>
+          <div class="profile-details">
+            <div class="label">Position</div><div class="value">${profile.jobTitle || '-'}</div>
+            <div class="label">Affiliation</div><div class="value">${profile.affiliation || '-'}</div>
+            <div class="label">Birth Date</div><div class="value">${formatDateSafe(profile.birthDate) || '-'}</div>
+            <div class="label">Contact</div><div class="value">${[profile.email, profile.phone].filter(Boolean).join(' | ') || '-'}</div>
+            <div class="label">Social</div><div class="value">${profile.socialMedia || '-'}</div>
+            <div class="label">Location</div><div class="value">${profile.address || '-'}</div>
           </div>
         </div>
-      ` : ''}
-
-      ${renderSection("Education", edu, eduRenderer, true)}
-      ${renderSection("Career Journey", career, careerRenderer, true)}
-      ${renderSection("Scientific Publications", pubs, pubRenderer)}
-      ${renderSection("Academic Activities", acts, actRenderer)}
-
+      </div>
+      
+      ${summary ? `<div class="summary-box">${summary}</div>` : ''}
+      
+      <div class="content">
+        ${hasData(edu) ? `
+        <div class="section">
+          <div class="section-title">Education</div>
+          ${edu.map(e => `
+            <div class="item">
+              <div class="item-header">
+                <div class="item-title">${e.institution}</div>
+                <div class="item-date">${e.startYear} — ${e.endYear}</div>
+              </div>
+              <div class="item-sub">${[e.level + " in " + e.major, e.degree].filter(Boolean).join(' <span class="separator">|</span> ')}</div>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+        
+        ${hasData(career) ? `
+        <div class="section">
+          <div class="section-title">Career Journey</div>
+          ${career.map(c => `
+            <div class="item">
+              <div class="item-header">
+                <div class="item-title">${c.position}</div>
+                <div class="item-date">${c.startDate} — ${c.endDate}</div>
+              </div>
+              <div class="item-sub">${[c.company, c.location].filter(Boolean).join(' <span class="separator">|</span> ')}</div>
+              ${c.description ? `<div class="item-desc">${c.description}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+        
+        ${hasData(pubs) ? `
+        <div class="section">
+          <div class="section-title">Scientific Publications</div>
+          ${pubs.map(p => `
+            <div class="item">
+              <div class="item-header">
+                <div class="item-title">${p.title}</div>
+                <div class="item-date">${p.year}</div>
+              </div>
+              <div class="item-desc">
+                ${[p.publisherName, p.researchDomain, p.doi ? 'DOI: ' + p.doi : ''].filter(Boolean).join(' <span class="separator">|</span> ')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+        
+        ${hasData(acts) ? `
+        <div class="section">
+          <div class="section-title">Academic Activities</div>
+          ${acts.map(a => `
+            <div class="item">
+              <div class="item-header">
+                <div class="item-title">${a.eventName}</div>
+                <div class="item-date">${new Date(a.startDate).getFullYear()}</div>
+              </div>
+              <div class="item-desc">
+                ${[a.role, a.organizer, a.level + " Level"].filter(Boolean).join(' <span class="separator">|</span> ')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+      </div>
+      
+      <div class="footer">
+        Generated by <span class="footer-brand">Xeenaps Smart Scholar Ecosystem</span> on ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+      </div>
     </div>
-    <div class="footer">
-      M A D E &nbsp; W I T H &nbsp; X E E N A P S &nbsp; &mdash; &nbsp; S M A R T &nbsp; S C H O L A R &nbsp; E C O S Y S T E M 
-      <img src="${logoUrl}" style="width: 14px; height: 14px; vertical-align: middle; margin-left: 12px;" />
-    </div>
-  </body></html>`;
+  </body>
+  </html>
+  `;
 }
