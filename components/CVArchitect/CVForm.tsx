@@ -33,7 +33,8 @@ import {
   FileText,
   ExternalLink,
   Save,
-  CheckCircle2
+  CheckCircle2,
+  Calendar
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import Swal from 'sweetalert2';
@@ -96,9 +97,9 @@ const CVForm: React.FC = () => {
   const filteredActs = useMemo(() => {
     if (!actFilter.start && !actFilter.end) return sourceData.activities;
     return sourceData.activities.filter(a => {
-      const date = new Date(a.startDate);
-      if (actFilter.start && date < new Date(actFilter.start)) return false;
-      if (actFilter.end && date > new Date(actFilter.end)) return false;
+      const date = new Date(a.startDate).getFullYear();
+      if (actFilter.start && date < parseInt(actFilter.start)) return false;
+      if (actFilter.end && date > parseInt(actFilter.end)) return false;
       return true;
     }).sort((a,b) => String(b.startDate).localeCompare(String(a.startDate)));
   }, [sourceData.activities, actFilter]);
@@ -249,14 +250,21 @@ const CVForm: React.FC = () => {
             <section className="space-y-4">
               <div className="flex items-center justify-between px-2">
                 <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Share2 size={16} /> Publications</h3>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => bulkToggle('selectedPublicationIds', sourceData.publications, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
-                  <span className="text-gray-300">|</span>
-                  <button type="button" onClick={() => bulkToggle('selectedPublicationIds', sourceData.publications, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-xl border border-gray-100 mr-2">
+                    <input type="number" placeholder="From" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={pubFilter.start} onChange={e => setPubFilter({...pubFilter, start: e.target.value})} />
+                    <span className="text-gray-300 text-[9px]">-</span>
+                    <input type="number" placeholder="To" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={pubFilter.end} onChange={e => setPubFilter({...pubFilter, end: e.target.value})} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => bulkToggle('selectedPublicationIds', filteredPubs, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">All</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" onClick={() => bulkToggle('selectedPublicationIds', filteredPubs, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                {sourceData.publications.map(p => (
+                {filteredPubs.map(p => (
                   <div key={p.id} onClick={() => toggleSelection('selectedPublicationIds', p.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedPublicationIds.includes(p.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 opacity-60'}`}>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.selectedPublicationIds.includes(p.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedPublicationIds.includes(p.id) && <Check size={10} strokeWidth={4} />}</div>
@@ -274,14 +282,21 @@ const CVForm: React.FC = () => {
             <section className="space-y-4">
               <div className="flex items-center justify-between px-2">
                 <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><ClipboardCheck size={16} /> Activities</h3>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => bulkToggle('selectedActivityIds', sourceData.activities, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">Select All</button>
-                  <span className="text-gray-300">|</span>
-                  <button type="button" onClick={() => bulkToggle('selectedActivityIds', sourceData.activities, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-xl border border-gray-100 mr-2">
+                    <input type="number" placeholder="From" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={actFilter.start} onChange={e => setActFilter({...actFilter, start: e.target.value})} />
+                    <span className="text-gray-300 text-[9px]">-</span>
+                    <input type="number" placeholder="To" className="w-10 bg-transparent border-none outline-none text-[9px] font-black text-[#004A74] text-center p-0" value={actFilter.end} onChange={e => setActFilter({...actFilter, end: e.target.value})} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => bulkToggle('selectedActivityIds', filteredActs, true)} className="text-[10px] font-black text-[#004A74] hover:underline uppercase">All</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" onClick={() => bulkToggle('selectedActivityIds', filteredActs, false)} className="text-[10px] font-black text-red-500 hover:underline uppercase">Clear</button>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                {sourceData.activities.map(a => (
+                {filteredActs.map(a => (
                   <div key={a.id} onClick={() => toggleSelection('selectedActivityIds', a.id)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${config.selectedActivityIds.includes(a.id) ? 'border-[#004A74] bg-[#004A74]/5' : 'border-gray-100 opacity-60'}`}>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.selectedActivityIds.includes(a.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'border-gray-200'}`}>{config.selectedActivityIds.includes(a.id) && <Check size={10} strokeWidth={4} />}</div>
