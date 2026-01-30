@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -31,7 +32,8 @@ import {
   PencilIcon,
   TrashIcon,
   CheckIcon,
-  LanguageIcon
+  LanguageIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { 
   BookmarkIcon as BookmarkSolid, 
@@ -44,6 +46,7 @@ import { FormDropdown } from '../Common/FormComponents';
 import Header from '../Layout/Header';
 import RelatedPresentations from '../Presenter/RelatedPresentations';
 import RelatedQuestion from '../QuestionBank/RelatedQuestion';
+import ConsultationGallery from '../Consultation/ConsultationGallery';
 
 interface LibraryDetailViewProps {
   item: LibraryItem;
@@ -347,6 +350,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const [showCiteModal, setShowCiteModal] = useState(false);
   const [showPresentations, setShowPresentations] = useState(false); 
   const [showQuestions, setShowQuestions] = useState(false); // New state for Question Bank
+  const [showConsultations, setShowConsultations] = useState(false); // New state for Consultation
   const [dummySearch, setDummySearch] = useState('');
   
   const [isBookmarked, setIsBookmarked] = useState(!!item.isBookmarked);
@@ -643,7 +647,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         </div>
 
         {/* 2. DETAIL NAVIGATION BAR: HIDDEN IF IN PRESENTATION/QUESTION GALLERY */}
-        {(!showPresentations && !showQuestions) && (
+        {(!showPresentations && !showQuestions && !showConsultations) && (
           <nav className="px-4 md:px-8 py-3 flex items-center justify-between border-t border-gray-50/50">
             <button onClick={handleBack} className="flex items-center gap-2 text-[#004A74] font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 px-3 py-2 rounded-xl transition-all">
               <ArrowLeftIcon className="w-4 h-4 stroke-[3]" /> Back
@@ -697,10 +701,12 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       <PencilIcon className="w-4 h-4" /> Update
                     </button>
                     <button onClick={() => { setShowPresentations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><PresentationChartBarIcon className="w-4 h-4" /> Presentation Mode</button>
-                    <button onClick={() => { setShowQuestions(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-[#004A74] bg-[#FED400]/10 hover:bg-[#FED400]/20 rounded-xl transition-all">
+                    <button onClick={() => { setShowQuestions(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
                       <AcademicCapIcon className="w-4 h-4" /> AI Question Bank
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ClipboardDocumentListIcon className="w-4 h-4" /> To-Do List</button>
+                    <button onClick={() => { setShowConsultations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-[#004A74] bg-[#FED400]/10 hover:bg-[#FED400]/20 rounded-xl transition-all">
+                      <ChatBubbleLeftRightIcon className="w-4 h-4" /> Consultation
+                    </button>
                     <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><AcademicCapIcon className="w-4 h-4" /> Export Metadata</button>
                     <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share Entry</button>
                     <div className="h-px bg-gray-50 my-1 mx-2" />
@@ -728,6 +734,12 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
           <RelatedQuestion 
             collection={currentItem}
             onBack={() => setShowQuestions(false)}
+          />
+        ) : showConsultations ? (
+          /* CONSULTATION GALLERY MODE */
+          <ConsultationGallery 
+            collection={currentItem}
+            onBack={() => setShowConsultations(false)}
           />
         ) : (
           /* DETAIL MODE */
