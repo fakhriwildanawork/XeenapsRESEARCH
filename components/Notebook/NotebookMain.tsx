@@ -163,10 +163,10 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
   }, [items, selectedIds]);
 
   return (
-    <div className="flex flex-col bg-white animate-in fade-in duration-500 pb-32">
+    <div className="flex flex-col h-full overflow-y-auto bg-white animate-in fade-in duration-500 pb-32 custom-scrollbar pr-1 relative">
       
       {/* HEADER - Flow naturally, only app header is sticky */}
-      <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex flex-col gap-6 shrink-0">
+      <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex flex-col gap-8 shrink-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
              <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
@@ -179,12 +179,6 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
           </div>
           
           <div className="flex items-center gap-3">
-             <button 
-               onClick={toggleSelectAll}
-               className="px-4 py-2 bg-gray-50 text-[#004A74] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all border border-gray-200"
-             >
-               {selectedIds.length === items.length && items.length > 0 ? 'Deselect All' : 'Select All'}
-             </button>
              <StandardPrimaryButton 
                onClick={() => { setSelectedNote(undefined); setIsFormOpen(true); }} 
                icon={<Plus size={20} />}
@@ -194,15 +188,24 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-           <SmartSearchBox 
-            value={localSearch} 
-            onChange={setLocalSearch} 
-            onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }}
-            phrases={["Search labels...", "Search collection titles...", "Search insights..."]}
-            className="w-full lg:max-w-xl"
-           />
-           <div className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/60 px-4">
+        <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
+           <div className="flex flex-col md:flex-row items-center gap-3 w-full lg:max-w-3xl flex-1">
+              <SmartSearchBox 
+                value={localSearch} 
+                onChange={setLocalSearch} 
+                onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }}
+                phrases={["Search labels...", "Search collection titles...", "Search insights..."]}
+                className="w-full"
+              />
+              <button 
+                onClick={toggleSelectAll}
+                className="px-6 py-3.5 bg-gray-50 text-[#004A74] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all border border-gray-200 shrink-0 w-full md:w-auto shadow-sm"
+              >
+                {selectedIds.length === items.length && items.length > 0 ? 'Deselect All' : 'Select All'}
+              </button>
+           </div>
+           
+           <div className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/60 px-4 whitespace-nowrap">
              {totalCount} Knowledge Anchors
            </div>
         </div>
