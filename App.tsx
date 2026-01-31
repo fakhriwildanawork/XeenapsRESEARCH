@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -24,6 +23,8 @@ const ActivityMain = React.lazy(() => import('./components/Activities/ActivityMa
 const TeachingMain = React.lazy(() => import('./components/Teaching/TeachingMain'));
 const CVMain = React.lazy(() => import('./components/CVArchitect/CVMain'));
 const ColleagueMain = React.lazy(() => import('./components/Colleague/ColleagueMain'));
+const TracerMain = React.lazy(() => import('./components/Research/Tracer/TracerMain'));
+const TracerDetail = React.lazy(() => import('./components/Research/Tracer/TracerDetail'));
 import { BRAND_ASSETS } from './assets';
 import { GlobalAppLoader } from './components/Common/LoadingComponents';
 
@@ -105,6 +106,8 @@ const App: React.FC = () => {
                 <Route path="/research/*" element={<GapFinderModule items={items} />} />
                 <Route path="/research/literature-review" element={<AllReview />} />
                 <Route path="/research/literature-review/:id" element={<ReviewDetail libraryItems={items} />} />
+                <Route path="/research/tracer" element={<TracerMain />} />
+                <Route path="/research/tracer/:id" element={<TracerDetail libraryItems={items} />} />
                 
                 <Route path="/presentations" element={<AllPresentation items={items} />} />
                 <Route path="/questions" element={<AllQuestion items={items} />} />

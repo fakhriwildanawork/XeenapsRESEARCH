@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { NavLink, useLocation } from 'react-router-dom';
@@ -242,10 +241,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
               <Share2 size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Publication</span>
             </NavLink>
-            <div className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-gray-400 cursor-not-allowed text-xs md:text-sm font-medium">
-              <Target size={14} className="mr-2 shrink-0 opacity-40" />
-              <span className="whitespace-nowrap opacity-50 italic">Tracer</span>
-            </div>
+            <NavLink 
+              to="/research/tracer"
+              onClick={handleNavClick}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname.startsWith('/research/tracer') ? 'text-[#004A74] bg-[#FED400]/10 font-bold' : 'text-gray-500 hover:text-[#004A74] hover:bg-[#FED400]/5'}`}
+            >
+              <Target size={14} className="mr-2 shrink-0" />
+              <span className="whitespace-nowrap">Tracer</span>
+            </NavLink>
           </div>
         </div>
 

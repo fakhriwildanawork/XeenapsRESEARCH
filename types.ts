@@ -1,4 +1,3 @@
-
 export enum SourceType {
   LINK = 'LINK',
   FILE = 'FILE',
@@ -394,6 +393,53 @@ export interface ResearchSource extends GapAnalysisRow {
   isAnalyzing?: boolean; 
   isFavorite?: boolean;
   isUsed?: boolean;
+}
+
+// --- TRACER MODULE TYPES ---
+
+export enum TracerStatus {
+  IN_PROGRESS = 'In Progress',
+  COMPLETED = 'Completed',
+  ON_HOLD = 'On Hold',
+  CANCELLED = 'Cancelled'
+}
+
+export interface TracerProject {
+  id: string;
+  title: string;
+  category: string;
+  authors: string[];
+  startDate: string;
+  estEndDate: string;
+  status: TracerStatus;
+  progress: number; // 0 - 100
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TracerLog {
+  id: string;
+  projectId: string;
+  date: string;
+  title: string;
+  logJsonId: string; // Sharding ID
+  storageNodeUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TracerReference {
+  id: string;
+  projectId: string;
+  collectionId: string; // Links to LibraryItem
+  createdAt: string;
+}
+
+export interface TracerQuote {
+  originalText: string;
+  contextFound: string;
+  enhancedText: string;
+  citation: string;
 }
 
 // --- BRAINSTORMING TYPES ---

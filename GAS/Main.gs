@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -45,6 +44,29 @@ function doGet(e) {
       const sortDir = e.parameter.sortDir || "desc";
       const result = getNotesFromRegistry(page, limit, search, collectionId, sortKey, sortDir);
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
+    // NEW: Tracer Project Retrieval
+    if (action === 'getTracerProjects') {
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "25");
+      const search = e.parameter.search || "";
+      const result = getTracerProjectsFromRegistry(page, limit, search);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
+    // NEW: Tracer Log Retrieval
+    if (action === 'getTracerLogs') {
+      const projectId = e.parameter.projectId;
+      const result = getTracerLogsFromRegistry(projectId);
+      return createJsonResponse({ status: 'success', data: result });
+    }
+
+    // NEW: Tracer Reference Retrieval
+    if (action === 'getTracerReferences') {
+      const projectId = e.parameter.projectId;
+      const result = getTracerReferencesFromRegistry(projectId);
+      return createJsonResponse({ status: 'success', data: result });
     }
 
     // NEW: getReviews (LITERATURE REVIEW MODULE)
@@ -264,11 +286,32 @@ function doPost(e) {
     if (action === 'setupCVDatabase') return createJsonResponse(setupCVDatabase());
     if (action === 'setupConsultationDatabase') return createJsonResponse(setupConsultationDatabase());
     if (action === 'setupReviewDatabase') return createJsonResponse(setupReviewDatabase());
+    if (action === 'setupTracerDatabase') return createJsonResponse(setupTracerDatabase());
     
     // NEW: saveNote
     if (action === 'saveNote') return createJsonResponse(saveNoteToRegistry(body.item, body.content));
     // NEW: deleteNote
     if (action === 'deleteNote') return createJsonResponse(deleteNoteFromRegistry(body.id));
+
+    // NEW: saveTracerProject
+    if (action === 'saveTracerProject') return createJsonResponse(saveTracerProjectToRegistry(body.item));
+    // NEW: deleteTracerProject
+    if (action === 'deleteTracerProject') return createJsonResponse(deleteTracerProjectFromRegistry(body.id));
+    // NEW: saveTracerLog
+    if (action === 'saveTracerLog') return createJsonResponse(saveTracerLogToRegistry(body.item, body.content));
+    // NEW: deleteTracerLog
+    if (action === 'deleteTracerLog') return createJsonResponse(deleteTracerLogFromRegistry(body.id));
+    // NEW: linkTracerReference
+    if (action === 'linkTracerReference') return createJsonResponse(linkTracerReferenceToRegistry(body.item));
+    // NEW: unlinkTracerReference
+    if (action === 'unlinkTracerReference') return createJsonResponse(unlinkTracerReferenceFromRegistry(body.id));
+
+    // NEW: aiTracerProxy
+    if (action === 'aiTracerProxy') {
+      const { subAction, payload } = body;
+      if (subAction === 'extractQuote') return createJsonResponse(handleAiTracerQuoteExtraction(payload));
+      if (subAction === 'enhanceQuote') return createJsonResponse(handleAiTracerQuoteEnhancement(payload));
+    }
 
     // NEW: saveReview
     if (action === 'saveReview') return createJsonResponse(saveReviewToRegistry(body.item, body.content));

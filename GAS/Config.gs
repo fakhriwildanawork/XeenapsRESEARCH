@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - GLOBAL CONFIGURATION
  */
@@ -29,7 +28,8 @@ const CONFIG = {
     COLLEAGUES: '1GDSVHc2-IuvMs7-GqopfYu2L8UZKRH5-I_a1GbDL9UA',
     CONSULTATION: '1tWeM09na8DY0pjU5wwnLNvzl_BIK6pB90m2WToF98Ts',
     NOTEBOOK: '1LxDILaoTFkHV9ZRx67YUhLQmHANeySdvR8AcYO8NMQs',
-    LITERATURE_REVIEW: '1l8P-jSZsj6Q6OuBjPDpM3nCNpDcxeoreYebhr0RMz_Y'
+    LITERATURE_REVIEW: '1l8P-jSZsj6Q6OuBjPDpM3nCNpDcxeoreYebhr0RMz_Y',
+    TRACER: '1-Placeholder-Tracer-Spreadsheet-ID' 
   },
   SCHEMAS: {
     LIBRARY: [
@@ -88,6 +88,15 @@ const CONFIG = {
     ],
     LITERATURE_REVIEW: [
       'id', 'label', 'centralQuestion', 'reviewJsonId', 'storageNodeUrl', 'isFavorite', 'createdAt', 'updatedAt'
+    ],
+    TRACER_PROJECTS: [
+      'id', 'title', 'category', 'authors', 'startDate', 'estEndDate', 'status', 'progress', 'createdAt', 'updatedAt'
+    ],
+    TRACER_LOGS: [
+      'id', 'projectId', 'date', 'title', 'logJsonId', 'storageNodeUrl', 'createdAt', 'updatedAt'
+    ],
+    TRACER_REFERENCES: [
+      'id', 'projectId', 'collectionId', 'createdAt'
     ]
   }
 };
