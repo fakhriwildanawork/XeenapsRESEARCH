@@ -466,6 +466,11 @@ function doPost(e) {
       return createJsonResponse(handleGenerateQuestions(body));
     }
 
+    // NEW ACTION: saveQuestion
+    if (action === 'saveQuestion') {
+      return createJsonResponse(saveQuestionToRegistry(body.item));
+    }
+
     // NEW ACTION: deleteQuestionRecord
     if (action === 'deleteQuestionRecord') {
       return createJsonResponse(deleteQuestionFromRegistry(body.id));

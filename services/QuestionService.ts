@@ -84,6 +84,23 @@ export const generateQuestionsWorkflow = async (
   }
 };
 
+/**
+ * NEW: Save or Update a single question record (Manual Entry)
+ */
+export const saveQuestionRecord = async (item: QuestionItem): Promise<boolean> => {
+  if (!GAS_WEB_APP_URL) return false;
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveQuestion', item })
+    });
+    const result = await res.json();
+    return result.status === 'success';
+  } catch (e) {
+    return false;
+  }
+};
+
 export const deleteQuestion = async (id: string): Promise<boolean> => {
   try {
     const res = await fetch(GAS_WEB_APP_URL!, {

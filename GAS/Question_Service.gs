@@ -32,6 +32,46 @@ function setupQuestionDatabase() {
 }
 
 /**
+ * NEW: Save or Update a single question record (Manual Entry)
+ */
+function saveQuestionToRegistry(item) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.QUESTION_BANK);
+    let sheet = ss.getSheetByName("QuestionBank");
+    if (!sheet) {
+      setupQuestionDatabase();
+      sheet = ss.getSheetByName("QuestionBank");
+    }
+
+    const headers = CONFIG.SCHEMAS.QUESTIONS;
+    const rowData = headers.map(h => {
+      const val = item[h];
+      return (typeof val === 'object' && val !== null) ? JSON.stringify(val) : (val !== undefined ? val : '');
+    });
+
+    const data = sheet.getDataRange().getValues();
+    const idIdx = headers.indexOf('id');
+    let existingRow = -1;
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idIdx] === item.id) {
+        existingRow = i + 1;
+        break;
+      }
+    }
+
+    if (existingRow > -1) {
+      sheet.getRange(existingRow, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+    return { status: 'success' };
+  } catch (e) {
+    return { status: 'error', message: e.toString() };
+  }
+}
+
+/**
  * Mengambil seluruh soal (Global) dengan Paginasi, Search, Filter Bloom, dan Date Range
  */
 function getAllQuestionsFromRegistry(page = 1, limit = 20, search = "", bloomFilter = "All", startDate = "", endDate = "", sortKey = "createdAt", sortDir = "desc") {
