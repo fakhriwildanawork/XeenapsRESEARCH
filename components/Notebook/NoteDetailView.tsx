@@ -28,6 +28,7 @@ interface NoteDetailViewProps {
   note: NoteItem;
   onClose: () => void;
   onEdit?: () => void; 
+  isMobileSidebarOpen?: boolean;
 }
 
 /**
@@ -89,7 +90,7 @@ const InlineRichEditor: React.FC<{ value: string; onChange: (v: string) => void 
   );
 };
 
-const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose }) => {
+const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobileSidebarOpen }) => {
   const [localNote, setLocalNote] = useState<NoteItem>(note);
   const [content, setContent] = useState<NoteContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -244,7 +245,17 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[1200] bg-white flex flex-col animate-in fade-in duration-500 overflow-hidden">
+    <div 
+      className={`fixed top-0 right-0 bottom-0 z-[1200] bg-white flex flex-col will-change-transform overflow-hidden transition-all duration-500 animate-in fade-in ${
+        isMobileSidebarOpen ? 'blur-[15px] opacity-40 pointer-events-none scale-[0.98]' : ''
+      }`}
+      style={{ 
+        left: 'var(--sidebar-offset, 0px)',
+        transformStyle: 'preserve-3d',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden'
+      }}
+    >
       {/* Top Header Navigation */}
       <header className="px-6 md:px-10 py-5 border-b border-gray-100 bg-white/80 backdrop-blur-md flex items-center justify-between shrink-0">
          <div className="flex items-center gap-4">

@@ -32,9 +32,10 @@ interface NotebookMainProps {
   libraryItems?: LibraryItem[];
   collectionId?: string; // Jika dipanggil dari LibraryDetail
   onBackToLibrary?: () => void;
+  isMobileSidebarOpen?: boolean;
 }
 
-const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collectionId = "", onBackToLibrary }) => {
+const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collectionId = "", onBackToLibrary, isMobileSidebarOpen }) => {
   const workflow = useAsyncWorkflow(30000);
   const { performUpdate, performDelete } = useOptimisticUpdate<NoteItem>();
   
@@ -309,6 +310,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
       {viewNote && (
         <NoteDetailView 
           note={viewNote}
+          isMobileSidebarOpen={isMobileSidebarOpen}
           onClose={() => setViewNote(null)}
           onEdit={() => { setSelectedNote(viewNote); setViewNote(null); setIsFormOpen(true); }}
         />

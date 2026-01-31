@@ -95,7 +95,7 @@ const App: React.FC = () => {
                 <Route path="/favorite" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/bookmark" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 
-                <Route path="/notebook" element={<NotebookMain libraryItems={items} />} />
+                <Route path="/notebook" element={<NotebookMain libraryItems={items} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/find-article" element={<FindArticle />} />
                 <Route path="/archived-articles" element={<ArchivedArticle />} />
 
