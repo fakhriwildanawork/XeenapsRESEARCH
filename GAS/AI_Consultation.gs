@@ -1,11 +1,40 @@
 /**
  * XEENAPS PKM - GROQ AI CONSULTATION SERVICE
  * Specialized for Reasoning and Contextual Deep Analysis via Groq Engine.
- * VERSION: 2.0 (Strict HTML Formatting)
+ * VERSION: 2.1 (Anti-Markdown Regex & Strict HTML)
  */
 
 function handleAiConsultRequest(collectionId, question) {
   return callGroqConsultant(question, collectionId);
+}
+
+/**
+ * Pembersih Output AI: Menjamin tidak ada simbol Markdown yang lolos ke UI.
+ */
+function cleanAiOutputToHtml(text) {
+  if (!text) return "";
+  let clean = text;
+
+  // 1. Tangani Bold Markdown yang bandel: **teks** -> <b>teks</b>
+  clean = clean.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+
+  // 2. Hapus semua sisa tanda bintang tunggal (biasanya dipakai bullet point/italics oleh AI)
+  clean = clean.replace(/\*/g, "");
+
+  // 3. Hapus simbol Header Markdown (#, ##, dll)
+  clean = clean.replace(/^#+\s+/gm, "");
+
+  // 4. Hapus Backticks (`)
+  clean = clean.replace(/`/g, "");
+
+  // 5. Konversi Newline menjadi <br/> jika AI lupa menyisipkan tag HTML
+  // Gunakan regex untuk menghindari duplikasi jika <br/> sudah ada
+  clean = clean.replace(/\n/g, "<br/>");
+  
+  // 6. Rapikan spasi berlebih
+  clean = clean.replace(/\s{2,}/g, ' ').trim();
+
+  return clean;
 }
 
 function callGroqConsultant(prompt, collectionId) {
@@ -63,13 +92,14 @@ function callGroqConsultant(prompt, collectionId) {
           { 
             role: "system", 
             content: "You are the Xeenaps Knowledge Consultant. \n\n" +
-                     "STRICT FORMATTING RULES:\n" +
-                     "1. NEVER use Markdown symbols like **, *, #, or -. Use HTML tags instead.\n" +
-                     "2. Use <b> for key terms and labels.\n" +
-                     "3. Use <span class='xeenaps-highlight' style='background-color: #FED40030; color: #004A74; padding: 0 4px; border-radius: 4px; font-weight: 700;'> for critical insights.\n" +
-                     "4. Use <br/> for line breaks and paragraph spacing.\n" +
-                     "5. For lists, use format like: 1. <b>Point Name</b>:<br/>Description<br/><br/>\n" +
-                     "6. Be highly analytical and link all answers to the provided [DOCUMENT_CONTEXT].\n\n" +
+                     "STRICT FORMATTING RULES (ZERO TOLERANCE FOR MARKDOWN):\n" +
+                     "1. NEVER use symbols like **, *, #, or -. If you use them, the application will crash.\n" +
+                     "2. ALWAYS use pure HTML tags for formatting.\n" +
+                     "3. Use <b> for key terms, labels, and bolding.\n" +
+                     "4. Use <span class='xeenaps-highlight' style='background-color: #FED40030; color: #004A74; padding: 0 4px; border-radius: 4px; font-weight: 700;'> for critical insights.\n" +
+                     "5. Use <br/> for line breaks and paragraph spacing.\n" +
+                     "6. For lists, use format: 1. <b>Point Name</b>:<br/>Description<br/><br/>\n" +
+                     "7. Link all answers to the provided [DOCUMENT_CONTEXT].\n\n" +
                      "[DOCUMENT_CONTEXT]: \n" + context 
           },
           { role: "user", content: prompt }
@@ -88,10 +118,15 @@ function callGroqConsultant(prompt, collectionId) {
       const responseData = JSON.parse(res.getContentText());
       if (responseData.choices && responseData.choices.length > 0) {
         const choice = responseData.choices[0].message;
+        
+        // APPLY REGEX CLEANING TO REMOVE ANY STRAY MARKDOWN
+        const cleanedAnswer = cleanAiOutputToHtml(choice.content);
+        const cleanedReasoning = choice.reasoning_content ? cleanAiOutputToHtml(choice.reasoning_content) : "";
+
         return { 
           status: 'success', 
-          data: choice.content,
-          reasoning: choice.reasoning_content || "" 
+          data: cleanedAnswer,
+          reasoning: cleanedReasoning 
         };
       }
     } catch (err) {

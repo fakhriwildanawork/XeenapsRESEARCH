@@ -16,6 +16,7 @@ import SettingsView from './components/Settings/SettingsView';
 import UserProfileView from './components/Profile/UserProfileView';
 import FindArticle from './components/Research/Literature/FindArticle';
 import ArchivedArticle from './components/Research/Literature/ArchivedArticle';
+import NotebookMain from './components/Notebook/NotebookMain';
 // Placeholder for the upcoming modules
 const ActivityMain = React.lazy(() => import('./components/Activities/ActivityMain'));
 const TeachingMain = React.lazy(() => import('./components/Teaching/TeachingMain'));
@@ -94,6 +95,7 @@ const App: React.FC = () => {
                 <Route path="/favorite" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/bookmark" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 
+                <Route path="/notebook" element={<NotebookMain />} />
                 <Route path="/find-article" element={<FindArticle />} />
                 <Route path="/archived-articles" element={<ArchivedArticle />} />
 

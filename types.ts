@@ -135,6 +135,34 @@ export interface LibraryItem {
   updatedAt: string;
 }
 
+// --- NOTEBOOK MODULE TYPES ---
+
+export interface NoteAttachment {
+  type: 'LINK' | 'FILE';
+  label: string;
+  url?: string;
+  fileId?: string;
+  nodeUrl?: string;
+  mimeType?: string;
+}
+
+export interface NoteItem {
+  id: string;
+  collectionId: string; // Opsional: relasi ke library
+  label: string;
+  noteJsonId: string; // ID file sharding di Drive
+  storageNodeUrl: string;
+  isFavorite: boolean;
+  isUsed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NoteContent {
+  description: string; // Isi teks catatan (HTML/Rich Text)
+  attachments: NoteAttachment[];
+}
+
 // --- ACTIVITIES TYPES ---
 
 export enum ActivityType {

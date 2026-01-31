@@ -35,6 +35,18 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: getNotes (NOTEBOOK MODULE)
+    if (action === 'getNotes') {
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "25");
+      const search = e.parameter.search || "";
+      const collectionId = e.parameter.collectionId || "";
+      const sortKey = e.parameter.sortKey || "createdAt";
+      const sortDir = e.parameter.sortDir || "desc";
+      const result = getNotesFromRegistry(page, limit, search, collectionId, sortKey, sortDir);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
     // NEW: getConsultations
     if (action === 'getConsultations') {
       const collectionId = e.parameter.collectionId;
@@ -230,6 +242,7 @@ function doPost(e) {
   
   try {
     if (action === 'setupDatabase') return createJsonResponse(setupDatabase());
+    if (action === 'setupNotebookDatabase') return createJsonResponse(setupNotebookDatabase());
     if (action === 'setupColleagueDatabase') return createJsonResponse(setupColleagueDatabase());
     if (action === 'setupTeachingDatabase') return createJsonResponse(setupTeachingDatabase());
     if (action === 'setupResearchDatabase') return createJsonResponse(setupResearchDatabase());
@@ -240,6 +253,11 @@ function doPost(e) {
     if (action === 'setupCVDatabase') return createJsonResponse(setupCVDatabase());
     if (action === 'setupConsultationDatabase') return createJsonResponse(setupConsultationDatabase());
     
+    // NEW: saveNote
+    if (action === 'saveNote') return createJsonResponse(saveNoteToRegistry(body.item, body.content));
+    // NEW: deleteNote
+    if (action === 'deleteNote') return createJsonResponse(deleteNoteFromRegistry(body.id));
+
     // NEW ACTION: saveConsultation
     if (action === 'saveConsultation') {
       return createJsonResponse(saveConsultationToRegistry(body.item, body.answerContent));

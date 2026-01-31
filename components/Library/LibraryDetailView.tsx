@@ -39,6 +39,7 @@ import {
   BookmarkIcon as BookmarkSolid, 
   StarIcon as StarSolid
 } from '@heroicons/react/24/solid';
+import { StickyNote } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { saveLibraryItem, deleteLibraryItem, generateCitations, generateInsight, fetchFileContent, translateInsightSection } from '../../services/gasService';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -47,6 +48,7 @@ import Header from '../Layout/Header';
 import RelatedPresentations from '../Presenter/RelatedPresentations';
 import RelatedQuestion from '../QuestionBank/RelatedQuestion';
 import ConsultationGallery from '../Consultation/ConsultationGallery';
+import NotebookMain from '../Notebook/NotebookMain';
 
 interface LibraryDetailViewProps {
   item: LibraryItem;
@@ -351,6 +353,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const [showPresentations, setShowPresentations] = useState(false); 
   const [showQuestions, setShowQuestions] = useState(false); // New state for Question Bank
   const [showConsultations, setShowConsultations] = useState(false); // New state for Consultation
+  const [showNotebook, setShowNotebook] = useState(false); // New state for Notebook
   const [dummySearch, setDummySearch] = useState('');
   
   const [isBookmarked, setIsBookmarked] = useState(!!item.isBookmarked);
@@ -647,7 +650,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         </div>
 
         {/* 2. DETAIL NAVIGATION BAR: HIDDEN IF IN PRESENTATION/QUESTION GALLERY */}
-        {(!showPresentations && !showQuestions && !showConsultations) && (
+        {(!showPresentations && !showQuestions && !showConsultations && !showNotebook) && (
           <nav className="px-4 md:px-8 py-3 flex items-center justify-between border-t border-gray-50/50">
             <button onClick={handleBack} className="flex items-center gap-2 text-[#004A74] font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 px-3 py-2 rounded-xl transition-all">
               <ArrowLeftIcon className="w-4 h-4 stroke-[3]" /> Back
@@ -707,6 +710,9 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     <button onClick={() => { setShowConsultations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-[#004A74] bg-[#FED400]/10 hover:bg-[#FED400]/20 rounded-xl transition-all">
                       <ChatBubbleLeftRightIcon className="w-4 h-4" /> Consultation
                     </button>
+                    <button onClick={() => { setShowNotebook(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
+                      <StickyNote className="w-4 h-4" /> Notes
+                    </button>
                     <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><AcademicCapIcon className="w-4 h-4" /> Export Metadata</button>
                     <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share Entry</button>
                     <div className="h-px bg-gray-50 my-1 mx-2" />
@@ -740,6 +746,12 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
           <ConsultationGallery 
             collection={currentItem}
             onBack={() => setShowConsultations(false)}
+          />
+        ) : showNotebook ? (
+          /* NOTEBOOK GALLERY MODE */
+          <NotebookMain 
+            collectionId={currentItem.id}
+            onBackToLibrary={() => setShowNotebook(false)}
           />
         ) : (
           /* DETAIL MODE */

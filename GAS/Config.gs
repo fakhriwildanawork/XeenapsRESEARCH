@@ -27,11 +27,15 @@ const CONFIG = {
     PROFILE: '1aGnFF7Tr8nnq69Qk6EjJXZb6yJb-OJBMZkOPZpBOexo',
     CV_REGISTRY: '1w_-GyH_gTansPBt_6tSR9twcAV0tQi4dan9rUfKdyKw',
     COLLEAGUES: '1GDSVHc2-IuvMs7-GqopfYu2L8UZKRH5-I_a1GbDL9UA',
-    CONSULTATION: '1tWeM09na8DY0pjU5wwnLNvzl_BIK6pB90m2WToF98Ts'
+    CONSULTATION: '1tWeM09na8DY0pjU5wwnLNvzl_BIK6pB90m2WToF98Ts',
+    NOTEBOOK: '1LxDILaoTFkHV9ZRx67YUhLQmHANeySdvR8AcYO8NMQs'
   },
   SCHEMAS: {
     LIBRARY: [
       'id', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
+    ],
+    NOTEBOOK: [
+      'id', 'collectionId', 'label', 'noteJsonId', 'storageNodeUrl', 'isFavorite', 'isUsed', 'createdAt', 'updatedAt'
     ],
     TEACHING: [
       'id', 'label', 'teachingDate', 'startTime', 'endTime', 'institution', 'faculty', 'program', 'academicYear', 'semester', 'classGroup', 'meetingNo', 'mode', 'plannedStudents', 'location', 'eventColor', 'skReference',

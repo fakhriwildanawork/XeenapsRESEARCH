@@ -1,0 +1,277 @@
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { NoteItem, NoteContent } from '../../types';
+import { fetchNotesPaginated, deleteNote, saveNote } from '../../services/NoteService';
+import { 
+  Plus, 
+  Trash2, 
+  Star, 
+  Search, 
+  Clock, 
+  LayoutGrid, 
+  ChevronRight,
+  Sparkles,
+  StickyNote,
+  Library,
+  Check,
+  MoreVertical,
+  Edit2
+} from 'lucide-react';
+import { SmartSearchBox } from '../Common/SearchComponents';
+import { StandardPrimaryButton, StandardQuickAccessBar, StandardQuickActionButton } from '../Common/ButtonComponents';
+import { CardGridSkeleton } from '../Common/LoadingComponents';
+import { StandardTableFooter } from '../Common/TableComponents';
+import { useAsyncWorkflow } from '../../hooks/useAsyncWorkflow';
+import { useOptimisticUpdate } from '../../hooks/useOptimisticUpdate';
+import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
+import { showXeenapsToast } from '../../utils/toastUtils';
+import NoteForm from './NoteForm';
+import NoteDetailView from './NoteDetailView';
+
+interface NotebookMainProps {
+  collectionId?: string; // Jika dipanggil dari LibraryDetail
+  onBackToLibrary?: () => void;
+}
+
+const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackToLibrary }) => {
+  const workflow = useAsyncWorkflow(30000);
+  const { performUpdate, performDelete } = useOptimisticUpdate<NoteItem>();
+  
+  const [items, setItems] = useState<NoteItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [localSearch, setLocalSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<NoteItem | undefined>();
+  const [viewNote, setViewNote] = useState<NoteItem | null>(null);
+
+  const itemsPerPage = 12;
+
+  const loadData = useCallback(() => {
+    workflow.execute(
+      async (signal) => {
+        setIsLoading(true);
+        const result = await fetchNotesPaginated(
+          currentPage, 
+          itemsPerPage, 
+          appliedSearch, 
+          collectionId,
+          "createdAt", 
+          "desc", 
+          signal
+        );
+        setItems(result.items);
+        setTotalCount(result.totalCount);
+      },
+      () => setIsLoading(false),
+      () => setIsLoading(false)
+    );
+  }, [currentPage, appliedSearch, itemsPerPage, collectionId, workflow.execute]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleToggleFavorite = async (e: React.MouseEvent, note: NoteItem) => {
+    e.stopPropagation();
+    await performUpdate(
+      items,
+      setItems,
+      [note.id],
+      (i) => ({ ...i, isFavorite: !i.isFavorite }),
+      async (updated) => {
+        // Karena saveNote butuh content, kita harus handle sedikit berbeda di backend 
+        // atau pastikan backend saveNote bisa handle partial update untuk favorite saja.
+        // Untuk sekarang kita asumsikan backend saveNote handle metadata update jika content null.
+        return await saveNote(updated, { description: "", attachments: [] });
+      }
+    );
+    showXeenapsToast('success', !note.isFavorite ? 'Marked as Favorite' : 'Removed from Favorites');
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (confirmed) {
+      const success = await deleteNote(id);
+      if (success) {
+        showXeenapsToast('success', 'Note purged successfully');
+        loadData();
+      }
+    }
+  };
+
+  const handleMassDelete = async () => {
+    const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
+    if (confirmed) {
+      for (const id of selectedIds) {
+        await deleteNote(id);
+      }
+      showXeenapsToast('success', `${selectedIds.length} Notes purged`);
+      setSelectedIds([]);
+      loadData();
+    }
+  };
+
+  const toggleSelect = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const formatShortDate = (dateStr: string) => {
+    if (!dateStr) return "-";
+    try {
+      const d = new Date(dateStr);
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    } catch { return "-"; }
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white overflow-hidden relative animate-in fade-in duration-500">
+      
+      {/* HEADER */}
+      <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex flex-col gap-6 shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
+                <StickyNote size={24} />
+             </div>
+             <div>
+                <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Notebook</h2>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Research Insights & Synthesis</p>
+             </div>
+          </div>
+          
+          <StandardPrimaryButton 
+            onClick={() => { setSelectedNote(undefined); setIsFormOpen(true); }} 
+            icon={<Plus size={20} />}
+          >
+            Create Note
+          </StandardPrimaryButton>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+           <SmartSearchBox 
+            value={localSearch} 
+            onChange={setLocalSearch} 
+            onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }}
+            phrases={["Search note labels...", "Find insights...", "Filter by keywords..."]}
+            className="w-full lg:max-w-xl"
+           />
+           <div className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/60 px-4">
+             {totalCount} Knowledge Anchors
+           </div>
+        </div>
+      </div>
+
+      {/* BATCH ACTION BAR */}
+      <div className="px-6 md:px-10">
+        <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>
+          <StandardQuickActionButton variant="danger" onClick={handleMassDelete} title="Mass Purge">
+            <Trash2 size={18} />
+          </StandardQuickActionButton>
+          <button onClick={() => setSelectedIds([])} className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/50 hover:text-[#004A74] px-2 transition-all">Clear Selection</button>
+        </StandardQuickAccessBar>
+      </div>
+
+      {/* GALLERY GRID */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 pb-32">
+        {isLoading ? (
+          <CardGridSkeleton count={8} />
+        ) : items.length === 0 ? (
+          <div className="py-40 text-center flex flex-col items-center justify-center space-y-4 opacity-30 grayscale">
+             <StickyNote size={80} strokeWidth={1} className="text-[#004A74]" />
+             <p className="text-sm font-black uppercase tracking-[0.4em]">Notebook is empty</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {items.map(item => (
+              <div 
+                key={item.id}
+                onClick={() => setViewNote(item)}
+                className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full ${selectedIds.includes(item.id) ? 'ring-2 ring-[#004A74] border-[#004A74]' : ''}`}
+              >
+                {/* Checkbox Top Left */}
+                <div className="absolute top-6 left-6 z-10" onClick={e => toggleSelect(e, item.id)}>
+                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200 hover:border-[#004A74]'}`}>
+                      {selectedIds.includes(item.id) && <Check size={14} strokeWidth={4} />}
+                   </div>
+                </div>
+
+                {/* Favorite Top Right */}
+                <div className="absolute top-6 right-6 z-10" onClick={e => handleToggleFavorite(e, item)}>
+                   <Star size={20} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
+                </div>
+
+                <div className="mt-8 mb-4">
+                   <div className="flex items-center gap-1.5 mb-2">
+                      <Sparkles size={12} className="text-[#FED400]" />
+                      <span className="text-[8px] font-black uppercase tracking-widest text-[#004A74]/40">Knowledge Anchor</span>
+                   </div>
+                   <h3 className="text-base font-black text-[#004A74] leading-tight uppercase line-clamp-2">{item.label}</h3>
+                </div>
+
+                {item.collectionId && (
+                   <div className="flex items-center gap-2 mt-auto pt-4 border-t border-gray-50 text-gray-400">
+                      <Library size={12} />
+                      <span className="text-[9px] font-bold uppercase tracking-tight truncate">Linked to Collection</span>
+                   </div>
+                )}
+
+                <div className="flex items-center justify-between mt-4">
+                   <div className="flex items-center gap-1.5 text-gray-300">
+                      <Clock size={12} />
+                      <span className="text-[8px] font-black uppercase tracking-tighter">{formatShortDate(item.createdAt)}</span>
+                   </div>
+                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedNote(item); setIsFormOpen(true); }} className="p-2 text-gray-400 hover:text-[#004A74] hover:bg-gray-50 rounded-lg transition-all"><Edit2 size={14} /></button>
+                      <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={14} /></button>
+                   </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <StandardTableFooter 
+        totalItems={totalCount} 
+        currentPage={currentPage} 
+        itemsPerPage={itemsPerPage} 
+        totalPages={Math.ceil(totalCount / itemsPerPage)} 
+        onPageChange={setCurrentPage} 
+      />
+
+      {isFormOpen && (
+        <NoteForm 
+          note={selectedNote} 
+          collectionId={collectionId}
+          onClose={() => setIsFormOpen(false)} 
+          onComplete={() => { setIsFormOpen(false); loadData(); }} 
+        />
+      )}
+
+      {viewNote && (
+        <NoteDetailView 
+          note={viewNote}
+          onClose={() => setViewNote(null)}
+          onEdit={() => { setSelectedNote(viewNote); setViewNote(null); setIsFormOpen(true); }}
+        />
+      )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
+      `}</style>
+    </div>
+  );
+};
+
+export default NotebookMain;

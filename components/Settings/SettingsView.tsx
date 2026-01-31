@@ -12,6 +12,7 @@ import {
   IdentificationIcon,
   ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
+import { StickyNote } from 'lucide-react';
 import { GAS_WEB_APP_URL } from '../../constants';
 import { initializeDatabase, initializeBrainstormingDatabase, initializePublicationDatabase, initializeConsultationDatabase } from '../../services/gasService';
 import { showXeenapsAlert } from '../../utils/swalUtils';
@@ -19,6 +20,7 @@ import { showXeenapsAlert } from '../../utils/swalUtils';
 const SettingsView: React.FC = () => {
   const isConfigured = !!GAS_WEB_APP_URL;
   const [isInitializing, setIsInitializing] = useState(false);
+  const [isInitializingNote, setIsInitializingNote] = useState(false);
   const [isInitializingBrain, setIsInitializingBrain] = useState(false);
   const [isInitializingPub, setIsInitializingPub] = useState(false);
   const [isInitializingTeaching, setIsInitializingTeaching] = useState(false);
@@ -31,7 +33,8 @@ const SettingsView: React.FC = () => {
     BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM',
     PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g',
     CONSULTATION: '1tWeM09na8DY0pjU5wwnLNvzl_BIK6pB90m2WToF98Ts',
-    CV_REGISTRY: '1-placeholder-cv-registry-id'
+    NOTEBOOK: '1LxDILaoTFkHV9ZRx67YUhLQmHANeySdvR8AcYO8NMQs',
+    CV_REGISTRY: '1w_-GyH_gTansPBt_6tSR9twcAV0tQi4dan9rUfKdyKw'
   };
 
   const openSheet = (id: string) => {
@@ -56,6 +59,31 @@ const SettingsView: React.FC = () => {
       showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
     } finally {
       setIsInitializing(false);
+    }
+  };
+
+  const handleInitNoteDatabase = async () => {
+    setIsInitializingNote(true);
+    try {
+      const response = await fetch(GAS_WEB_APP_URL!, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'setupNotebookDatabase' })
+      });
+      const result = await response.json();
+      if (result.status === 'success') {
+        showXeenapsAlert({
+          icon: 'success',
+          title: 'NOTEBOOK READY',
+          text: 'The Notebook registry sheet has been successfully initialized.',
+          confirmButtonText: 'EXCELLENT'
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err: any) {
+      showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
+    } finally {
+      setIsInitializingNote(false);
     }
   };
 
@@ -276,6 +304,21 @@ const SettingsView: React.FC = () => {
               Initialize
             </button>
           </div>
+
+          <div className="p-4 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
+            <h3 className="text-[10px] font-black mb-3 flex items-center gap-2 uppercase tracking-widest">
+              <TableCellsIcon className="w-4 h-4 text-[#FED400]" />
+              Notebook
+            </h3>
+            <button 
+              onClick={handleInitNoteDatabase}
+              disabled={isInitializingNote || !isConfigured}
+              className="w-full py-2.5 bg-[#FED400] text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
+            >
+              {isInitializingNote ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
+              Initialize
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
@@ -332,6 +375,17 @@ const SettingsView: React.FC = () => {
               <div>
                 <h4 className="font-bold text-[#004A74] group-hover:text-white group-hover:scale-105 transition-all origin-left">Master Library Database</h4>
                 <p className="text-sm text-gray-500 group-hover:text-white/70">Access raw collection data and full system backups.</p>
+              </div>
+              <TableCellsIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
+            </button>
+
+            <button 
+              onClick={() => openSheet(SPREADSHEET_IDS.NOTEBOOK)}
+              className="group flex items-center justify-between p-6 bg-white/40 hover:bg-[#004A74] rounded-2xl border border-white/60 transition-all duration-500 text-left shadow-sm"
+            >
+              <div>
+                <h4 className="font-bold text-[#004A74] group-hover:text-white group-hover:scale-105 transition-all origin-left">Notebook Registry</h4>
+                <p className="text-sm text-gray-500 group-hover:text-white/70">Manage sharded notes and metadata.</p>
               </div>
               <TableCellsIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
             </button>
