@@ -35,7 +35,7 @@ const CONFIG = {
       'id', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
     ],
     NOTEBOOK: [
-      'id', 'collectionId', 'label', 'noteJsonId', 'storageNodeUrl', 'isFavorite', 'isUsed', 'createdAt', 'updatedAt'
+      'id', 'collectionId', 'collectionTitle', 'label', 'searchIndex', 'noteJsonId', 'storageNodeUrl', 'isFavorite', 'isUsed', 'createdAt', 'updatedAt'
     ],
     TEACHING: [
       'id', 'label', 'teachingDate', 'startTime', 'endTime', 'institution', 'faculty', 'program', 'academicYear', 'semester', 'classGroup', 'meetingNo', 'mode', 'plannedStudents', 'location', 'eventColor', 'skReference',

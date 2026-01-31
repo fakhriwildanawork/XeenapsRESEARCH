@@ -149,9 +149,11 @@ export interface NoteAttachment {
 export interface NoteItem {
   id: string;
   collectionId: string; // Opsional: relasi ke library
+  collectionTitle?: string; // New: Persistent collection title for backend search
   label: string;
   noteJsonId: string; // ID file sharding di Drive
   storageNodeUrl: string;
+  searchIndex?: string; // New: Concatenated text (desc + attachments) for backend search
   isFavorite: boolean;
   isUsed: boolean;
   createdAt: string;

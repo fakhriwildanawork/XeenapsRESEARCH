@@ -154,11 +154,6 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
     } catch { return "-"; }
   };
 
-  const getCollectionTitle = (id: string) => {
-    if (!id) return null;
-    return libraryItems.find(lib => lib.id === id)?.title || null;
-  };
-
   const anyUnfavSelected = useMemo(() => {
     return items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite);
   }, [items, selectedIds]);
@@ -195,7 +190,12 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                 value={localSearch} 
                 onChange={setLocalSearch} 
                 onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }}
-                phrases={["Search labels...", "Search collection titles...", "Search insights..."]}
+                phrases={[
+                  "Search labels...", 
+                  "Search in descriptions...", 
+                  "Search collection titles...", 
+                  "Search attachment labels..."
+                ]}
                 className="w-full"
               />
               <button 
@@ -237,7 +237,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {items.map(item => {
-              const collectionTitle = getCollectionTitle(item.collectionId);
+              const collectionTitle = item.collectionTitle;
               return (
                 <div 
                   key={item.id}
@@ -302,6 +302,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
         <NoteForm 
           note={selectedNote} 
           collectionId={collectionId}
+          libraryItems={libraryItems}
           onClose={() => setIsFormOpen(false)} 
           onComplete={() => { setIsFormOpen(false); loadData(); }} 
         />

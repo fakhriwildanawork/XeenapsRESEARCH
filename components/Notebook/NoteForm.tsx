@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { NoteItem, NoteContent, NoteAttachment } from '../../types';
+import { NoteItem, NoteContent, NoteAttachment, LibraryItem } from '../../types';
 import { saveNote, fetchNoteContent, uploadNoteAttachment } from '../../services/NoteService';
 import { deleteRemoteFile } from '../../services/ActivityService';
 import { 
@@ -29,6 +29,7 @@ interface NoteFormProps {
   collectionId?: string;
   onClose: () => void;
   onComplete: () => void;
+  libraryItems?: LibraryItem[];
 }
 
 const RichEditor: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
@@ -87,13 +88,14 @@ const RichEditor: React.FC<{ value: string; onChange: (v: string) => void }> = (
   );
 };
 
-const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComplete }) => {
+const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComplete, libraryItems = [] }) => {
   const [isLoading, setIsLoading] = useState(!!note);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [metadata, setMetadata] = useState<NoteItem>(note || {
     id: crypto.randomUUID(),
     collectionId: collectionId || '',
+    collectionTitle: '',
     label: '',
     noteJsonId: '',
     storageNodeUrl: '',
@@ -214,8 +216,15 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
     
     // Refresh content state after all promises resolved
     const finalContent = { ...content };
+
+    // Resolve Collection Title if exists
+    let finalMetadata = { ...metadata };
+    if (finalMetadata.collectionId && libraryItems.length > 0) {
+      const col = libraryItems.find(it => it.id === finalMetadata.collectionId);
+      if (col) finalMetadata.collectionTitle = col.title;
+    }
     
-    const success = await saveNote(metadata, finalContent);
+    const success = await saveNote(finalMetadata, finalContent);
     Swal.close();
     
     if (success) {

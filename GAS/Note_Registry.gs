@@ -37,21 +37,28 @@ function getNotesFromRegistry(page = 1, limit = 25, search = "", collectionId = 
     const headers = data[0];
     const rawItems = data.slice(1);
     
-    const labelIdx = headers.indexOf('label');
+    const idIdx = headers.indexOf('id');
     const colIdIdx = headers.indexOf('collectionId');
+    const colTitleIdx = headers.indexOf('collectionTitle');
+    const labelIdx = headers.indexOf('label');
+    const searchIdx = headers.indexOf('searchIndex');
     const createdIdx = headers.indexOf('createdAt');
     const favIdx = headers.indexOf('isFavorite');
 
-    // Pencarian diperluas untuk mencakup label (dan metadata lain yang tersimpan di baris tersebut)
     const searchTokens = search ? search.toLowerCase().split(/\s+/).filter(t => t.length > 1) : [];
 
     let filtered = rawItems.filter(row => {
       // 1. Filter by Collection ID if provided
       if (collectionId && row[colIdIdx] !== collectionId) return false;
 
-      // 2. Tokenized Smart Search on Label
+      // 2. BACKEND TOKENIZED SMART SEARCH (Label, Title Collection, Description & Lampiran Index)
       if (searchTokens.length > 0) {
-        const searchableStr = String(row[labelIdx] || "").toLowerCase();
+        const searchableStr = (
+          String(row[labelIdx] || "") + " " + 
+          String(row[colTitleIdx] || "") + " " + 
+          String(row[searchIdx] || "")
+        ).toLowerCase();
+        
         return searchTokens.every(token => searchableStr.includes(token));
       }
 
@@ -118,10 +125,18 @@ function saveNoteToRegistry(item, content) {
       }
     }
 
-    // --- LOGIC: SHARDING JSON PAYLOAD ---
-    // Jika content diberikan (bukan partial update metadata), simpan ke Drive
-    // NOTE: Cek apakah content valid (punya description atau attachments)
+    // --- LOGIC: SHARDING JSON PAYLOAD & SEARCH INDEXING ---
     if (content && (content.description !== undefined || (content.attachments && content.attachments.length > 0))) {
+      
+      // BUILD SEARCH INDEX (Backend search enhancement)
+      let indexText = (content.description || "").replace(/<[^>]*>/g, ' '); 
+      if (content.attachments && Array.isArray(content.attachments)) {
+        content.attachments.forEach(at => {
+          indexText += " " + (at.label || "");
+        });
+      }
+      item.searchIndex = indexText.substring(0, 5000); // Limit spreadsheet cell size
+
       let storageTarget;
       if (existingRow > -1) {
          storageTarget = { 
