@@ -172,9 +172,11 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     try {
       const translated = await translateReviewRowContent(row.answer, langCode);
       if (translated) {
+        // Clean any stray dashes at beginning of translation
+        const cleanTranslated = translated.replace(/^- /gm, "").replace(/^-/gm, "").trim();
         setContent(prev => ({
           ...prev,
-          matrix: prev.matrix.map(m => m.collectionId === row.collectionId ? { ...m, answer: translated } : m)
+          matrix: prev.matrix.map(m => m.collectionId === row.collectionId ? { ...m, answer: cleanTranslated } : m)
         }));
         showXeenapsToast('success', 'Row translated');
       }
@@ -194,7 +196,9 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     try {
       const translated = await translateReviewRowContent(content.finalSynthesis, langCode);
       if (translated) {
-        setContent(prev => ({ ...prev, finalSynthesis: translated }));
+        // ULTIMATE STRAY DASH CLEANER: Remove any leading dashes often added by translation engines
+        const cleanSynthesis = translated.replace(/^- /gm, "").replace(/^-/gm, "").trim();
+        setContent(prev => ({ ...prev, finalSynthesis: cleanSynthesis }));
         showXeenapsToast('success', 'Synthesis translated');
       } else {
         showXeenapsToast('error', 'Translation engine returned empty result');

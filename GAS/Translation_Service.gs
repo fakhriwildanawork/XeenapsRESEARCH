@@ -1,28 +1,27 @@
 
 /**
  * XEENAPS PKM - TRANSLATION SERVICE (LINGVA ENGINE) - INDUSTRIAL GRADE
- * Menggunakan Lingva API dengan sistem Marker Unik ___XTn___ untuk preservasi tag HTML.
- * Versi stabil dengan Marker Repair Regex dan Optimasi Chunking.
+ * Menggunakan Lingva API dengan sistem Marker Unik {{XTn}} untuk preservasi tag HTML.
+ * Versi stabil dengan Stray Dash Sanitizer.
  */
 
 function fetchTranslation(text, targetLang) {
   if (!text) return "";
 
   try {
-    // 1. EKSTRAKSI TAG & PENGGANTIAN DENGAN MARKER UNIK (Ultra-Resilient)
+    // 1. EKSTRAKSI TAG & PENGGANTIAN DENGAN MARKER UNIK (Resilient Placeholder)
     const preservedTags = [];
     const processedText = text.replace(/<[^>]+>/g, function(match) {
-      const placeholder = "___XT" + preservedTags.length + "___";
+      const placeholder = "{{XT" + preservedTags.length + "}}";
       preservedTags.push(match);
       return placeholder;
     });
 
-    // 2. CHUNKING LOGIC: Perkecil ke 1000 karakter agar 100% aman dari URI Too Long
+    // 2. CHUNKING LOGIC: 1000 karakter untuk stabilitas URI
     const MAX_CHUNK_LENGTH = 1000;
     const chunks = [];
     let currentChunk = "";
     
-    // Pemecahan cerdas berbasis spasi
     const segments = processedText.split(/(\s+)/);
     for (let segment of segments) {
       if ((currentChunk + segment).length > MAX_CHUNK_LENGTH) {
@@ -60,7 +59,8 @@ function fetchTranslation(text, targetLang) {
           if (response.getResponseCode() === 200) {
             const json = JSON.parse(response.getContentText());
             if (json.translation) {
-              chunkTranslated = json.translation;
+              // STRAY DASH SANITIZER: Hapus karakter dash yang sering ditambahkan engine di awal chunk
+              chunkTranslated = json.translation.replace(/^- /gm, "").replace(/^-/gm, "");
               isSuccess = true;
               break;
             }
@@ -78,13 +78,13 @@ function fetchTranslation(text, targetLang) {
     // 4. MARKER REPAIR & RESTORASI TAG
     let finalResult = translatedFull.trim();
     
-    // REGEX: Bersihkan spasi liar yang sering disisipkan engine translasi
-    // Contoh: "___ XT 0 ___" menjadi "___XT0___"
-    finalResult = finalResult.replace(/___\s*XT\s*(\d+)\s*___/gi, "___XT$1___");
+    // REGEX: Bersihkan spasi di dalam kurung kurawal hasil translasi
+    // Contoh: "{ { XT 0 } }" menjadi "{{XT0}}"
+    finalResult = finalResult.replace(/\{\s*\{\s*XT\s*(\d+)\s*\}\s*\}/gi, "{{XT$1}}");
 
     // Kembalikan tag HTML asli
     preservedTags.forEach((tag, index) => {
-      const marker = "___XT" + index + "___";
+      const marker = "{{XT" + index + "}}";
       finalResult = finalResult.split(marker).join(tag);
     });
 
@@ -92,7 +92,6 @@ function fetchTranslation(text, targetLang) {
 
   } catch (err) {
     console.error("Translation Engine Error: " + err.toString());
-    // Fallback: kembalikan teks asli jika gagal total agar tidak blank
     return text;
   }
 }

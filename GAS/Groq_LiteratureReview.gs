@@ -49,7 +49,7 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
         const file = DriveApp.getFileById(extractedId);
         fullText = JSON.parse(file.getBlob().getDataAsString()).fullText;
       } else {
-        const remoteRes = UrlFetchApp.fetch(nodeUrl + (nodeUrl.includes('?') ? '&' : '?') + "action=getFileContent&fileId=" + extractedId);
+        const remoteRes = UrlFetchApp.fetch(nodeUrl + (nodeUrl.indexOf('?') === -1 ? '?' : '&') + "action=getFileContent&fileId=" + extractedId);
         fullText = JSON.parse(JSON.parse(remoteRes.getContentText()).content).fullText;
       }
       // MANDATORY LIMIT: 35.000 characters
@@ -121,6 +121,7 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
 
 /**
  * Narrative Synthesis: Merajut seluruh baris matrix menjadi narasi akademik.
+ * Versi Hardened: Larangan total terhadap Markdown dash/bintang.
  */
 function callGroqNarrativeSynthesizer(matrix, centralQuestion) {
   const keys = getKeysFromSheet('Groq', 2);
@@ -138,9 +139,12 @@ function callGroqNarrativeSynthesizer(matrix, centralQuestion) {
   - Write a cohesive and high-level academic synthesis that directly addresses the central question.
   - STRUCTURE:
     1. Use <p> tags for analytical paragraphs.
-    2. Use <ol> and <li> tags (NUMBERED LISTS) to highlight core technical pillars, trends, or comparative findings across sources.
+    2. Use <ol> and <li> tags (NUMBERED LISTS) to highlight core technical pillars.
     3. Use <b> tags for emphasis on critical concepts.
-  - FORMAT: RETURN VALID HTML STRUCTURE. DO NOT use Markdown symbols (*, #). Use <p>, <br/>, <b>, <ol>, <li>.
+  - STRICT FORMATTING RULES: 
+    * RETURN VALID HTML STRUCTURE ONLY. 
+    * STRICTLY DO NOT use Markdown symbols like "-", "*", or "#".
+    * DO NOT use dashes (-) for bullet points; use <ol> and <li> instead.
   - COMPLEXITY: The synthesis must be very comprehensive, discussing agreements and contradictions between sources.
   
   LANGUAGE: ENGLISH.`;
@@ -154,7 +158,7 @@ function callGroqNarrativeSynthesizer(matrix, centralQuestion) {
       const payload = {
         model: model,
         messages: [
-          { role: "system", content: "You are a professional academic writer. Provide a comprehensive synthesized narrative using valid HTML structure (paragraphs and numbered lists)." },
+          { role: "system", content: "You are a professional academic writer. Provide a comprehensive synthesized narrative using valid HTML structure. Do not use markdown bullet points." },
           { role: "user", content: prompt }
         ],
         temperature: 0.5
