@@ -47,6 +47,17 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: getReviews (LITERATURE REVIEW MODULE)
+    if (action === 'getReviews') {
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "20");
+      const search = e.parameter.search || "";
+      const sortKey = e.parameter.sortKey || "createdAt";
+      const sortDir = e.parameter.sortDir || "desc";
+      const result = getReviewsFromRegistry(page, limit, search, sortKey, sortDir);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
     // NEW: getConsultations
     if (action === 'getConsultations') {
       const collectionId = e.parameter.collectionId;
@@ -252,11 +263,19 @@ function doPost(e) {
     if (action === 'setupActivitiesDatabase') return createJsonResponse(setupActivitiesDatabase());
     if (action === 'setupCVDatabase') return createJsonResponse(setupCVDatabase());
     if (action === 'setupConsultationDatabase') return createJsonResponse(setupConsultationDatabase());
+    if (action === 'setupReviewDatabase') return createJsonResponse(setupReviewDatabase());
     
     // NEW: saveNote
     if (action === 'saveNote') return createJsonResponse(saveNoteToRegistry(body.item, body.content));
     // NEW: deleteNote
     if (action === 'deleteNote') return createJsonResponse(deleteNoteFromRegistry(body.id));
+
+    // NEW: saveReview
+    if (action === 'saveReview') return createJsonResponse(saveReviewToRegistry(body.item, body.content));
+    // NEW: deleteReview
+    if (action === 'deleteReview') return createJsonResponse(deleteReviewFromRegistry(body.id));
+    // NEW: aiReviewProxy
+    if (action === 'aiReviewProxy') return createJsonResponse(handleAiReviewRequest(body.subAction, body.payload));
 
     // NEW ACTION: saveConsultation
     if (action === 'saveConsultation') {
@@ -489,7 +508,7 @@ function doPost(e) {
       let fileId;
       if (target.isLocal) {
         const folder = DriveApp.getFolderById(target.folderId);
-        const blob = Utilities.newBlob(Utilities.base64Decode(body.fileData), body.mimeType, body.fileName);
+        const blob = Utilities.newBlob(Utilities.newBlob(Utilities.base64Decode(body.fileData), body.mimeType, body.fileName));
         fileId = folder.createFile(blob).getId();
       } else {
         const res = UrlFetchApp.fetch(target.url, {

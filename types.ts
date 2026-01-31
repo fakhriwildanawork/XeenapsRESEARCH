@@ -165,6 +165,31 @@ export interface NoteContent {
   attachments: NoteAttachment[];
 }
 
+// --- LITERATURE REVIEW MODULE TYPES ---
+
+export interface ReviewMatrixRow {
+  collectionId: string;
+  title: string;
+  answer: string;
+  verbatim: string;
+}
+
+export interface ReviewContent {
+  matrix: ReviewMatrixRow[];
+  finalSynthesis: string;
+}
+
+export interface ReviewItem {
+  id: string;
+  label: string;
+  centralQuestion: string;
+  reviewJsonId: string;
+  storageNodeUrl: string;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // --- ACTIVITIES TYPES ---
 
 export enum ActivityType {

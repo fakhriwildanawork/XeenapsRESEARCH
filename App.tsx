@@ -17,6 +17,8 @@ import UserProfileView from './components/Profile/UserProfileView';
 import FindArticle from './components/Research/Literature/FindArticle';
 import ArchivedArticle from './components/Research/Literature/ArchivedArticle';
 import NotebookMain from './components/Notebook/NotebookMain';
+import AllReview from './components/Research/LiteratureReview/AllReview';
+import ReviewDetail from './components/Research/LiteratureReview/ReviewDetail';
 // Placeholder for the upcoming modules
 const ActivityMain = React.lazy(() => import('./components/Activities/ActivityMain'));
 const TeachingMain = React.lazy(() => import('./components/Teaching/TeachingMain'));
@@ -101,6 +103,8 @@ const App: React.FC = () => {
 
                 {/* RESEARCH SUB-ROUTES */}
                 <Route path="/research/*" element={<GapFinderModule items={items} />} />
+                <Route path="/research/literature-review" element={<AllReview />} />
+                <Route path="/research/literature-review/:id" element={<ReviewDetail libraryItems={items} />} />
                 
                 <Route path="/presentations" element={<AllPresentation items={items} />} />
                 <Route path="/questions" element={<AllQuestion items={items} />} />
