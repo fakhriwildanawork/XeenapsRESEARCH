@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { NoteItem, NoteContent, NoteAttachment } from '../../types';
 import { fetchNoteContent, saveNote, uploadNoteAttachment } from '../../services/NoteService';
 import { deleteRemoteFile } from '../../services/ActivityService';
-// Added missing Eye import from lucide-react to fix compilation error
 import { 
   X, 
   Clock, 
@@ -20,13 +20,14 @@ import {
   Paperclip,
   Image as ImageIcon,
   Loader2,
-  Eye
+  Eye,
+  Link as LinkIcon
 } from 'lucide-react';
 
 interface NoteDetailViewProps {
   note: NoteItem;
   onClose: () => void;
-  onEdit?: () => void; // Keep for interface compatibility but focusing on inline edit
+  onEdit?: () => void; 
 }
 
 /**
@@ -142,9 +143,10 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose }) => {
 
   const handleAddLink = () => {
     if (!content) return;
+    // Prepend (descending order)
     const updatedContent = { 
       ...content, 
-      attachments: [...content.attachments, { type: 'LINK' as const, label: 'NEW LINK', url: '' }] 
+      attachments: [{ type: 'LINK' as const, label: 'NEW LINK', url: '' }, ...content.attachments] 
     };
     setContent(updatedContent);
     performSync(localNote, updatedContent);
@@ -155,14 +157,22 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose }) => {
     if (!file || !content) return;
 
     const tempId = crypto.randomUUID();
+    let previewUrl: string | undefined;
+
+    if (file.type.startsWith('image/')) {
+      previewUrl = URL.createObjectURL(file);
+    }
+
     const optimisticAt: NoteAttachment = {
       type: 'FILE',
       label: file.name,
+      url: previewUrl, // Local blob for instant preview
       fileId: `pending_${tempId}`,
       mimeType: file.type
     };
 
-    const updatedWithOptimistic = { ...content, attachments: [...content.attachments, optimisticAt] };
+    // Prepend (descending order)
+    const updatedWithOptimistic = { ...content, attachments: [optimisticAt, ...content.attachments] };
     setContent(updatedWithOptimistic);
 
     const result = await uploadNoteAttachment(file);
@@ -171,20 +181,37 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose }) => {
         ? `https://lh3.googleusercontent.com/d/${result.fileId}`
         : `https://drive.google.com/file/d/${result.fileId}/view`;
 
-      const finalizedContent = {
+      setContent(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          attachments: prev.attachments.map(at => 
+            at.fileId === `pending_${tempId}` 
+              ? { ...at, fileId: result.fileId, nodeUrl: result.nodeUrl, url: finalUrl } 
+              : at
+          )
+        };
+      });
+      // Content updated from state above
+      const finalContent = {
         ...content,
-        attachments: [...content.attachments, {
+        attachments: [{
           type: 'FILE' as const,
           label: file.name,
           fileId: result.fileId,
           nodeUrl: result.nodeUrl,
           mimeType: result.mimeType,
           url: finalUrl
-        }]
+        }, ...content.attachments]
       };
-      setContent(finalizedContent);
-      performSync(localNote, finalizedContent);
+      performSync(localNote, finalContent);
+    } else {
+      setContent(prev => {
+        if (!prev) return null;
+        return { ...prev, attachments: prev.attachments.filter(at => at.fileId !== `pending_${tempId}`) };
+      });
     }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleRemoveAttachment = async (idx: number) => {
@@ -311,8 +338,13 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose }) => {
                     <div className="flex items-center justify-between px-4">
                        <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><Paperclip size={14} /> Documentation Matrix</h3>
                        <div className="flex gap-2">
-                          <button onClick={handleAddLink} className="p-2 bg-white border border-gray-100 rounded-xl text-[#004A74] hover:bg-gray-50 transition-all shadow-sm"><Globe size={16} /></button>
-                          <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-[#004A74] text-white rounded-xl hover:bg-[#003859] transition-all shadow-md"><Plus size={16} /></button>
+                          <button onClick={handleAddLink} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-xl text-[9px] font-black uppercase tracking-widest text-[#004A74] hover:bg-gray-50 shadow-sm transition-all">
+                             <LinkIcon size={12} /> Add Link
+                          </button>
+                          <label className="flex items-center gap-1.5 px-4 py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest cursor-pointer hover:bg-[#003859] shadow-md transition-all">
+                             <Plus size={12} /> Add File
+                             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} />
+                          </label>
                        </div>
                     </div>
                     
@@ -320,7 +352,18 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose }) => {
                        {content?.attachments.map((at, i) => {
                           const isPending = at.fileId?.startsWith('pending_');
                           const isImage = at.mimeType?.startsWith('image/') || at.url?.includes('lh3.googleusercontent');
-                          const previewUrl = at.url || `https://lh3.googleusercontent.com/d/${at.fileId}`;
+                          
+                          // Smart URL Mapping for view
+                          const viewUrl = at.type === 'LINK' 
+                             ? at.url 
+                             : (isImage 
+                                ? (at.url?.startsWith('blob:') ? at.url : `https://lh3.googleusercontent.com/d/${at.fileId}`)
+                                : `https://drive.google.com/file/d/${at.fileId}/view`
+                               );
+
+                          const previewThumbnail = isImage 
+                             ? (at.url?.startsWith('blob:') ? at.url : `https://lh3.googleusercontent.com/d/${at.fileId}`)
+                             : null;
 
                           return (
                              <div 
@@ -328,18 +371,18 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose }) => {
                                className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col ${isPending ? 'opacity-50 grayscale' : ''}`}
                              >
                                 <div className="aspect-video bg-gray-50 rounded-[1.5rem] mb-4 overflow-hidden relative border border-gray-100">
-                                   {isImage ? (
-                                      <img src={previewUrl} className="w-full h-full object-cover" />
+                                   {previewThumbnail ? (
+                                      <img src={previewThumbnail} className="w-full h-full object-cover" />
                                    ) : at.type === 'LINK' ? (
                                       <div className="w-full h-full flex items-center justify-center text-gray-200"><Globe size={40} /></div>
                                    ) : (
                                       <div className="w-full h-full flex items-center justify-center text-gray-200"><FileIcon size={40} /></div>
                                    )}
                                    
-                                   <div className="absolute inset-0 bg-[#004A74]/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                                      {at.url && !isPending && (
+                                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                      {viewUrl && !isPending && (
                                         <button 
-                                          onClick={() => window.open(at.url, '_blank')}
+                                          onClick={() => window.open(viewUrl, '_blank')}
                                           className="p-3 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 transition-all shadow-lg"
                                         >
                                            <Eye size={20} />
@@ -347,7 +390,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose }) => {
                                       )}
                                       <button 
                                         onClick={() => handleRemoveAttachment(i)}
-                                        className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all active:scale-90"
+                                        className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all active:scale-90 shadow-lg"
                                       >
                                          <Trash2 size={20} />
                                       </button>
