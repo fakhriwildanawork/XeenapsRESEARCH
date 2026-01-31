@@ -242,7 +242,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                 <div 
                   key={item.id}
                   onClick={() => setViewNote(item)}
-                  className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full ${selectedIds.includes(item.id) ? 'ring-2 ring-[#004A74] border-[#004A74]' : ''}`}
+                  className={`group relative bg-white border border-gray-200 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full ${selectedIds.includes(item.id) ? 'ring-2 ring-[#004A74] border-[#004A74]' : ''}`}
                 >
                   {/* Checkbox Top Left */}
                   <div className="absolute top-6 left-6 z-10" onClick={e => toggleSelect(e, item.id)}>

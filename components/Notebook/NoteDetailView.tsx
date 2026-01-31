@@ -57,8 +57,8 @@ const InlineRichEditor: React.FC<{ value: string; onChange: (v: string) => void 
   };
 
   return (
-    <div className="flex flex-col rounded-[2.5rem] border border-gray-100 overflow-hidden bg-white shadow-sm transition-all focus-within:ring-4 focus-within:ring-[#004A74]/5">
-       <div className="flex items-center gap-1 p-3 bg-gray-50/50 border-b border-gray-100">
+    <div className="flex flex-col rounded-[2.5rem] border border-gray-200 overflow-hidden bg-white shadow-sm transition-all focus-within:ring-4 focus-within:ring-[#004A74]/5">
+       <div className="flex items-center gap-1 p-3 bg-gray-50/50 border-b border-gray-200">
           <button 
             type="button" 
             onClick={() => exec('bold')} 
@@ -292,9 +292,10 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
                   )}
                </div>
                
-               <div className="group relative">
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Note Label / Summary Title</label>
                   <textarea 
-                    className="w-full bg-transparent border-none text-2xl md:text-4xl font-black text-[#004A74] uppercase tracking-tighter leading-tight focus:ring-0 p-0 placeholder:text-gray-100 outline-none resize-none overflow-hidden"
+                    className="w-full px-8 py-6 bg-gray-50 border border-gray-200 rounded-[2rem] text-2xl md:text-3xl font-black text-[#004A74] uppercase tracking-tighter leading-tight focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all outline-none resize-none overflow-hidden"
                     value={localNote.label}
                     onChange={(e) => handleLabelChange(e.target.value)}
                     onInput={(e) => {
@@ -306,7 +307,6 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
                     rows={1}
                     ref={(el) => { if(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
                   />
-                  <div className="absolute -bottom-2 left-0 w-12 h-1.5 bg-[#FED400] rounded-full opacity-30 group-focus-within:opacity-100 transition-all" />
                </div>
 
                <div className="flex items-center gap-6 pt-4 border-t border-gray-50 text-gray-400">
@@ -379,7 +379,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
                           return (
                              <div 
                                key={i}
-                               className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col ${isPending ? 'opacity-50 grayscale' : ''}`}
+                               className={`group relative bg-white border border-gray-200 rounded-[2.5rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col ${isPending ? 'opacity-50 grayscale' : ''}`}
                              >
                                 <div className="aspect-video bg-gray-50 rounded-[1.5rem] mb-4 overflow-hidden relative border border-gray-100">
                                    {previewThumbnail ? (
