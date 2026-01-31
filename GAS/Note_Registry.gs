@@ -42,10 +42,20 @@ function getNotesFromRegistry(page = 1, limit = 25, search = "", collectionId = 
     const createdIdx = headers.indexOf('createdAt');
     const favIdx = headers.indexOf('isFavorite');
 
+    // Pencarian diperluas untuk mencakup label (dan metadata lain yang tersimpan di baris tersebut)
+    const searchTokens = search ? search.toLowerCase().split(/\s+/).filter(t => t.length > 1) : [];
+
     let filtered = rawItems.filter(row => {
-      const matchesCol = !collectionId || row[colIdIdx] === collectionId;
-      const matchesSearch = !search || String(row[labelIdx]).toLowerCase().includes(search.toLowerCase());
-      return matchesCol && matchesSearch;
+      // 1. Filter by Collection ID if provided
+      if (collectionId && row[colIdIdx] !== collectionId) return false;
+
+      // 2. Tokenized Smart Search on Label
+      if (searchTokens.length > 0) {
+        const searchableStr = String(row[labelIdx] || "").toLowerCase();
+        return searchTokens.every(token => searchableStr.includes(token));
+      }
+
+      return true;
     });
 
     // SERVER-SIDE SORTING
@@ -110,7 +120,8 @@ function saveNoteToRegistry(item, content) {
 
     // --- LOGIC: SHARDING JSON PAYLOAD ---
     // Jika content diberikan (bukan partial update metadata), simpan ke Drive
-    if (content && (content.description || (content.attachments && content.attachments.length > 0))) {
+    // NOTE: Cek apakah content valid (punya description atau attachments)
+    if (content && (content.description !== undefined || (content.attachments && content.attachments.length > 0))) {
       let storageTarget;
       if (existingRow > -1) {
          storageTarget = { 

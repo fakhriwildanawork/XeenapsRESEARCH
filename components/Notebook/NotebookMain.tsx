@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { NoteItem, NoteContent } from '../../types';
+import { NoteItem, NoteContent, LibraryItem } from '../../types';
 import { fetchNotesPaginated, deleteNote, saveNote } from '../../services/NoteService';
 import { 
   Plus, 
@@ -29,11 +29,12 @@ import NoteForm from './NoteForm';
 import NoteDetailView from './NoteDetailView';
 
 interface NotebookMainProps {
+  libraryItems?: LibraryItem[];
   collectionId?: string; // Jika dipanggil dari LibraryDetail
   onBackToLibrary?: () => void;
 }
 
-const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackToLibrary }) => {
+const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collectionId = "", onBackToLibrary }) => {
   const workflow = useAsyncWorkflow(30000);
   const { performUpdate, performDelete } = useOptimisticUpdate<NoteItem>();
   
@@ -84,13 +85,26 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackTo
       [note.id],
       (i) => ({ ...i, isFavorite: !i.isFavorite }),
       async (updated) => {
-        // Karena saveNote butuh content, kita harus handle sedikit berbeda di backend 
-        // atau pastikan backend saveNote bisa handle partial update untuk favorite saja.
-        // Untuk sekarang kita asumsikan backend saveNote handle metadata update jika content null.
         return await saveNote(updated, { description: "", attachments: [] });
       }
     );
     showXeenapsToast('success', !note.isFavorite ? 'Marked as Favorite' : 'Removed from Favorites');
+  };
+
+  const handleBatchFavorite = async () => {
+    if (selectedIds.length === 0) return;
+    const selectedItems = items.filter(i => selectedIds.includes(i.id));
+    const anyUnfav = selectedItems.some(i => !i.isFavorite);
+    const newValue = anyUnfav;
+
+    await performUpdate(
+      items,
+      setItems,
+      selectedIds,
+      (i) => ({ ...i, isFavorite: newValue }),
+      async (updated) => await saveNote(updated, { description: "", attachments: [] })
+    );
+    showXeenapsToast('success', `Bulk ${newValue ? 'Favorite' : 'Unfavorite'} complete`);
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -122,6 +136,14 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackTo
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
+  const toggleSelectAll = () => {
+    if (selectedIds.length === items.length && items.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(items.map(i => i.id));
+    }
+  };
+
   const formatShortDate = (dateStr: string) => {
     if (!dateStr) return "-";
     try {
@@ -131,10 +153,19 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackTo
     } catch { return "-"; }
   };
 
+  const getCollectionTitle = (id: string) => {
+    if (!id) return null;
+    return libraryItems.find(lib => lib.id === id)?.title || null;
+  };
+
+  const anyUnfavSelected = useMemo(() => {
+    return items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite);
+  }, [items, selectedIds]);
+
   return (
-    <div className="flex flex-col h-full bg-white overflow-hidden relative animate-in fade-in duration-500">
+    <div className="flex flex-col bg-white animate-in fade-in duration-500 pb-32">
       
-      {/* HEADER */}
+      {/* HEADER - Flow naturally, only app header is sticky */}
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex flex-col gap-6 shrink-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -147,12 +178,20 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackTo
              </div>
           </div>
           
-          <StandardPrimaryButton 
-            onClick={() => { setSelectedNote(undefined); setIsFormOpen(true); }} 
-            icon={<Plus size={20} />}
-          >
-            Create Note
-          </StandardPrimaryButton>
+          <div className="flex items-center gap-3">
+             <button 
+               onClick={toggleSelectAll}
+               className="px-4 py-2 bg-gray-50 text-[#004A74] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all border border-gray-200"
+             >
+               {selectedIds.length === items.length && items.length > 0 ? 'Deselect All' : 'Select All'}
+             </button>
+             <StandardPrimaryButton 
+               onClick={() => { setSelectedNote(undefined); setIsFormOpen(true); }} 
+               icon={<Plus size={20} />}
+             >
+               Create Note
+             </StandardPrimaryButton>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -160,7 +199,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackTo
             value={localSearch} 
             onChange={setLocalSearch} 
             onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }}
-            phrases={["Search note labels...", "Find insights...", "Filter by keywords..."]}
+            phrases={["Search labels...", "Search collection titles...", "Search insights..."]}
             className="w-full lg:max-w-xl"
            />
            <div className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/60 px-4">
@@ -170,17 +209,20 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackTo
       </div>
 
       {/* BATCH ACTION BAR */}
-      <div className="px-6 md:px-10">
+      <div className="px-6 md:px-10 mt-4">
         <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>
           <StandardQuickActionButton variant="danger" onClick={handleMassDelete} title="Mass Purge">
             <Trash2 size={18} />
+          </StandardQuickActionButton>
+          <StandardQuickActionButton variant="warning" onClick={handleBatchFavorite} title="Mass Favorite">
+            {anyUnfavSelected ? <Star size={18} /> : <Star size={18} className="fill-current" />}
           </StandardQuickActionButton>
           <button onClick={() => setSelectedIds([])} className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/50 hover:text-[#004A74] px-2 transition-all">Clear Selection</button>
         </StandardQuickAccessBar>
       </div>
 
-      {/* GALLERY GRID */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 pb-32">
+      {/* GALLERY GRID - Scrolling naturally with page */}
+      <div className="p-6 md:p-10">
         {isLoading ? (
           <CardGridSkeleton count={8} />
         ) : items.length === 0 ? (
@@ -190,62 +232,67 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackTo
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {items.map(item => (
-              <div 
-                key={item.id}
-                onClick={() => setViewNote(item)}
-                className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full ${selectedIds.includes(item.id) ? 'ring-2 ring-[#004A74] border-[#004A74]' : ''}`}
-              >
-                {/* Checkbox Top Left */}
-                <div className="absolute top-6 left-6 z-10" onClick={e => toggleSelect(e, item.id)}>
-                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200 hover:border-[#004A74]'}`}>
-                      {selectedIds.includes(item.id) && <Check size={14} strokeWidth={4} />}
-                   </div>
-                </div>
+            {items.map(item => {
+              const collectionTitle = getCollectionTitle(item.collectionId);
+              return (
+                <div 
+                  key={item.id}
+                  onClick={() => setViewNote(item)}
+                  className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full ${selectedIds.includes(item.id) ? 'ring-2 ring-[#004A74] border-[#004A74]' : ''}`}
+                >
+                  {/* Checkbox Top Left */}
+                  <div className="absolute top-6 left-6 z-10" onClick={e => toggleSelect(e, item.id)}>
+                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200 hover:border-[#004A74]'}`}>
+                        {selectedIds.includes(item.id) && <Check size={14} strokeWidth={4} />}
+                     </div>
+                  </div>
 
-                {/* Favorite Top Right */}
-                <div className="absolute top-6 right-6 z-10" onClick={e => handleToggleFavorite(e, item)}>
-                   <Star size={20} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
-                </div>
+                  {/* Favorite Top Right */}
+                  <div className="absolute top-6 right-6 z-10" onClick={e => handleToggleFavorite(e, item)}>
+                     <Star size={20} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
+                  </div>
 
-                <div className="mt-8 mb-4">
-                   <div className="flex items-center gap-1.5 mb-2">
-                      <Sparkles size={12} className="text-[#FED400]" />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[#004A74]/40">Knowledge Anchor</span>
-                   </div>
-                   <h3 className="text-base font-black text-[#004A74] leading-tight uppercase line-clamp-2">{item.label}</h3>
-                </div>
+                  <div className="mt-8 mb-4">
+                     <div className="flex items-center gap-1.5 mb-2">
+                        <Sparkles size={12} className="text-[#FED400]" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-[#004A74]/40">Knowledge Anchor</span>
+                     </div>
+                     <h3 className="text-base font-black text-[#004A74] leading-tight uppercase line-clamp-2">{item.label}</h3>
+                  </div>
 
-                {item.collectionId && (
-                   <div className="flex items-center gap-2 mt-auto pt-4 border-t border-gray-50 text-gray-400">
-                      <Library size={12} />
-                      <span className="text-[9px] font-bold uppercase tracking-tight truncate">Linked to Collection</span>
-                   </div>
-                )}
+                  {collectionTitle && (
+                     <div className="flex items-center gap-2 mt-auto pt-4 border-t border-gray-50 text-gray-400">
+                        <Library size={12} className="shrink-0" />
+                        <span className="text-[9px] font-bold uppercase tracking-tight truncate">{collectionTitle}</span>
+                     </div>
+                  )}
 
-                <div className="flex items-center justify-between mt-4">
-                   <div className="flex items-center gap-1.5 text-gray-300">
-                      <Clock size={12} />
-                      <span className="text-[8px] font-black uppercase tracking-tighter">{formatShortDate(item.createdAt)}</span>
-                   </div>
-                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => { e.stopPropagation(); setSelectedNote(item); setIsFormOpen(true); }} className="p-2 text-gray-400 hover:text-[#004A74] hover:bg-gray-50 rounded-lg transition-all"><Edit2 size={14} /></button>
-                      <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={14} /></button>
-                   </div>
+                  <div className="flex items-center justify-between mt-4">
+                     <div className="flex items-center gap-1.5 text-gray-300">
+                        <Clock size={12} />
+                        <span className="text-[8px] font-black uppercase tracking-tighter">{formatShortDate(item.createdAt)}</span>
+                     </div>
+                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedNote(item); setIsFormOpen(true); }} className="p-2 text-gray-400 hover:text-[#004A74] hover:bg-gray-50 rounded-lg transition-all"><Edit2 size={14} /></button>
+                        <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={14} /></button>
+                     </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      <StandardTableFooter 
-        totalItems={totalCount} 
-        currentPage={currentPage} 
-        itemsPerPage={itemsPerPage} 
-        totalPages={Math.ceil(totalCount / itemsPerPage)} 
-        onPageChange={setCurrentPage} 
-      />
+      <div className="px-6 md:px-10">
+        <StandardTableFooter 
+          totalItems={totalCount} 
+          currentPage={currentPage} 
+          itemsPerPage={itemsPerPage} 
+          totalPages={Math.ceil(totalCount / itemsPerPage)} 
+          onPageChange={setCurrentPage} 
+        />
+      </div>
 
       {isFormOpen && (
         <NoteForm 
@@ -263,13 +310,6 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ collectionId = "", onBackTo
           onEdit={() => { setSelectedNote(viewNote); setViewNote(null); setIsFormOpen(true); }}
         />
       )}
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
-      `}</style>
     </div>
   );
 };
