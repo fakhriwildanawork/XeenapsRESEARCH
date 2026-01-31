@@ -126,8 +126,9 @@ const AllReview: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-500 overflow-hidden">
-      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8 shrink-0">
+    <div className="flex flex-col h-full overflow-y-auto custom-scrollbar animate-in fade-in duration-500 pr-1">
+      {/* MODULE HEADER - Now scrolls with the page */}
+      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8 shrink-0 px-1">
         <div className="flex items-center gap-4">
            <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
               <BookOpen size={24} />
@@ -152,7 +153,8 @@ const AllReview: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar pb-20">
+      {/* CONTENT AREA - No longer has its own scroll to allow full page scroll */}
+      <div className="flex-1 pb-10">
         {isLoading ? (
           <CardGridSkeleton count={8} />
         ) : items.length === 0 ? (
@@ -161,7 +163,7 @@ const AllReview: React.FC = () => {
              <p className="text-sm font-black uppercase tracking-[0.4em]">No reviews created</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-1 pb-12">
             {items.map(item => (
               <div 
                 key={item.id}
@@ -212,13 +214,16 @@ const AllReview: React.FC = () => {
         )}
       </div>
 
-      <StandardTableFooter 
-        totalItems={totalCount} 
-        currentPage={currentPage} 
-        itemsPerPage={itemsPerPage} 
-        totalPages={Math.ceil(totalCount / itemsPerPage)} 
-        onPageChange={setCurrentPage} 
-      />
+      {/* FOOTER - Now part of the scroll flow */}
+      <div className="px-1 pb-20">
+        <StandardTableFooter 
+          totalItems={totalCount} 
+          currentPage={currentPage} 
+          itemsPerPage={itemsPerPage} 
+          totalPages={Math.ceil(totalCount / itemsPerPage)} 
+          onPageChange={setCurrentPage} 
+        />
+      </div>
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
