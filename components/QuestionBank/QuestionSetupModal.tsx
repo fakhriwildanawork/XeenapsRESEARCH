@@ -182,10 +182,10 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, items = [
 
           <div className="flex bg-gray-100 p-1 rounded-xl">
              <button onClick={() => setMode('AI')} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all flex items-center gap-2 ${mode === 'AI' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400'}`}>
-                <SparklesIcon size={14} /> AI Mode
+                <SparklesIcon className="w-3.5 h-3.5" /> AI Mode
              </button>
              <button onClick={() => setMode('MANUAL')} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all flex items-center gap-2 ${mode === 'MANUAL' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400'}`}>
-                <PencilSquareIcon size={14} /> Manual
+                <PencilSquareIcon className="w-3.5 h-3.5" /> Manual
              </button>
           </div>
 
@@ -250,7 +250,7 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, items = [
                       return (
                         <div key={opt.key} className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${isCorrect ? 'bg-green-50 border-green-500/30' : 'bg-gray-50 border-gray-100'}`}>
                            <button type="button" onClick={() => setManualData({...manualData, correctAnswer: opt.key})} className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] shadow-sm transition-all ${isCorrect ? 'bg-green-500 text-white' : 'bg-white text-gray-400'}`}>
-                             {isCorrect ? <CheckIconSolid size={16} strokeWidth={3} /> : opt.key}
+                             {isCorrect ? <CheckIconSolid className="w-4 h-4" strokeWidth={3} /> : opt.key}
                            </button>
                            <input className="flex-1 bg-transparent border-none p-0 text-xs font-bold text-[#004A74] outline-none" placeholder={`Option ${opt.key} text...`} value={opt.text} onChange={(e) => {
                               const newOpts = [...manualData.options];
@@ -294,7 +294,7 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, items = [
 
           <div className="pt-8 flex justify-end">
             <button type="submit" disabled={isGenerating} className="w-full md:w-auto px-12 py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-4">
-              {mode === 'AI' ? <SparklesIcon size={16} /> : <CheckIconSolid size={16} />}
+              {mode === 'AI' ? <SparklesIcon className="w-4 h-4" /> : <CheckIconSolid className="w-4 h-4" />}
               {mode === 'AI' ? 'Generate Assessment' : 'Secure Manual Record'}
             </button>
           </div>
