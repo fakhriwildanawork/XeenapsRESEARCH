@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NoteItem, NoteContent, NoteAttachment } from '../../types';
 import { saveNote, fetchNoteContent, uploadNoteAttachment } from '../../services/NoteService';
+import { deleteRemoteFile } from '../../services/ActivityService';
 import { 
   X, 
   Save, 
@@ -15,7 +16,8 @@ import {
   Italic,
   Globe,
   FileIcon,
-  ChevronRight
+  ChevronRight,
+  Image as ImageIcon
 } from 'lucide-react';
 import { FormField } from '../Common/FormComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
@@ -31,6 +33,8 @@ interface NoteFormProps {
 
 const RichEditor: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
   
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== value) {
@@ -38,21 +42,44 @@ const RichEditor: React.FC<{ value: string; onChange: (v: string) => void }> = (
     }
   }, [value]);
 
+  const updateActiveStates = () => {
+    setIsBold(document.queryCommandState('bold'));
+    setIsItalic(document.queryCommandState('italic'));
+  };
+
   const exec = (cmd: string) => {
     document.execCommand(cmd, false);
+    updateActiveStates();
     if (editorRef.current) onChange(editorRef.current.innerHTML);
   };
 
   return (
     <div className="flex flex-col rounded-[2rem] border border-gray-200 overflow-hidden bg-white shadow-sm focus-within:ring-4 focus-within:ring-[#004A74]/5 transition-all">
        <div className="flex items-center gap-1 p-2 bg-gray-50 border-b border-gray-100">
-          <button type="button" onClick={() => exec('bold')} className="p-2 hover:bg-white rounded-xl transition-all text-[#004A74]"><Bold size={16} /></button>
-          <button type="button" onClick={() => exec('italic')} className="p-2 hover:bg-white rounded-xl transition-all text-[#004A74]"><Italic size={16} /></button>
+          <button 
+            type="button" 
+            onClick={() => exec('bold')} 
+            className={`p-2 rounded-xl transition-all ${isBold ? 'bg-[#004A74] text-white shadow-inner' : 'hover:bg-white text-[#004A74]'}`}
+          >
+            <Bold size={16} />
+          </button>
+          <button 
+            type="button" 
+            onClick={() => exec('italic')} 
+            className={`p-2 rounded-xl transition-all ${isItalic ? 'bg-[#004A74] text-white shadow-inner' : 'hover:bg-white text-[#004A74]'}`}
+          >
+            <Italic size={16} />
+          </button>
        </div>
        <div 
          ref={editorRef}
          contentEditable 
-         onInput={(e) => onChange(e.currentTarget.innerHTML)}
+         onInput={(e) => {
+           onChange(e.currentTarget.innerHTML);
+           updateActiveStates();
+         }}
+         onKeyUp={updateActiveStates}
+         onMouseUp={updateActiveStates}
          className="p-8 text-sm min-h-[300px] outline-none leading-relaxed text-[#004A74] font-medium"
          {...({ "data-placeholder": "Start composing your knowledge anchor..." } as any)}
        />
@@ -63,8 +90,7 @@ const RichEditor: React.FC<{ value: string; onChange: (v: string) => void }> = (
 const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComplete }) => {
   const [isLoading, setIsLoading] = useState(!!note);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-
+  
   const [metadata, setMetadata] = useState<NoteItem>(note || {
     id: crypto.randomUUID(),
     collectionId: collectionId || '',
@@ -82,6 +108,10 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
     attachments: []
   });
 
+  // Track background uploads to wait on save or cleanup on cancel
+  const uploadPromises = useRef<Map<string, Promise<any>>>(new Map());
+  const newlyUploadedFiles = useRef<{fileId: string, nodeUrl: string}[]>([]);
+
   useEffect(() => {
     if (note?.noteJsonId) {
       const load = async () => {
@@ -94,29 +124,67 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
   }, [note]);
 
   const handleAddLink = () => {
-    setContent({ ...content, attachments: [...content.attachments, { type: 'LINK', label: '', url: '' }] });
+    setContent(prev => ({ ...prev, attachments: [...prev.attachments, { type: 'LINK', label: '', url: '' }] }));
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    const result = await uploadNoteAttachment(file);
-    if (result) {
-      setContent({ 
-        ...content, 
-        attachments: [...content.attachments, { 
-          type: 'FILE', 
-          label: file.name, 
-          fileId: result.fileId, 
-          nodeUrl: result.nodeUrl, 
-          mimeType: result.mimeType 
-        }] 
-      });
-      showXeenapsToast('success', 'File synchronized to storage node');
+    const tempId = crypto.randomUUID();
+    let previewUrl: string | undefined;
+
+    if (file.type.startsWith('image/')) {
+      previewUrl = URL.createObjectURL(file);
     }
-    setIsUploading(false);
+
+    // INSTANT UI FEEDBACK (OPTIMISTIC)
+    const placeholder: NoteAttachment = {
+      type: 'FILE',
+      label: file.name,
+      url: previewUrl, // Use local URL for instant preview
+      fileId: `pending_${tempId}`,
+      mimeType: file.type
+    };
+
+    setContent(prev => ({ ...prev, attachments: [...prev.attachments, placeholder] }));
+
+    // START PARALLEL SYNC
+    const uploadPromise = uploadNoteAttachment(file).then(result => {
+      if (result) {
+        newlyUploadedFiles.current.push({ fileId: result.fileId, nodeUrl: result.nodeUrl });
+        
+        // Update the item once finished
+        setContent(prev => ({
+          ...prev,
+          attachments: prev.attachments.map(at => 
+            at.fileId === `pending_${tempId}` 
+              ? { ...at, fileId: result.fileId, nodeUrl: result.nodeUrl, url: undefined } 
+              : at
+          )
+        }));
+      } else {
+        showXeenapsToast('error', `Failed to upload ${file.name}`);
+        setContent(prev => ({
+          ...prev,
+          attachments: prev.attachments.filter(at => at.fileId !== `pending_${tempId}`)
+        }));
+      }
+      uploadPromises.current.delete(tempId);
+    });
+
+    uploadPromises.current.set(tempId, uploadPromise);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleCancel = async () => {
+    if (newlyUploadedFiles.current.length > 0) {
+      // Background Cleanup
+      newlyUploadedFiles.current.forEach(f => {
+        deleteRemoteFile(f.fileId, f.nodeUrl);
+      });
+    }
+    onClose();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,9 +192,25 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
     if (!metadata.label.trim()) return;
 
     setIsSubmitting(true);
+    
+    // WAIT FOR ANY IN-FLIGHT UPLOADS
+    if (uploadPromises.current.size > 0) {
+      Swal.fire({ 
+        title: 'Finalizing Attachments...', 
+        text: 'Waiting for background synchronization to complete',
+        allowOutsideClick: false, 
+        didOpen: () => Swal.showLoading(), 
+        ...XEENAPS_SWAL_CONFIG 
+      });
+      await Promise.all(uploadPromises.current.values());
+    }
+
     Swal.fire({ title: 'Architecting Cloud Note...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
     
-    const success = await saveNote(metadata, content);
+    // Refresh content state after all promises resolved
+    const finalContent = { ...content };
+    
+    const success = await saveNote(metadata, finalContent);
     Swal.close();
     
     if (success) {
@@ -137,6 +221,8 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
     }
     setIsSubmitting(false);
   };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (isLoading) return null;
 
@@ -151,7 +237,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
               </div>
               <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">{note ? 'Refine Note' : 'Create Knowledge Anchor'}</h2>
            </div>
-           <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={28} /></button>
+           <button onClick={handleCancel} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={28} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar p-8 md:p-12 space-y-12">
@@ -176,51 +262,71 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
                  <div className="flex gap-2">
                     <button type="button" onClick={handleAddLink} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-xl text-[9px] font-black uppercase tracking-widest text-[#004A74] hover:bg-gray-50 shadow-sm transition-all"><LinkIcon size={12} /> Add Link</button>
                     <label className="flex items-center gap-1.5 px-4 py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest cursor-pointer hover:bg-[#003859] shadow-md transition-all">
-                       {isUploading ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} {isUploading ? 'Uploading...' : 'Attach File'}
-                       <input type="file" className="hidden" onChange={handleFileSelect} disabled={isUploading} />
+                       <Plus size={12} /> Attach File
+                       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} />
                     </label>
                  </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 {content.attachments.map((at, idx) => (
-                    <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4 group animate-in slide-in-from-bottom-2">
-                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#004A74]/30 shadow-sm">
-                          {at.type === 'LINK' ? <Globe size={18} /> : <FileIcon size={18} />}
-                       </div>
-                       <div className="flex-1 space-y-2">
-                          <input 
-                            className="w-full bg-transparent border-none p-0 text-[10px] font-black text-[#004A74] uppercase outline-none"
-                            placeholder="LABEL..."
-                            value={at.label}
-                            onChange={e => {
-                              const newAt = [...content.attachments];
-                              newAt[idx].label = e.target.value;
-                              setContent({...content, attachments: newAt});
-                            }}
-                          />
-                          {at.type === 'LINK' && (
+                 {content.attachments.map((at, idx) => {
+                    const isPending = at.fileId?.startsWith('pending_');
+                    const isImage = at.mimeType?.startsWith('image/') || at.url;
+
+                    return (
+                      <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4 group animate-in slide-in-from-bottom-2 relative overflow-hidden">
+                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#004A74]/30 shadow-sm overflow-hidden shrink-0">
+                            {isImage ? (
+                               <img src={at.url || `https://lh3.googleusercontent.com/d/${at.fileId}`} className="w-full h-full object-cover" />
+                            ) : at.type === 'LINK' ? (
+                               <Globe size={18} />
+                            ) : (
+                               <FileIcon size={18} />
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
                             <input 
-                              className="w-full bg-transparent border-none p-0 text-[9px] font-medium text-blue-500 underline outline-none"
-                              placeholder="https://..."
-                              value={at.url}
+                              className="w-full bg-transparent border-none p-0 text-[10px] font-black text-[#004A74] uppercase outline-none"
+                              placeholder="LABEL..."
+                              value={at.label}
                               onChange={e => {
                                 const newAt = [...content.attachments];
-                                newAt[idx].url = e.target.value;
+                                newAt[idx].label = e.target.value;
                                 setContent({...content, attachments: newAt});
                               }}
                             />
-                          )}
-                       </div>
-                       <button 
-                         type="button" 
-                         onClick={() => setContent({...content, attachments: content.attachments.filter((_, i) => i !== idx)})}
-                         className="p-2 text-red-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
-                       >
-                          <Trash2 size={16} />
-                       </button>
-                    </div>
-                 ))}
+                            {at.type === 'LINK' ? (
+                              <input 
+                                className="w-full bg-transparent border-none p-0 text-[9px] font-medium text-blue-500 underline outline-none"
+                                placeholder="https://..."
+                                value={at.url}
+                                onChange={e => {
+                                  const newAt = [...content.attachments];
+                                  newAt[idx].url = e.target.value;
+                                  setContent({...content, attachments: newAt});
+                                }}
+                              />
+                            ) : (
+                               <div className="flex items-center gap-2">
+                                  <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{at.type}</span>
+                                  {isPending && <span className="text-[7px] font-black text-[#FED400] bg-[#004A74] px-1.5 py-0.5 rounded-full animate-pulse">Syncing</span>}
+                               </div>
+                            )}
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            // If it's a newly uploaded file, we might want to track it for cleanup if not already saved, 
+                            // but for simplicity, the standard delete from registry logic in parent covers the hard deletes.
+                            setContent({...content, attachments: content.attachments.filter((_, i) => i !== idx)});
+                          }}
+                          className="p-2 text-red-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                        >
+                           <Trash2 size={16} />
+                        </button>
+                      </div>
+                    );
+                 })}
               </div>
            </div>
 
