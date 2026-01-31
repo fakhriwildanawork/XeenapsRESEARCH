@@ -276,10 +276,16 @@ function doPost(e) {
     if (action === 'deleteReview') return createJsonResponse(deleteReviewFromRegistry(body.id));
     // NEW: aiReviewProxy
     if (action === 'aiReviewProxy') return createJsonResponse(handleAiReviewRequest(body.subAction, body.payload));
-    // NEW: translateReviewRow
+    
+    // ACTION: translateReviewRow (Refined with Error Catching)
     if (action === 'translateReviewRow') {
-      const { text, targetLang } = body;
-      return createJsonResponse({ status: 'success', translated: fetchTranslation(text, targetLang) });
+      try {
+        const { text, targetLang } = body;
+        const result = fetchTranslation(text, targetLang);
+        return createJsonResponse({ status: 'success', translated: result });
+      } catch (tErr) {
+        return createJsonResponse({ status: 'error', message: "Translation failed: " + tErr.toString() });
+      }
     }
 
     // NEW ACTION: saveConsultation

@@ -196,9 +196,11 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
       if (translated) {
         setContent(prev => ({ ...prev, finalSynthesis: translated }));
         showXeenapsToast('success', 'Synthesis translated');
+      } else {
+        showXeenapsToast('error', 'Translation engine returned empty result');
       }
     } catch (e) {
-      showXeenapsToast('error', 'Translation failed');
+      showXeenapsToast('error', 'Critical translation failure');
     } finally {
       setTranslatingSynthesis(false);
     }
@@ -242,7 +244,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
               <Star size={18} fill={review.isFavorite ? "currentColor" : "none"} />
             </button>
             <div className="w-10 h-10 flex items-center justify-center">
-               {isBusy && <Loader2 size={20} className="animate-spin text-[#004A74]" />}
+               {(isBusy || translatingSynthesis) && <Loader2 size={20} className="animate-spin text-[#004A74]" />}
             </div>
          </div>
       </header>
@@ -451,10 +453,13 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
             </div>
 
             <div className="relative group">
-               {isBusy && !content.finalSynthesis && (
+               {/* INTEGRATED LOADING OVERLAY FOR TRANSLATION & SYNTHESIS */}
+               {(isBusy || translatingSynthesis) && (
                  <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-[3.5rem]">
                     <Loader2 size={40} className="text-[#004A74] animate-spin mb-4" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#004A74]">Architecting Narrative...</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#004A74]">
+                       {translatingSynthesis ? 'Translating Core Wisdom...' : 'Architecting Narrative...'}
+                    </p>
                  </div>
                )}
                <div className="bg-white p-10 md:p-16 border border-gray-100 rounded-[3.5rem] shadow-xl relative overflow-hidden min-h-[400px]">
