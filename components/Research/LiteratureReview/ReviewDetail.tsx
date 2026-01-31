@@ -460,7 +460,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                <div className="bg-white p-10 md:p-16 border border-gray-100 rounded-[3.5rem] shadow-xl relative overflow-hidden min-h-[400px]">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-[#FED400]/5 -translate-y-24 translate-x-24 rounded-full" />
                   <div 
-                    className="text-sm md:text-base leading-[1.8] text-[#004A74] font-medium italic relative z-10 review-output-body"
+                    className="text-sm md:text-base leading-[1.8] text-[#004A74] font-medium relative z-10 review-output-body"
                     dangerouslySetInnerHTML={{ __html: content.finalSynthesis || '<p className="text-gray-200 text-center py-20 uppercase font-black tracking-widest">Synthesis Pending Matrix Completion</p>' }}
                   />
                </div>
@@ -472,7 +472,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                   <div>
                     <h4 className="text-sm font-black text-[#004A74] uppercase tracking-widest mb-1">Scientific Integrity Guard</h4>
                     <p className="text-xs font-bold text-[#004A74]/50 leading-relaxed italic">
-                      "The narrative above is synthesized from the matrix evidence. Use numbering lists for comparative clarity. Cross-verify citations with original sources."
+                      "The narrative above is synthesized from the matrix evidence. Numbered lists provide comparative clarity for major knowledge pillars."
                     </p>
                   </div>
                </div>
@@ -493,10 +493,25 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
         
-        .review-output-body b { font-weight: 900; color: #004A74; text-decoration: underline; text-decoration-color: #FED40060; }
-        .review-output-body br { margin-bottom: 1rem; content: ""; display: block; }
-        .review-output-body ol, .review-output-body ul { margin: 1.5rem 0; padding-left: 1.5rem; }
-        .review-output-body li { margin-bottom: 0.75rem; font-weight: 600; list-style-position: outside; }
+        .review-output-body b { font-weight: 900; color: #004A74; }
+        .review-output-body p { margin-bottom: 1.5rem; line-height: 1.8; }
+        .review-output-body br { margin-bottom: 0.5rem; content: ""; display: block; }
+        .review-output-body ol { 
+          list-style-type: decimal !important; 
+          margin: 1.5rem 0 1.5rem 1.5rem !important; 
+          padding-left: 0.5rem !important;
+        }
+        .review-output-body ul { 
+          list-style-type: disc !important; 
+          margin: 1.5rem 0 1.5rem 1.5rem !important; 
+          padding-left: 0.5rem !important;
+        }
+        .review-output-body li { 
+          margin-bottom: 0.75rem !important; 
+          font-weight: 600; 
+          display: list-item !important;
+          padding-left: 0.5rem;
+        }
       `}</style>
     </div>
   );

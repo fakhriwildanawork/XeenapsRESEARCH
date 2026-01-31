@@ -63,24 +63,27 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
   const model = config.model;
 
   const prompt = `ACT AS A SENIOR SCIENTIFIC ANALYST.
-  I am conducting a deep Literature Review on this central question: "${centralQuestion}".
+  I am conducting a deep Literature Review on this specific question: "${centralQuestion}".
   
-  TASK: Perform a COMPREHENSIVE AND HOLISTIC extraction from the provided source text.
-  1. ANSWER: Provide an EXTREMELY DETAILED SINGLE-PARAGRAPH analysis. This paragraph must be holistic, technical, and cover methodology, primary data, and nuances used by the author. Do not use bullets or multiple paragraphs for this section.
-  2. VERBATIM: Extract the most impactful sentence that encapsulates their primary argument or result.
+  TASK: Perform a COMPREHENSIVE AND HOLISTIC extraction that directly answers the question based on the source text.
+  
+  --- MANDATORY REQUIREMENTS ---
+  1. ANSWER: Provide an EXTREMELY DETAILED SINGLE-PARAGRAPH analysis. This paragraph must be holistic, covering factual findings, methodology used, and technical nuances relevant to the question.
+  2. NO LISTS: Strictly DO NOT use bullet points, numbered lists, or multiple paragraphs in the "answer" field. Everything must be in one dense, cohesive academic paragraph.
+  3. RELEVANCE: Ignore any part of the text that does not help in answering "${centralQuestion}".
+  4. VERBATIM: Extract exactly one impactful sentence as a direct quote.
   
   --- RULES ---
-  - IF DATA NOT FOUND, return "Data not explicitly found in this source" for answer and empty string for verbatim.
+  - IF DATA NOT FOUND, return "This source does not explicitly address the central question."
   - RESPONSE MUST BE RAW JSON.
   - USE PLAIN STRING TEXT.
-  - NO CONVERSATION.
   
   TEXT TO ANALYZE:
   ${context}
 
   EXPECTED JSON:
   {
-    "answer": "Holistic technical single-paragraph analysis covering methodology and results...",
+    "answer": "Holistic technical single-paragraph answering the central question...",
     "verbatim": "..."
   }`;
 
@@ -90,7 +93,7 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
       const payload = {
         model: model,
         messages: [
-          { role: "system", content: "You are an expert scientific data extractor. You provide holistic, technical, and highly informative academic answers in a single dense paragraph." },
+          { role: "system", content: "You are an expert scientific data extractor. You provide holistic, technical, and highly informative academic answers in a single dense paragraph without lists." },
           { role: "user", content: prompt }
         ],
         temperature: 0.1,
@@ -132,15 +135,13 @@ function callGroqNarrativeSynthesizer(matrix, centralQuestion) {
   ${matrixSummary}
 
   --- NARRATIVE REQUIREMENTS ---
-  - Write a cohesive and high-level academic synthesis.
-  - Use a mix of analytical paragraphs and NUMBERED LISTS for key comparative findings or trends to improve readability.
-  - Structure:
-    1. Introduction of the problem space and general trends.
-    2. Numbered list of core technical pillars found across sources.
-    3. Discussion of contradictions or gaps between sources.
-    4. Holistic conclusion on the current state of knowledge.
-  - USE HTML TAGS: <b> for emphasis, <br/> for paragraph breaks.
-  - RETURN PLAIN TEXT WITH HTML. NO MARKDOWN.
+  - Write a cohesive and high-level academic synthesis that directly addresses the central question.
+  - STRUCTURE:
+    1. Use <p> tags for analytical paragraphs.
+    2. Use <ol> and <li> tags (NUMBERED LISTS) to highlight core technical pillars, trends, or comparative findings across sources.
+    3. Use <b> tags for emphasis on critical concepts.
+  - FORMAT: RETURN VALID HTML STRUCTURE. DO NOT use Markdown symbols (*, #). Use <p>, <br/>, <b>, <ol>, <li>.
+  - COMPLEXITY: The synthesis must be very comprehensive, discussing agreements and contradictions between sources.
   
   LANGUAGE: ENGLISH.`;
 
@@ -153,7 +154,7 @@ function callGroqNarrativeSynthesizer(matrix, centralQuestion) {
       const payload = {
         model: model,
         messages: [
-          { role: "system", content: "You are a professional academic writer. Provide a comprehensive synthesized narrative using HTML formatting and numbering lists for clarity." },
+          { role: "system", content: "You are a professional academic writer. Provide a comprehensive synthesized narrative using valid HTML structure (paragraphs and numbered lists)." },
           { role: "user", content: prompt }
         ],
         temperature: 0.5
