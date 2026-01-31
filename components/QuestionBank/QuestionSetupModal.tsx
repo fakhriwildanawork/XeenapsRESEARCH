@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { LibraryItem, BloomsLevel, QuestionItem, QuestionOption, LibraryType } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { LibraryItem, BloomsLevel, QuestionItem, QuestionOption } from '../../types';
 import { generateQuestionsWorkflow, saveQuestionRecord } from '../../services/QuestionService';
 import { fetchLibraryPaginated } from '../../services/gasService';
 import { 
@@ -12,7 +12,8 @@ import {
   TagIcon,
   PencilSquareIcon,
   CheckIcon as CheckIconSolid,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline';
 import { FormField, FormDropdown } from '../Common/FormComponents';
 import Swal from 'sweetalert2';
@@ -21,7 +22,7 @@ import { showXeenapsToast } from '../../utils/toastUtils';
 
 interface QuestionSetupModalProps {
   item?: LibraryItem;
-  items?: LibraryItem[]; // Not used for direct source anymore to avoid heavy load
+  items?: LibraryItem[]; 
   onClose: () => void;
   onComplete: () => void;
 }
@@ -31,11 +32,13 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCount, setGeneratedCount] = useState<number | null>(null);
   
-  // Dynamic Source Selection State
+  // Smart Search Source State
   const [selectedSource, setSelectedSource] = useState<LibraryItem | null>(item || null);
   const [sourceSearch, setSourceSearch] = useState('');
   const [availableSources, setAvailableSources] = useState<LibraryItem[]>([]);
   const [isSearchingSources, setIsSearchingSources] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     bloomLevel: BloomsLevel.C2_UNDERSTAND,
@@ -66,9 +69,9 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
   const bloomOptions = Object.values(BloomsLevel);
   const languages = ['English', 'Indonesian', 'French', 'German', 'Spanish'];
 
-  // Effect for Lazy Loading Sources from Backend
+  // Smart Search Logic (Debounced Backend Fetch)
   useEffect(() => {
-    if (item) return; // If context item exists, no need to search
+    if (item) return;
     
     const delayDebounceFn = setTimeout(async () => {
       if (sourceSearch.length < 2) {
@@ -78,8 +81,7 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
       
       setIsSearchingSources(true);
       try {
-        // Fetch from backend using metadata search
-        const result = await fetchLibraryPaginated(1, 10, sourceSearch, 'All', 'research');
+        const result = await fetchLibraryPaginated(1, 15, sourceSearch, 'All', 'research');
         setAvailableSources(result.items);
       } catch (err) {
         console.error("Failed to fetch sources", err);
@@ -91,14 +93,24 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
     return () => clearTimeout(delayDebounceFn);
   }, [sourceSearch, item]);
 
+  // Click Outside Results Panel
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const validateManual = () => {
     if (!selectedSource) return "Source Collection is mandatory.";
     if (!formData.customLabel.trim()) return "Question Set Label is mandatory.";
-    if (!manualData.questionText.trim()) return "Question Text is mandatory.";
+    if (!manualData.questionText.trim()) return "Question text is mandatory.";
     if (manualData.options.some(opt => !opt.text.trim())) return "All 5 options are mandatory.";
-    if (!manualData.reasoningCorrect.trim()) return "Correct Answer Rationale is mandatory.";
-    if (Object.values(manualData.reasoningDistractors).filter(v => !!v.trim()).length < 4) return "All 4 Distractor Logics are mandatory.";
-    if (!manualData.verbatimReference.trim()) return "Verbatim Evidence is mandatory.";
+    if (!manualData.reasoningCorrect.trim()) return "Rationale for correct answer is mandatory.";
+    if (!manualData.verbatimReference.trim()) return "Verbatim evidence is mandatory.";
     return null;
   };
 
@@ -229,39 +241,76 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
           {/* COMMON FIELDS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {!item ? (
-              <FormField label="Source Collection (Lazy Search)" required>
-                <div className="relative group">
-                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                      {isSearchingSources ? <AcademicCapIcon className="w-4 h-4 text-[#004A74] animate-spin" /> : <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
-                   </div>
-                   <FormDropdown 
-                      value={selectedSource?.title || ''} 
-                      options={availableSources.map(it => it.title)} 
-                      onChange={(val) => setSelectedSource(availableSources.find(it => it.title === val) || null)} 
-                      placeholder="Type title to search..." 
-                      showSearch={true}
-                      allowCustom={false}
-                      // Pass the search input state to parent component if FormDropdown supports it, 
-                      // or we rely on the Internal input of FormDropdown if we modify its logic.
-                      // Here we use it as a simple selector since we manage availableSources via useEffect.
-                   />
-                   <input 
-                      className="absolute inset-0 opacity-0 cursor-pointer pointer-events-none" 
-                      onInput={(e) => setSourceSearch((e.target as HTMLInputElement).value)}
-                   />
-                </div>
-              </FormField>
+              <div className="relative" ref={searchContainerRef}>
+                <FormField label="Source Collection (Smart Search)" required>
+                  <div className="relative group">
+                    <MagnifyingGlassIcon className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${isSearchingSources ? 'text-[#004A74] animate-pulse' : 'text-gray-400'}`} />
+                    <input 
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74] outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/5 transition-all"
+                      placeholder="Type title or keywords..."
+                      value={selectedSource ? selectedSource.title : sourceSearch}
+                      onChange={(e) => {
+                        setSelectedSource(null);
+                        setSourceSearch(e.target.value);
+                        setShowResults(true);
+                      }}
+                      onFocus={() => setShowResults(true)}
+                    />
+                    {selectedSource && (
+                       <button 
+                         type="button" 
+                         onClick={() => { setSelectedSource(null); setSourceSearch(''); }}
+                         className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
+                       >
+                         <XMarkIcon className="w-3 h-3 text-gray-400" />
+                       </button>
+                    )}
+                  </div>
+                </FormField>
+
+                {/* Search Results Panel */}
+                {showResults && sourceSearch.length >= 2 && (
+                  <div className="absolute top-full left-0 right-0 z-[100] mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                      {isSearchingSources ? (
+                        <div className="p-8 text-center"><Loader2Icon className="w-6 h-6 animate-spin mx-auto text-[#004A74]" /></div>
+                      ) : availableSources.length === 0 ? (
+                        <div className="p-8 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">No matching literature</div>
+                      ) : (
+                        availableSources.map(src => (
+                          <button
+                            key={src.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedSource(src);
+                              setShowResults(false);
+                            }}
+                            className="w-full text-left p-4 hover:bg-gray-50 border-b border-gray-50 last:border-0 group flex items-start gap-3"
+                          >
+                            <BookOpenIcon className="w-4 h-4 text-gray-300 mt-0.5 group-hover:text-[#004A74]" />
+                            <div className="min-w-0">
+                               <p className="text-[11px] font-black text-[#004A74] uppercase truncate">{src.title}</p>
+                               <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">{src.authors[0]} • {src.year} • {src.topic}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
-              <FormField label="Context Literature">
-                 <div className="px-5 py-3 bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-black text-[#004A74] uppercase truncate shadow-inner">
+               <FormField label="Context Source">
+                 <div className="w-full px-5 py-3 bg-[#004A74]/5 border border-[#004A74]/10 rounded-xl text-[10px] font-black text-[#004A74] uppercase truncate">
                     {item.title}
                  </div>
-              </FormField>
+               </FormField>
             )}
-            <FormField label="Question Set Label" required>
+
+            <FormField label={mode === 'MANUAL' ? "Question Set Label *" : "Question Set Label"} required>
               <div className="relative">
                 <TagIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input className="w-full pl-11 pr-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74] outline-none focus:bg-white" placeholder="e.g., Exam Set A..." value={formData.customLabel} onChange={(e) => setFormData({...formData, customLabel: e.target.value.toUpperCase()})} />
+                <input className="w-full pl-11 pr-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74] outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/5" placeholder="e.g., EXAM SET A..." value={formData.customLabel} onChange={(e) => setFormData({...formData, customLabel: e.target.value.toUpperCase()})} />
               </div>
             </FormField>
           </div>
@@ -271,15 +320,17 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
               <FormDropdown value={formData.bloomLevel} options={bloomOptions} onChange={(v) => setFormData({...formData, bloomLevel: v as BloomsLevel})} placeholder="Level" allowCustom={false} showSearch={false} />
             </FormField>
             <FormField label="Language" required>
-              <FormDropdown 
-                value={formData.language} 
-                options={languages} 
-                onChange={(v) => setFormData({...formData, language: v})} 
-                placeholder="Select Language" 
-                allowCustom={false} 
-                showSearch={false} 
-                disabled={mode === 'MANUAL'}
-              />
+              <div className={mode === 'MANUAL' ? 'opacity-50 grayscale pointer-events-none' : ''}>
+                <FormDropdown 
+                  value={formData.language} 
+                  options={languages} 
+                  onChange={(v) => setFormData({...formData, language: v})} 
+                  placeholder="Select Language" 
+                  allowCustom={false} 
+                  showSearch={false} 
+                  disabled={mode === 'MANUAL'}
+                />
+              </div>
             </FormField>
           </div>
 
@@ -295,14 +346,14 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
                 </div>
               </FormField>
               <FormField label="Additional Context (Optional)">
-                <textarea className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm min-h-[120px] outline-none focus:bg-white" placeholder="Specific sub-chapters..." value={formData.additionalContext} onChange={(e) => setFormData({...formData, additionalContext: e.target.value})} />
+                <textarea className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm min-h-[120px] outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/5" placeholder="Specific sub-chapters..." value={formData.additionalContext} onChange={(e) => setFormData({...formData, additionalContext: e.target.value})} />
               </FormField>
             </div>
           ) : (
             /* MANUAL FORM VIEW */
             <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
-               <FormField label="Question Core Text" required>
-                  <textarea className="w-full px-6 py-4 bg-[#004A74]/5 border border-[#004A74]/10 rounded-2xl text-sm font-bold text-[#004A74] min-h-[100px] outline-none focus:bg-white" placeholder="Enter your question here..." value={manualData.questionText} onChange={(e) => setManualData({...manualData, questionText: e.target.value})} />
+               <FormField label="Question Core Text *" required>
+                  <textarea className="w-full px-6 py-4 bg-[#004A74]/5 border border-[#004A74]/10 rounded-2xl text-sm font-bold text-[#004A74] min-h-[100px] outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/10" placeholder="Enter your question here..." value={manualData.questionText} onChange={(e) => setManualData({...manualData, questionText: e.target.value})} />
                </FormField>
 
                <div className="space-y-4">
@@ -328,10 +379,10 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-gray-100">
                   <div className="space-y-6">
-                    <FormField label="Correct Answer Rationale" required>
-                      <textarea className="w-full px-5 py-4 bg-green-50/30 border border-green-100 rounded-2xl text-[11px] font-medium text-green-800 min-h-[100px] outline-none" placeholder="Why is the chosen key correct?" value={manualData.reasoningCorrect} onChange={(e) => setManualData({...manualData, reasoningCorrect: e.target.value})} />
+                    <FormField label="Correct Answer Rationale *" required>
+                      <textarea className="w-full px-5 py-4 bg-green-50/30 border border-green-100 rounded-2xl text-[11px] font-medium text-green-800 min-h-[100px] outline-none focus:bg-white" placeholder="Why is the chosen key correct?" value={manualData.reasoningCorrect} onChange={(e) => setManualData({...manualData, reasoningCorrect: e.target.value})} />
                     </FormField>
-                    <FormField label="Verbatim Evidence (from document)" required>
+                    <FormField label="Verbatim Evidence (from document) *" required>
                       <div className="relative group">
                          <DocumentTextIcon className="absolute left-4 top-4 w-4 h-4 text-gray-300" />
                          <textarea className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-[10px] font-bold italic text-gray-500 min-h-[80px] outline-none focus:bg-white" placeholder="Copy-paste the exact sentence from the source..." value={manualData.verbatimReference} onChange={(e) => setManualData({...manualData, verbatimReference: e.target.value})} />
@@ -374,3 +425,9 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
 };
 
 export default QuestionSetupModal;
+
+const Loader2Icon = (props: any) => (
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+  </svg>
+);
