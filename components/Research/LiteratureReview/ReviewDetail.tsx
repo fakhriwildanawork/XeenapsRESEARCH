@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate } from 'react-router-dom';
 import { ReviewItem, ReviewContent, ReviewMatrixRow, LibraryItem } from '../../../types';
-import { fetchReviewsPaginated, fetchReviewContent, saveReview, runMatrixExtraction, runReviewSynthesis } from '../../../services/ReviewService';
+import { fetchReviewsPaginated, fetchReviewContent, saveReview, runMatrixExtraction, runReviewSynthesis, translateReviewRowContent } from '../../../services/ReviewService';
 import { 
   ArrowLeft, 
   Sparkles, 
@@ -21,12 +21,31 @@ import {
   Eye,
   Star,
   RefreshCcw,
-  Languages
+  Languages,
+  Globe
 } from 'lucide-react';
 import ReviewSourceSelectorModal from './ReviewSourceSelectorModal';
 import { showXeenapsToast } from '../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../utils/confirmUtils';
 import { fetchFileContent } from '../../../services/gasService';
+
+const LANG_OPTIONS = [
+  { label: "English", code: "en" },
+  { label: "Indonesian", code: "id" },
+  { label: "Portuguese", code: "pt" },
+  { label: "Spanish", code: "es" },
+  { label: "German", code: "de" },
+  { label: "French", code: "fr" },
+  { label: "Dutch", code: "nl" },
+  { label: "Mandarin", code: "zh" },
+  { label: "Japanese", code: "ja" },
+  { label: "Vietnamese", code: "vi" },
+  { label: "Thai", code: "th" },
+  { label: "Hindi", code: "hi" },
+  { label: "Turkish", code: "tr" },
+  { label: "Russian", code: "ru" },
+  { label: "Arabic", code: "ar" }
+];
 
 const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems }) => {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +57,10 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [isBusy, setIsBusy] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   
+  const [translatingId, setTranslatingId] = useState<string | null>(null);
+  const [translatingSynthesis, setTranslatingSynthesis] = useState(false);
+  const [openTranslationMenu, setOpenTranslationMenu] = useState<string | null>(null);
+
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -78,19 +101,20 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
 
     const newRows: ReviewMatrixRow[] = [];
     
-    // SEQUENTIAL AI PROCESSING (35k char logic is in Backend callGroqReviewExtractor)
+    // SEQUENTIAL AI PROCESSING
     for (const lib of selectedLibs) {
       try {
         const result = await runMatrixExtraction(lib.id, review.centralQuestion);
         if (result) {
-          newRows.push({
+          const row = {
             collectionId: lib.id,
             title: lib.title,
             answer: result.answer,
             verbatim: result.verbatim
-          });
+          };
+          newRows.push(row);
           // Optimistic update per item for UI feedback
-          setContent(prev => ({ ...prev, matrix: [...prev.matrix, ...newRows] }));
+          setContent(prev => ({ ...prev, matrix: [...prev.matrix, row] }));
         }
       } catch (e) {
         showXeenapsToast('error', `Failed to analyze: ${lib.title}`);
@@ -122,6 +146,47 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     if (confirm) {
       setContent(prev => ({ ...prev, matrix: prev.matrix.filter(m => m.collectionId !== libId) }));
       showXeenapsToast('success', 'Source removed from matrix');
+    }
+  };
+
+  const handleTranslateRow = async (row: ReviewMatrixRow, langCode: string) => {
+    if (translatingId) return;
+    setTranslatingId(row.collectionId);
+    setOpenTranslationMenu(null);
+    showXeenapsToast('info', 'Translating row analysis...');
+
+    try {
+      const translated = await translateReviewRowContent(row.answer, langCode);
+      if (translated) {
+        setContent(prev => ({
+          ...prev,
+          matrix: prev.matrix.map(m => m.collectionId === row.collectionId ? { ...m, answer: translated } : m)
+        }));
+        showXeenapsToast('success', 'Row translated successfully');
+      }
+    } catch (e) {
+      showXeenapsToast('error', 'Translation failed');
+    } finally {
+      setTranslatingId(null);
+    }
+  };
+
+  const handleTranslateSynthesis = async (langCode: string) => {
+    if (translatingSynthesis) return;
+    setTranslatingSynthesis(true);
+    setOpenTranslationMenu(null);
+    showXeenapsToast('info', 'Translating final review...');
+
+    try {
+      const translated = await translateReviewRowContent(content.finalSynthesis, langCode);
+      if (translated) {
+        setContent(prev => ({ ...prev, finalSynthesis: translated }));
+        showXeenapsToast('success', 'Synthesis translated');
+      }
+    } catch (e) {
+      showXeenapsToast('error', 'Translation failed');
+    } finally {
+      setTranslatingSynthesis(false);
     }
   };
 
@@ -162,13 +227,9 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
             >
               <Star size={18} fill={review.isFavorite ? "currentColor" : "none"} />
             </button>
-            <button 
-              onClick={handleSynthesize}
-              disabled={isBusy || content.matrix.length === 0}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-40"
-            >
-               {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Synthesize Review
-            </button>
+            <div className="w-10 h-10 flex items-center justify-center">
+               {isBusy && <Loader2 size={20} className="animate-spin text-[#004A74]" />}
+            </div>
          </div>
       </header>
 
@@ -195,7 +256,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
             <div className="flex items-center justify-between px-4">
                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><ClipboardList size={16} /> Comparative Analysis Matrix</h3>
                <button 
-                 onClick={() => setIsReviewSelectorOpen(true)}
+                 onClick={() => setIsSelectorOpen(true)}
                  disabled={isBusy}
                  className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#004A74] rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
                >
@@ -236,7 +297,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                                  </div>
                               </td>
                               <td className="p-6 align-top">
-                                 <div className="text-[11px] font-semibold text-gray-600 leading-relaxed">
+                                 <div className="text-[11px] font-semibold text-gray-600 leading-relaxed whitespace-pre-wrap">
                                     {row.answer}
                                  </div>
                               </td>
@@ -248,15 +309,57 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                                  ) : <span className="text-[9px] text-gray-300 italic">No quote extracted.</span>}
                               </td>
                               <td className="p-6 text-center align-top">
-                                 <button onClick={() => removeRow(row.collectionId)} className="p-2.5 text-red-300 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all">
-                                    <Trash2 size={16} />
-                                 </button>
+                                 <div className="flex flex-col gap-2">
+                                    <div className="relative">
+                                       <button 
+                                          onClick={() => setOpenTranslationMenu(openTranslationMenu === row.collectionId ? null : row.collectionId)}
+                                          disabled={!!translatingId}
+                                          className={`p-2.5 rounded-xl transition-all ${translatingId === row.collectionId ? 'bg-[#004A74] text-white animate-pulse' : 'bg-gray-50 text-gray-400 hover:text-[#004A74]'}`}
+                                          title="Translate Row"
+                                       >
+                                          {translatingId === row.collectionId ? <Loader2 size={16} className="animate-spin" /> : <Globe size={16} />}
+                                       </button>
+                                       {openTranslationMenu === row.collectionId && (
+                                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-1 z-[110] animate-in fade-in zoom-in-95">
+                                             <div className="p-2 border-b border-gray-50 mb-1">
+                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Language</p>
+                                             </div>
+                                             <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                                {LANG_OPTIONS.map((lang) => (
+                                                   <button 
+                                                      key={lang.code}
+                                                      onClick={() => handleTranslateRow(row, lang.code)}
+                                                      className="w-full text-left px-3 py-2 text-[10px] font-bold text-[#004A74] hover:bg-gray-50 rounded-lg transition-all"
+                                                   >
+                                                      {lang.label}
+                                                   </button>
+                                                ))}
+                                             </div>
+                                          </div>
+                                       )}
+                                    </div>
+                                    <button onClick={() => removeRow(row.collectionId)} className="p-2.5 text-red-300 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all">
+                                       <Trash2 size={16} />
+                                    </button>
+                                 </div>
                               </td>
                            </tr>
                         ))}
                      </tbody>
                   </table>
                </div>
+            </div>
+
+            {/* SYNTHESIZE BUTTON RELOCATED */}
+            <div className="flex justify-center pt-8">
+               <button 
+                  onClick={handleSynthesize}
+                  disabled={isBusy || content.matrix.length === 0}
+                  className="group relative flex items-center gap-4 px-16 py-5 bg-[#004A74] text-[#FED400] rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-xs shadow-[0_20px_50px_-10px_rgba(0,74,116,0.3)] hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:grayscale"
+               >
+                  {isBusy ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
+                  Synthesize Global Review
+               </button>
             </div>
          </section>
 
@@ -267,14 +370,44 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                   <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><Sparkles size={14} className="text-[#FED400]" /> Integrated Review Synthesis</h3>
                   <h2 className="text-3xl font-black text-[#004A74] uppercase tracking-tighter">THE FINAL REVIEW</h2>
                </div>
-               <button 
-                  onClick={handleSynthesize}
-                  disabled={isBusy || content.matrix.length === 0}
-                  className="p-3 bg-white border border-gray-200 rounded-xl text-[#004A74] hover:bg-gray-50 transition-all shadow-sm"
-                  title="Re-Synthesize"
-               >
-                  <RefreshCcw size={18} className={isBusy ? 'animate-spin' : ''} />
-               </button>
+               <div className="flex items-center gap-2">
+                  <div className="relative">
+                     <button 
+                        onClick={() => setOpenTranslationMenu(openTranslationMenu === 'synthesis' ? null : 'synthesis')}
+                        disabled={translatingSynthesis || content.matrix.length === 0}
+                        className={`p-3 border border-gray-200 rounded-xl transition-all ${translatingSynthesis ? 'bg-[#004A74] text-white animate-pulse' : 'bg-white text-[#004A74] hover:bg-gray-50 shadow-sm'}`}
+                        title="Translate Synthesis"
+                     >
+                        {translatingSynthesis ? <Loader2 size={18} className="animate-spin" /> : <Globe size={18} />}
+                     </button>
+                     {openTranslationMenu === 'synthesis' && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-1 z-[110] animate-in fade-in zoom-in-95">
+                           <div className="p-2 border-b border-gray-50 mb-1">
+                              <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Select Language</p>
+                           </div>
+                           <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                              {LANG_OPTIONS.map((lang) => (
+                                 <button 
+                                    key={lang.code}
+                                    onClick={() => handleTranslateSynthesis(lang.code)}
+                                    className="w-full text-left px-3 py-2 text-[10px] font-bold text-[#004A74] hover:bg-gray-50 rounded-lg transition-all"
+                                 >
+                                    {lang.label}
+                                 </button>
+                              ))}
+                           </div>
+                        </div>
+                     )}
+                  </div>
+                  <button 
+                     onClick={handleSynthesize}
+                     disabled={isBusy || content.matrix.length === 0}
+                     className="p-3 bg-white border border-gray-200 rounded-xl text-[#004A74] hover:bg-gray-50 transition-all shadow-sm"
+                     title="Re-Synthesize"
+                  >
+                     <RefreshCcw size={18} className={isBusy ? 'animate-spin' : ''} />
+                  </button>
+               </div>
             </div>
 
             <div className="relative">

@@ -66,20 +66,21 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
   I am conducting a Literature Review on this central question: "${centralQuestion}".
   
   TASK: Extract data from the provided text to fill my review matrix.
-  1. ANSWER: Directly answer the central question based ONLY on this text.
+  1. ANSWER: Provide a COMPREHENSIVE and DETAILED answer (minimal 250 words) to the central question based ONLY on this text. Analyze the nuances, findings, and technical aspects relevant to the question.
   2. VERBATIM: Provide one specific quote from the text as evidence for your answer.
   
   --- RULES ---
   - IF DATA NOT FOUND, return "Data not explicitly found in this source" for answer and empty string for verbatim.
   - RESPONSE MUST BE RAW JSON.
   - USE PLAIN STRING TEXT.
+  - NO CONVERSATION.
   
   TEXT TO ANALYZE:
   ${context}
 
   EXPECTED JSON:
   {
-    "answer": "...",
+    "answer": "Detailed multi-paragraph analysis...",
     "verbatim": "..."
   }`;
 

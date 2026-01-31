@@ -276,6 +276,11 @@ function doPost(e) {
     if (action === 'deleteReview') return createJsonResponse(deleteReviewFromRegistry(body.id));
     // NEW: aiReviewProxy
     if (action === 'aiReviewProxy') return createJsonResponse(handleAiReviewRequest(body.subAction, body.payload));
+    // NEW: translateReviewRow
+    if (action === 'translateReviewRow') {
+      const { text, targetLang } = body;
+      return createJsonResponse({ status: 'success', translated: fetchTranslation(text, targetLang) });
+    }
 
     // NEW ACTION: saveConsultation
     if (action === 'saveConsultation') {
@@ -699,7 +704,7 @@ function doPost(e) {
       // STRICT REGEX Patterns - Ensure no cross-contamination
       const doiPattern = /10\.\d{4,9}\/[-._;()/:A-Z0-9]{5,}/i;
       const isbnPattern = /ISBN(?:-1[03])?:?\s*((?:97[89][\s-]?)?[0-9]{1,5}[\s-]?[0-9]+[\s-]?[0-9]+[\s-]?[0-9X])/i;
-      const issnPattern = /ISSN:?\s*([0-9]{4}-?[0-9]{3}[0-9X])/i;
+      const isbnPattern = /ISSN:?\s*([0-9]{4}-?[0-9]{3}[0-9X])/i;
       const pmidPattern = /PMID:?\s*(\d{4,11})/i;
       const arxivPattern = /arXiv:?\s*(\d{4}\.\d{4,5}(?:v\d+)?)/i;
 

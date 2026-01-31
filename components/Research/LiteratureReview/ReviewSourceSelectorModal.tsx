@@ -65,6 +65,13 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
     }
   };
 
+  const handleExecute = () => {
+    if (selected.length === 0) return;
+    onConfirm(selected);
+    setSelected([]); // Reset selection state
+    onClose(); // Auto-close modal
+  };
+
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-8 bg-black/40 backdrop-blur-md animate-in fade-in">
       <div className="bg-white rounded-[3rem] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20">
@@ -171,7 +178,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
           <div className="flex gap-4">
              <button onClick={onClose} className="px-8 py-4 bg-white text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[10px]">Cancel</button>
              <button 
-                onClick={() => onConfirm(selected)}
+                onClick={handleExecute}
                 disabled={selected.length === 0}
                 className="px-12 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 disabled:grayscale"
              >

@@ -118,3 +118,17 @@ export const runReviewSynthesis = async (
     return null;
   }
 };
+
+export const translateReviewRowContent = async (text: string, targetLang: string): Promise<string | null> => {
+  if (!GAS_WEB_APP_URL) return null;
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'translateReviewRow', text, targetLang })
+    });
+    const result = await res.json();
+    return result.status === 'success' ? result.translated : null;
+  } catch (e) {
+    return null;
+  }
+};
