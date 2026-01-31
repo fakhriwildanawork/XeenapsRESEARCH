@@ -1,19 +1,18 @@
 
-import React, { useState } from 'react';
-import { LibraryItem, BloomsLevel, QuestionItem, QuestionOption } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { LibraryItem, BloomsLevel, QuestionItem, QuestionOption, LibraryType } from '../../types';
 import { generateQuestionsWorkflow, saveQuestionRecord } from '../../services/QuestionService';
+import { fetchLibraryPaginated } from '../../services/gasService';
 import { 
   XMarkIcon, 
   SparklesIcon, 
   AcademicCapIcon, 
-  QueueListIcon,
-  ChevronRightIcon,
   DocumentTextIcon,
   CheckBadgeIcon,
   TagIcon,
-  CircleStackIcon,
   PencilSquareIcon,
-  CheckIcon as CheckIconSolid
+  CheckIcon as CheckIconSolid,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { FormField, FormDropdown } from '../Common/FormComponents';
 import Swal from 'sweetalert2';
@@ -22,16 +21,21 @@ import { showXeenapsToast } from '../../utils/toastUtils';
 
 interface QuestionSetupModalProps {
   item?: LibraryItem;
-  items?: LibraryItem[]; // Database of items for manual selection
+  items?: LibraryItem[]; // Not used for direct source anymore to avoid heavy load
   onClose: () => void;
   onComplete: () => void;
 }
 
-const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, items = [], onClose, onComplete }) => {
+const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, onComplete }) => {
   const [mode, setMode] = useState<'AI' | 'MANUAL'>('AI');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCount, setGeneratedCount] = useState<number | null>(null);
+  
+  // Dynamic Source Selection State
   const [selectedSource, setSelectedSource] = useState<LibraryItem | null>(item || null);
+  const [sourceSearch, setSourceSearch] = useState('');
+  const [availableSources, setAvailableSources] = useState<LibraryItem[]>([]);
+  const [isSearchingSources, setIsSearchingSources] = useState(false);
 
   const [formData, setFormData] = useState({
     bloomLevel: BloomsLevel.C2_UNDERSTAND,
@@ -62,13 +66,39 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, items = [
   const bloomOptions = Object.values(BloomsLevel);
   const languages = ['English', 'Indonesian', 'French', 'German', 'Spanish'];
 
+  // Effect for Lazy Loading Sources from Backend
+  useEffect(() => {
+    if (item) return; // If context item exists, no need to search
+    
+    const delayDebounceFn = setTimeout(async () => {
+      if (sourceSearch.length < 2) {
+        setAvailableSources([]);
+        return;
+      }
+      
+      setIsSearchingSources(true);
+      try {
+        // Fetch from backend using metadata search
+        const result = await fetchLibraryPaginated(1, 10, sourceSearch, 'All', 'research');
+        setAvailableSources(result.items);
+      } catch (err) {
+        console.error("Failed to fetch sources", err);
+      } finally {
+        setIsSearchingSources(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [sourceSearch, item]);
+
   const validateManual = () => {
-    if (!selectedSource) return "Source required.";
-    if (!formData.customLabel.trim()) return "Label required.";
-    if (!manualData.questionText.trim()) return "Question text required.";
-    if (manualData.options.some(opt => !opt.text.trim())) return "All 5 options required.";
-    if (!manualData.reasoningCorrect.trim()) return "Rationale for correct answer required.";
-    if (!manualData.verbatimReference.trim()) return "Verbatim evidence is mandatory.";
+    if (!selectedSource) return "Source Collection is mandatory.";
+    if (!formData.customLabel.trim()) return "Question Set Label is mandatory.";
+    if (!manualData.questionText.trim()) return "Question Text is mandatory.";
+    if (manualData.options.some(opt => !opt.text.trim())) return "All 5 options are mandatory.";
+    if (!manualData.reasoningCorrect.trim()) return "Correct Answer Rationale is mandatory.";
+    if (Object.values(manualData.reasoningDistractors).filter(v => !!v.trim()).length < 4) return "All 4 Distractor Logics are mandatory.";
+    if (!manualData.verbatimReference.trim()) return "Verbatim Evidence is mandatory.";
     return null;
   };
 
@@ -198,9 +228,34 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, items = [
           
           {/* COMMON FIELDS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {!item && (
-              <FormField label="Source Collection" required>
-                <FormDropdown value={selectedSource?.title || ''} options={items.map(it => it.title)} onChange={(val) => setSelectedSource(items.find(it => it.title === val) || null)} placeholder="Select source..." />
+            {!item ? (
+              <FormField label="Source Collection (Lazy Search)" required>
+                <div className="relative group">
+                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                      {isSearchingSources ? <AcademicCapIcon className="w-4 h-4 text-[#004A74] animate-spin" /> : <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
+                   </div>
+                   <FormDropdown 
+                      value={selectedSource?.title || ''} 
+                      options={availableSources.map(it => it.title)} 
+                      onChange={(val) => setSelectedSource(availableSources.find(it => it.title === val) || null)} 
+                      placeholder="Type title to search..." 
+                      showSearch={true}
+                      allowCustom={false}
+                      // Pass the search input state to parent component if FormDropdown supports it, 
+                      // or we rely on the Internal input of FormDropdown if we modify its logic.
+                      // Here we use it as a simple selector since we manage availableSources via useEffect.
+                   />
+                   <input 
+                      className="absolute inset-0 opacity-0 cursor-pointer pointer-events-none" 
+                      onInput={(e) => setSourceSearch((e.target as HTMLInputElement).value)}
+                   />
+                </div>
+              </FormField>
+            ) : (
+              <FormField label="Context Literature">
+                 <div className="px-5 py-3 bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-black text-[#004A74] uppercase truncate shadow-inner">
+                    {item.title}
+                 </div>
               </FormField>
             )}
             <FormField label="Question Set Label" required>
@@ -216,7 +271,15 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, items = [
               <FormDropdown value={formData.bloomLevel} options={bloomOptions} onChange={(v) => setFormData({...formData, bloomLevel: v as BloomsLevel})} placeholder="Level" allowCustom={false} showSearch={false} />
             </FormField>
             <FormField label="Language" required>
-              <FormDropdown value={formData.language} options={languages} onChange={(v) => setFormData({...formData, language: v})} placeholder="Select Language" allowCustom={false} showSearch={false} />
+              <FormDropdown 
+                value={formData.language} 
+                options={languages} 
+                onChange={(v) => setFormData({...formData, language: v})} 
+                placeholder="Select Language" 
+                allowCustom={false} 
+                showSearch={false} 
+                disabled={mode === 'MANUAL'}
+              />
             </FormField>
           </div>
 
@@ -243,7 +306,7 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, items = [
                </FormField>
 
                <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Response Options & Key</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Response Options & Key *</label>
                   <div className="grid grid-cols-1 gap-3">
                     {manualData.options.map((opt, idx) => {
                       const isCorrect = manualData.correctAnswer === opt.key;
@@ -276,7 +339,7 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, items = [
                     </FormField>
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Distractor Logics</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Distractor Logics *</label>
                     {['A', 'B', 'C', 'D', 'E'].filter(k => k !== manualData.correctAnswer).map(k => (
                       <div key={k} className="flex items-start gap-3 p-3 bg-red-50/20 border border-red-100/50 rounded-xl">
                         <span className="text-[10px] font-black text-red-300 mt-1">{k}</span>
