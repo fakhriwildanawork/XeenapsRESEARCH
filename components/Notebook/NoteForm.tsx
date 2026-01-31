@@ -141,8 +141,8 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
     // INSTANT UI FEEDBACK (OPTIMISTIC)
     const placeholder: NoteAttachment = {
       type: 'FILE',
-      label: file.name,
-      url: previewUrl, // Use local URL for instant preview
+      label: file.name, // Initial value automatically matches filename
+      url: previewUrl, 
       fileId: `pending_${tempId}`,
       mimeType: file.type
     };
@@ -154,12 +154,17 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
       if (result) {
         newlyUploadedFiles.current.push({ fileId: result.fileId, nodeUrl: result.nodeUrl });
         
+        // Smart URL mapping based on file type
+        const finalUrl = result.mimeType.startsWith('image/') 
+          ? `https://lh3.googleusercontent.com/d/${result.fileId}`
+          : `https://drive.google.com/file/d/${result.fileId}/view`;
+
         // Update the item once finished
         setContent(prev => ({
           ...prev,
           attachments: prev.attachments.map(at => 
             at.fileId === `pending_${tempId}` 
-              ? { ...at, fileId: result.fileId, nodeUrl: result.nodeUrl, url: undefined } 
+              ? { ...at, fileId: result.fileId, nodeUrl: result.nodeUrl, url: finalUrl } 
               : at
           )
         }));
@@ -271,13 +276,13 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  {content.attachments.map((at, idx) => {
                     const isPending = at.fileId?.startsWith('pending_');
-                    const isImage = at.mimeType?.startsWith('image/') || at.url;
+                    const isImage = at.mimeType?.startsWith('image/') || at.url?.includes('lh3.googleusercontent');
 
                     return (
                       <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4 group animate-in slide-in-from-bottom-2 relative overflow-hidden">
                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#004A74]/30 shadow-sm overflow-hidden shrink-0">
                             {isImage ? (
-                               <img src={at.url || `https://lh3.googleusercontent.com/d/${at.fileId}`} className="w-full h-full object-cover" />
+                               <img src={at.url} className="w-full h-full object-cover" />
                             ) : at.type === 'LINK' ? (
                                <Globe size={18} />
                             ) : (
@@ -316,8 +321,6 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
                         <button 
                           type="button" 
                           onClick={() => {
-                            // If it's a newly uploaded file, we might want to track it for cleanup if not already saved, 
-                            // but for simplicity, the standard delete from registry logic in parent covers the hard deletes.
                             setContent({...content, attachments: content.attachments.filter((_, i) => i !== idx)});
                           }}
                           className="p-2 text-red-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
