@@ -55,7 +55,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [content, setContent] = useState<ReviewContent>({ matrix: [], finalSynthesis: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [isBusy, setIsBusy] = useState(false);
-  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [isReviewSelectorOpen, setIsReviewSelectorOpen] = useState(false);
   
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [translatingSynthesis, setTranslatingSynthesis] = useState(false);
@@ -95,7 +95,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
       return;
     }
 
-    setIsSelectorOpen(false);
+    setIsReviewSelectorOpen(false);
     setIsBusy(true);
     showXeenapsToast('info', `Running sequential analysis on ${selectedLibs.length} papers...`);
 
@@ -256,7 +256,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
             <div className="flex items-center justify-between px-4">
                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><ClipboardList size={16} /> Comparative Analysis Matrix</h3>
                <button 
-                 onClick={() => setIsSelectorOpen(true)}
+                 onClick={() => setIsReviewSelectorOpen(true)}
                  disabled={isBusy}
                  className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#004A74] rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
                >
@@ -350,7 +350,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                </div>
             </div>
 
-            {/* SYNTHESIZE BUTTON RELOCATED */}
+            {/* Mandatory Correction 3: SYNTHESIZE BUTTON RELOCATED */}
             <div className="flex justify-center pt-8">
                <button 
                   onClick={handleSynthesize}
@@ -372,6 +372,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                </div>
                <div className="flex items-center gap-2">
                   <div className="relative">
+                     {/* Mandatory Correction 4: Translate with Lingva */}
                      <button 
                         onClick={() => setOpenTranslationMenu(openTranslationMenu === 'synthesis' ? null : 'synthesis')}
                         disabled={translatingSynthesis || content.matrix.length === 0}
@@ -460,15 +461,4 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   );
 };
 
-// Internal variable for modal state to avoid confusion with selector modal
-let isReviewSelectorOpen: boolean;
-let setIsReviewSelectorOpen: (o: boolean) => void;
-
-const ReviewWorkspace: React.FC<{ libraryItems: LibraryItem[] }> = (props) => {
-  const [open, setOpen] = useState(false);
-  isReviewSelectorOpen = open;
-  setIsReviewSelectorOpen = setOpen;
-  return <ReviewDetail {...props} />;
-};
-
-export default ReviewWorkspace;
+export default ReviewDetail;

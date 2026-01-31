@@ -68,8 +68,9 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
   const handleExecute = () => {
     if (selected.length === 0) return;
     onConfirm(selected);
-    setSelected([]); // Reset selection state
-    onClose(); // Auto-close modal
+    // Mandatory Correction 1: Auto close and reset
+    setSelected([]); 
+    onClose(); 
   };
 
   return (

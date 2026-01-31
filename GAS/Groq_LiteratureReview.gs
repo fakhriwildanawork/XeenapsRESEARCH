@@ -62,12 +62,12 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
   const config = getProviderModel('Groq');
   const model = config.model;
 
-  const prompt = `ACT AS A SENIOR SCIENTIFIC ANALYST.
-  I am conducting a Literature Review on this central question: "${centralQuestion}".
+  const prompt = `ACT AS A SENIOR SCIENTIFIC ANALYST AND RESEARCH STRATEGIST.
+  I am conducting a deep Literature Review on this central question: "${centralQuestion}".
   
-  TASK: Extract data from the provided text to fill my review matrix.
-  1. ANSWER: Provide a COMPREHENSIVE and DETAILED answer (minimal 250 words) to the central question based ONLY on this text. Analyze the nuances, findings, and technical aspects relevant to the question.
-  2. VERBATIM: Provide one specific quote from the text as evidence for your answer.
+  TASK: Perform a PROLIX AND COMPREHENSIVE extraction from the provided source text.
+  1. ANSWER: Provide an EXTREMELY DETAILED and MULTI-PARAGRAPH analysis (minimum 400 words). Do not just summarize; deep-dive into the methodology, technical nuances, primary data points, and the specific context used by the author to address the question. Explain the "How" and "Why" behind their conclusions.
+  2. VERBATIM: Extract the most impactful sentence that encapsulates their primary argument or result.
   
   --- RULES ---
   - IF DATA NOT FOUND, return "Data not explicitly found in this source" for answer and empty string for verbatim.
@@ -80,7 +80,7 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
 
   EXPECTED JSON:
   {
-    "answer": "Detailed multi-paragraph analysis...",
+    "answer": "Extended technical multi-paragraph analysis covering methodology and results...",
     "verbatim": "..."
   }`;
 
@@ -90,7 +90,7 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
       const payload = {
         model: model,
         messages: [
-          { role: "system", content: "You are an expert scientific data extractor. Always return raw JSON." },
+          { role: "system", content: "You are an expert scientific data extractor. You provide prolix, technical, and highly informative academic answers." },
           { role: "user", content: prompt }
         ],
         temperature: 0.1,
