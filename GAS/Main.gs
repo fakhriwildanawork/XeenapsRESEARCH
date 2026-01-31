@@ -701,85 +701,87 @@ function doPost(e) {
       let detectedMime = null;
       let primaryDoiFromMeta = null;
       
-      // STRICT REGEX Patterns - Ensure no cross-contamination
-      const doiPattern = /10\.\d{4,9}\/[-._;()/:A-Z0-9]{5,}/i;
-      const isbnPattern = /ISBN(?:-1[03])?:?\s*((?:97[89][\s-]?)?[0-9]{1,5}[\s-]?[0-9]+[\s-]?[0-9]+[\s-]?[0-9X])/i;
-      const issnPattern = /ISSN:?\s*([0-9]{4}-?[0-9]{3}[0-9X])/i;
-      const pmidPattern = /PMID:?\s*(\d{4,11})/i;
-      const arxivPattern = /arXiv:?\s*(\d{4}\.\d{4,5}(?:v\d+)?)/i;
+      // Wrap regex variables in a block to avoid identifier duplication errors in Main.gs
+      {
+        const doiPattern = /10\.\d{4,9}\/[-._;()/:A-Z0-9]{5,}/i;
+        const isbnPattern = /ISBN(?:-1[03])?:?\s*((?:97[89][\s-]?)?[0-9]{1,5}[\s-]?[0-9]+[\s-]?[0-9]+[\s-]?[0-9X])/i;
+        const issnPattern = /ISSN:?\s*([0-9]{4}-?[0-9]{3}[0-9X])/i;
+        const pmidPattern = /PMID:?\s*(\d{4,11})/i;
+        const arxivPattern = /arXiv:?\s*(\d{4}\.\d{4,5}(?:v\d+)?)/i;
 
-      let detectedDoi = null;
-      let detectedIsbn = null;
-      let detectedIssn = null;
-      let detectedPmid = null;
-      let detectedArxiv = null;
+        let detectedDoi = null;
+        let detectedIsbn = null;
+        let detectedIssn = null;
+        let detectedPmid = null;
+        let detectedArxiv = null;
 
-      try {
-        if (body.url) {
-          // STEP 1: SNIFF URL STRING (Strict checking)
-          const urlDoiMatch = body.url.match(doiPattern);
-          if (urlDoiMatch) detectedDoi = urlDoiMatch[0];
-          
-          const urlPmidMatch = body.url.match(/pubmed\.ncbi\.nlm\.nih\.gov\/(\d+)/i);
-          if (urlPmidMatch) detectedPmid = urlPmidMatch[1];
+        try {
+          if (body.url) {
+            // STEP 1: SNIFF URL STRING (Strict checking)
+            const urlDoiMatch = body.url.match(doiPattern);
+            if (urlDoiMatch) detectedDoi = urlDoiMatch[0];
+            
+            const urlPmidMatch = body.url.match(/pubmed\.ncbi\.nlm\.nih\.gov\/(\d+)/i);
+            if (urlPmidMatch) detectedPmid = urlPmidMatch[1];
 
-          const urlArxivMatch = body.url.match(/arxiv\.org\/(?:pdf|abs)\/(\d{4}\.\d{4,5})/i);
-          if (urlArxivMatch) detectedArxiv = urlArxivMatch[1];
+            const urlArxivMatch = body.url.match(/arxiv\.org\/(?:pdf|abs)\/(\d{4}\.\d{4,5})/i);
+            if (urlArxivMatch) detectedArxiv = urlArxivMatch[1];
 
-          const driveId = getFileIdFromUrl(body.url);
-          if (driveId && (body.url.includes('drive.google.com') || body.url.includes('docs.google.com'))) {
-            try {
-              const fileMeta = Drive.Files.get(driveId);
-              detectedMime = fileMeta.mimeType;
-              const isAudioVideo = detectedMime.includes('audio/') || detectedMime.includes('video/');
-              if (isAudioVideo) {
-                return createJsonResponse({ status: 'error', message: 'Audio/Video from Drive not supported.' });
-              }
-              if (detectedMime && detectedMime.toLowerCase().includes('image/')) imageView = 'https://lh3.googleusercontent.com/d/' + driveId;
-            } catch (e) {}
+            const driveId = getFileIdFromUrl(body.url);
+            if (driveId && (body.url.includes('drive.google.com') || body.url.includes('docs.google.com'))) {
+              try {
+                const fileMeta = Drive.Files.get(driveId);
+                detectedMime = fileMeta.mimeType;
+                const isAudioVideo = detectedMime.includes('audio/') || detectedMime.includes('video/');
+                if (isAudioVideo) {
+                  return createJsonResponse({ status: 'error', message: 'Audio/Video from Drive not supported.' });
+                }
+                if (detectedMime && detectedMime.toLowerCase().includes('image/')) imageView = 'https://lh3.googleusercontent.com/d/' + driveId;
+              } catch (e) {}
+            }
+            
+            extractedText = routerUrlExtraction(body.url);
+            const doiMetaMatch = extractedText.match(/PRIMARY_DOI:\s*([^\n]+)/);
+            if (doiMetaMatch) primaryDoiFromMeta = doiMetaMatch[1].trim();
+          } else if (body.fileData) {
+            extractedText = handleFileExtraction(body.fileData, body.mimeType, fileName);
+            detectedMime = body.mimeType;
           }
-          
-          extractedText = routerUrlExtraction(body.url);
-          const doiMetaMatch = extractedText.match(/PRIMARY_DOI:\s*([^\n]+)/);
-          if (doiMetaMatch) primaryDoiFromMeta = doiMetaMatch[1].trim();
-        } else if (body.fileData) {
-          extractedText = handleFileExtraction(body.fileData, body.mimeType, fileName);
-          detectedMime = body.mimeType;
+        } catch (err) {
+          extractedText = "Extraction failed: " + err.toString();
         }
-      } catch (err) {
-        extractedText = "Extraction failed: " + err.toString();
-      }
 
-      const snippet = extractedText.substring(0, 15000);
-      
-      // STEP 2: Content Scanning (Fallback)
-      if (!detectedDoi) detectedDoi = primaryDoiFromMeta || (snippet.match(doiPattern) ? snippet.match(doiPattern)[0] : null);
-      if (!detectedIsbn) detectedIsbn = snippet.match(isbnPattern) ? snippet.match(isbnPattern)[1] : null;
-      if (!detectedIssn) detectedIssn = snippet.match(issnPattern) ? snippet.match(issnPattern)[1] : null;
-      if (!detectedPmid) detectedPmid = snippet.match(pmidPattern) ? snippet.match(pmidPattern)[1] : null;
-      if (!detectedArxiv) detectedArxiv = snippet.match(arxivPattern) ? (snippet.match(arxivPattern)[1] || snippet.match(arxivPattern)[0]) : null;
+        const snippet = extractedText.substring(0, 15000);
+        
+        // STEP 2: Content Scanning (Fallback)
+        if (!detectedDoi) detectedDoi = primaryDoiFromMeta || (snippet.match(doiPattern) ? snippet.match(doiPattern)[0] : null);
+        if (!detectedIsbn) detectedIsbn = snippet.match(isbnPattern) ? snippet.match(isbnPattern)[1] : null;
+        if (!detectedIssn) detectedIssn = snippet.match(issnPattern) ? snippet.match(issnPattern)[1] : null;
+        if (!detectedPmid) detectedPmid = snippet.match(pmidPattern) ? snippet.match(pmidPattern)[1] : null;
+        if (!detectedArxiv) detectedArxiv = snippet.match(arxivPattern) ? (snippet.match(arxivPattern)[1] || snippet.match(arxivPattern)[0]) : null;
 
-      // DOI CLEANUP
-      if (detectedDoi && !primaryDoiFromMeta) {
-        detectedDoi = detectedDoi.replace(/[.,;)]+$/, '');
-        if (/[0-9][A-Z]{3,}$/.test(detectedDoi)) {
-          const cleaned = detectedDoi.replace(/[A-Z]{3,}$/, '');
-          if (cleaned.length > 7) detectedDoi = cleaned;
+        // DOI CLEANUP
+        if (detectedDoi && !primaryDoiFromMeta) {
+          detectedDoi = detectedDoi.replace(/[.,;)]+$/, '');
+          if (/[0-9][A-Z]{3,}$/.test(detectedDoi)) {
+            const cleaned = detectedDoi.replace(/[A-Z]{3,}$/, '');
+            if (cleaned.length > 7) detectedDoi = cleaned;
+          }
         }
-      }
 
-      return createJsonResponse({ 
-        status: 'success', 
-        extractedText: extractedText,
-        fileName: fileName,
-        mimeType: detectedMime,
-        detectedDoi: detectedDoi,
-        detectedIsbn: detectedIsbn,
-        detectedIssn: detectedIssn,
-        detectedPmid: detectedPmid,
-        detectedArxiv: detectedArxiv,
-        imageView: imageView
-      });
+        return createJsonResponse({ 
+          status: 'success', 
+          extractedText: extractedText,
+          fileName: fileName,
+          mimeType: detectedMime,
+          detectedDoi: detectedDoi,
+          detectedIsbn: detectedIsbn,
+          detectedIssn: detectedIssn,
+          detectedPmid: detectedPmid,
+          detectedArxiv: detectedArxiv,
+          imageView: imageView
+        });
+      }
     }
 
     if (action === 'searchByIdentifier') return createJsonResponse(handleIdentifierSearch(body.idValue));

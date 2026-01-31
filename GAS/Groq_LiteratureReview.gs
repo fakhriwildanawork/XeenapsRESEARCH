@@ -62,11 +62,11 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
   const config = getProviderModel('Groq');
   const model = config.model;
 
-  const prompt = `ACT AS A SENIOR SCIENTIFIC ANALYST AND RESEARCH STRATEGIST.
+  const prompt = `ACT AS A SENIOR SCIENTIFIC ANALYST.
   I am conducting a deep Literature Review on this central question: "${centralQuestion}".
   
-  TASK: Perform a PROLIX AND COMPREHENSIVE extraction from the provided source text.
-  1. ANSWER: Provide an EXTREMELY DETAILED and MULTI-PARAGRAPH analysis (minimum 400 words). Do not just summarize; deep-dive into the methodology, technical nuances, primary data points, and the specific context used by the author to address the question. Explain the "How" and "Why" behind their conclusions.
+  TASK: Perform a COMPREHENSIVE AND HOLISTIC extraction from the provided source text.
+  1. ANSWER: Provide an EXTREMELY DETAILED SINGLE-PARAGRAPH analysis. This paragraph must be holistic, technical, and cover methodology, primary data, and nuances used by the author. Do not use bullets or multiple paragraphs for this section.
   2. VERBATIM: Extract the most impactful sentence that encapsulates their primary argument or result.
   
   --- RULES ---
@@ -80,7 +80,7 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
 
   EXPECTED JSON:
   {
-    "answer": "Extended technical multi-paragraph analysis covering methodology and results...",
+    "answer": "Holistic technical single-paragraph analysis covering methodology and results...",
     "verbatim": "..."
   }`;
 
@@ -90,7 +90,7 @@ function callGroqReviewExtractor(collectionId, centralQuestion) {
       const payload = {
         model: model,
         messages: [
-          { role: "system", content: "You are an expert scientific data extractor. You provide prolix, technical, and highly informative academic answers." },
+          { role: "system", content: "You are an expert scientific data extractor. You provide holistic, technical, and highly informative academic answers in a single dense paragraph." },
           { role: "user", content: prompt }
         ],
         temperature: 0.1,
@@ -126,17 +126,19 @@ function callGroqNarrativeSynthesizer(matrix, centralQuestion) {
   const matrixSummary = matrix.map((m, i) => `SOURCE ${i+1} (${m.title}): ${m.answer}`).join('\n\n');
 
   const prompt = `ACT AS A DISTINGUISHED ACADEMIC PROFESSOR.
-  TASK: Synthesize a Literature Review narrative for the central question: "${centralQuestion}".
+  TASK: Synthesize a VERY COMPREHENSIVE Literature Review narrative for: "${centralQuestion}".
   
   DATA INPUT (Matrix of findings from various literatures):
   ${matrixSummary}
 
   --- NARRATIVE REQUIREMENTS ---
-  - Write a cohesive 4-paragraph academic narrative.
-  - Para 1: Introduction of the problem and general trends across sources.
-  - Para 2: Synthesis of similar viewpoints and confirmations.
-  - Para 3: Discussion of contradictions or differences in methodologies/findings.
-  - Para 4: Conclusion and synthesis of the current state of knowledge.
+  - Write a cohesive and high-level academic synthesis.
+  - Use a mix of analytical paragraphs and NUMBERED LISTS for key comparative findings or trends to improve readability.
+  - Structure:
+    1. Introduction of the problem space and general trends.
+    2. Numbered list of core technical pillars found across sources.
+    3. Discussion of contradictions or gaps between sources.
+    4. Holistic conclusion on the current state of knowledge.
   - USE HTML TAGS: <b> for emphasis, <br/> for paragraph breaks.
   - RETURN PLAIN TEXT WITH HTML. NO MARKDOWN.
   
@@ -151,7 +153,7 @@ function callGroqNarrativeSynthesizer(matrix, centralQuestion) {
       const payload = {
         model: model,
         messages: [
-          { role: "system", content: "You are a professional academic writer. Provide only the synthesized narrative without conversation." },
+          { role: "system", content: "You are a professional academic writer. Provide a comprehensive synthesized narrative using HTML formatting and numbering lists for clarity." },
           { role: "user", content: prompt }
         ],
         temperature: 0.5
