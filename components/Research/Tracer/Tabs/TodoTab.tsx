@@ -50,6 +50,15 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
     return days;
   }, [viewAnchorDate, numDays, todayOffset]);
 
+  // STABLE ORDERING: Newest Created/Updated Always on Top
+  const sortedTodos = useMemo(() => {
+    return [...todos].sort((a, b) => {
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+  }, [todos]);
+
   const shiftWeek = (direction: number) => {
     const next = new Date(viewAnchorDate);
     next.setDate(next.getDate() + (direction * (isMobile ? 3 : 7)));
@@ -57,7 +66,6 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
   };
 
   const getPriorityColor = (todo: TracerTodo) => {
-    // Robust status check (String/Boolean/Pending safe)
     const isDone = todo.isDone === true || String(todo.isDone).toUpperCase() === 'TRUE';
     if (isDone) return 'bg-green-500';
     
@@ -80,26 +88,24 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
   const handleSaveTodo = async (data: TracerTodo) => {
     setFormModal({ open: false, mode: 'view' });
     
-    // OPTIMISTIC UPDATE: Instant UI Reflection
+    // OPTIMISTIC PREPEND: Force new item to top
     setTodos(prev => {
       const exists = prev.find(t => t.id === data.id);
       if (exists) return prev.map(t => t.id === data.id ? data : t);
-      return [...prev, data];
+      return [data, ...prev]; 
     });
 
     if (await saveTracerTodo(data)) {
-      await onRefresh(); // Silent Sync
+      await onRefresh(); 
     }
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (await showXeenapsDeleteConfirm(1)) {
-      // OPTIMISTIC DELETE: Instant UI Reflection
       setTodos(prev => prev.filter(t => t.id !== id));
-      
       if (await deleteTracerTodo(id)) {
-        await onRefresh(); // Silent Sync
+        await onRefresh();
       }
     }
   };
@@ -116,11 +122,10 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
       updatedAt: new Date().toISOString()
     };
 
-    // OPTIMISTIC COMPLETION: Force green instantly
     setTodos(prev => prev.map(t => t.id === updated.id ? updated : t));
 
     if (await saveTracerTodo(updated)) {
-      await onRefresh(); // Silent Sync
+      await onRefresh();
     }
   };
 
@@ -132,13 +137,12 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700">
       
-      {/* HEADER CONTROLS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1 md:px-2">
          <div className="space-y-1">
             <h3 className="text-[9px] md:text-[11px] font-black text-[#004A74] uppercase tracking-[0.3em] flex items-center gap-2">
               <Zap size={isMobile ? 12 : 16} className="text-[#FED400] fill-[#FED400]" /> {numDays}-Day Strategic Pulse
             </h3>
-            <p className="text-[7px] md:text-[8px] font-bold text-gray-400 uppercase tracking-widest">Gantt-Matrix Mode</p>
+            <p className="text-[7px] md:text-[8px] font-bold text-gray-400 uppercase tracking-widest">Chronological Matrix View</p>
          </div>
 
          <div className="flex items-center gap-2 bg-gray-100 p-1 md:p-1.5 rounded-xl border border-gray-200">
@@ -155,14 +159,13 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
          </div>
       </div>
 
-      {/* GANTT MATRIX CONTAINER */}
       <section className="bg-white border border-gray-100 rounded-[1.5rem] md:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
         <div className="overflow-x-auto custom-scrollbar-h">
           <div className="w-full min-w-0">
-            {/* GRID HEADER: Narrowed to 120px for better visibility */}
-            <div className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[120px_repeat(14,1fr)]'} border-b border-gray-100 bg-gray-50/50`}>
-               <div className="sticky left-0 z-30 bg-white border-r border-gray-200 px-4 py-3 flex items-center shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
-                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-gray-400">Execution</span>
+            {/* GRID HEADER: Execution column widened to 220px, dates narrowed */}
+            <div className={`grid ${isMobile ? 'grid-cols-[140px_repeat(7,1fr)]' : 'grid-cols-[220px_repeat(14,1fr)]'} border-b border-gray-100 bg-gray-50/50`}>
+               <div className="sticky left-0 z-30 bg-white border-r border-gray-200 px-5 py-3 flex items-center shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
+                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-[#004A74]">Project Execution Logs</span>
                </div>
                
                {timelineDays.map((day, idx) => {
@@ -171,12 +174,15 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
                  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                  
                  return (
-                   <div key={idx} className={`flex flex-col items-center justify-center py-2 border-r border-gray-50 transition-all ${isToday ? 'bg-[#FED400]/10' : ''}`}>
+                   <div key={idx} className={`flex flex-col items-center justify-center py-3 border-r border-gray-50 transition-all ${isToday ? 'bg-[#FED400]/10' : ''}`}>
                       <span className={`text-[7px] md:text-[8px] font-black uppercase mb-0.5 ${isToday ? 'text-[#004A74]' : 'text-gray-300'}`}>{dayNames[day.getDay()]}</span>
-                      <span className={`text-[9px] md:text-[10px] font-black ${isToday ? 'text-[#004A74] bg-[#FED400] w-5 h-5 flex items-center justify-center rounded-lg' : 'text-gray-400'}`}>
+                      <span className={`text-[9px] md:text-[10px] font-black ${isToday ? 'text-[#004A74] bg-[#FED400] w-6 h-6 flex items-center justify-center rounded-lg shadow-sm' : 'text-[#004A74]'}`}>
                         {day.getDate()}
                       </span>
-                      <span className="text-[6px] font-bold text-gray-300 uppercase mt-0.5">{monthNames[day.getMonth()]}</span>
+                      <div className="flex flex-col items-center -space-y-1">
+                        <span className="text-[6px] font-black text-gray-400 uppercase">{monthNames[day.getMonth()]}</span>
+                        <span className="text-[6px] font-black text-gray-300 uppercase">{day.getFullYear()}</span>
+                      </div>
                    </div>
                  );
                })}
@@ -184,33 +190,33 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
 
             {/* GRID BODY: TASK ROWS */}
             <div className="divide-y divide-gray-50">
-               {todos.length === 0 ? (
+               {sortedTodos.length === 0 ? (
                  <div className="py-20 text-center opacity-20">
                     <CheckCircle2 size={48} className="mx-auto mb-2 text-[#004A74]" />
                     <p className="text-[10px] font-black uppercase tracking-widest">Pipeline Clear</p>
                  </div>
-               ) : todos.map(todo => {
+               ) : sortedTodos.map(todo => {
                  const isDone = todo.isDone === true || String(todo.isDone).toUpperCase() === 'TRUE';
                  return (
-                 <div key={todo.id} className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[120px_repeat(14,1fr)]'} hover:bg-blue-50/20 transition-all group`}>
+                 <div key={todo.id} className={`grid ${isMobile ? 'grid-cols-[140px_repeat(7,1fr)]' : 'grid-cols-[220px_repeat(14,1fr)]'} hover:bg-blue-50/20 transition-all group`}>
                     <div 
                       onClick={() => setFormModal({ open: true, todo, mode: 'view' })}
-                      className="sticky left-0 z-20 bg-white border-r border-gray-200 px-3 py-3 flex items-center gap-2 cursor-pointer group-hover:bg-[#fcfcfc] shadow-[2px_0_10px_rgba(0,0,0,0.02)]"
+                      className="sticky left-0 z-20 bg-white border-r border-gray-200 px-4 py-4 flex items-center gap-3 cursor-pointer group-hover:bg-[#fcfcfc] shadow-[2px_0_10px_rgba(0,0,0,0.02)]"
                     >
-                       <div className={`shrink-0 w-1 h-6 rounded-full ${getPriorityColor(todo)}`} />
+                       <div className={`shrink-0 w-1.5 h-8 rounded-full ${getPriorityColor(todo)} shadow-sm`} />
                        <div className="min-w-0 flex-1">
-                          <h4 className="text-[9px] md:text-[10px] font-black text-[#004A74] uppercase truncate leading-tight">{todo.title}</h4>
-                          <div className="flex items-center gap-1 mt-0.5">
-                             <Clock size={8} className="text-gray-300" />
-                             <span className="text-[6px] font-bold text-gray-400 uppercase tracking-tighter">Due: {todo.deadline}</span>
+                          <h4 className="text-[9px] md:text-[11px] font-black text-[#004A74] uppercase truncate leading-tight mb-0.5">{todo.title}</h4>
+                          <div className="flex items-center gap-1.5">
+                             <Clock size={10} className="text-gray-300" />
+                             <span className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter">Deadline: {todo.deadline}</span>
                           </div>
                        </div>
                        
-                       <div className="flex gap-1 ml-1">
+                       <div className="flex gap-1.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           {!isDone && (
-                            <button onClick={(e) => handleCompleteRequest(e, todo)} className="p-1 text-green-500 hover:bg-green-50 rounded transition-all"><Check size={12} strokeWidth={3}/></button>
+                            <button onClick={(e) => handleCompleteRequest(e, todo)} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition-all"><Check size={14} strokeWidth={4}/></button>
                           )}
-                          <button onClick={(e) => handleDelete(e, todo.id)} className="p-1 text-red-200 hover:text-red-500 rounded transition-all"><Trash2 size={12} /></button>
+                          <button onClick={(e) => handleDelete(e, todo.id)} className="p-1.5 text-red-200 hover:text-red-500 rounded-lg transition-all"><Trash2 size={14} /></button>
                        </div>
                     </div>
 
@@ -219,11 +225,11 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
                       const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
                       const colorClass = isActive ? getPriorityColor(todo) : 'bg-transparent';
                       return (
-                        <div key={idx} className={`border-r border-gray-50 flex items-center justify-center p-0.5 min-h-[48px] ${isToday ? 'bg-[#FED400]/5' : ''}`}>
+                        <div key={idx} className={`border-r border-gray-50 flex items-center justify-center p-0.5 min-h-[56px] ${isToday ? 'bg-[#FED400]/5' : ''}`}>
                            {isActive && (
                              <div 
                                onClick={() => setFormModal({ open: true, todo, mode: 'view' })}
-                               className={`w-full h-full rounded-sm shadow-sm transition-all hover:scale-105 cursor-pointer ${colorClass}`}
+                               className={`w-full h-full rounded-sm shadow-sm transition-all hover:scale-[1.03] cursor-pointer ${colorClass}`}
                              />
                            )}
                         </div>
@@ -236,12 +242,11 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
         </div>
       </section>
 
-      {/* COMPACTED LEGEND */}
-      <div className="flex flex-wrap items-center justify-center gap-4 px-6 py-3 bg-white/50 rounded-2xl border border-gray-100 backdrop-blur-sm">
-         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500" /><span className="text-[7px] font-black text-gray-500 uppercase">Done</span></div>
-         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500" /><span className="text-[7px] font-black text-gray-500 uppercase">Alert</span></div>
-         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-yellow-400" /><span className="text-[7px] font-black text-gray-500 uppercase">Critical</span></div>
-         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#004A74]" /><span className="text-[7px] font-black text-gray-500 uppercase">Active</span></div>
+      <div className="flex flex-wrap items-center justify-center gap-6 px-6 py-4 bg-white/50 rounded-3xl border border-gray-100 backdrop-blur-sm">
+         <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm" /><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Done</span></div>
+         <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm" /><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Alert</span></div>
+         <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-sm" /><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Critical</span></div>
+         <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-[#004A74] shadow-sm" /><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Active</span></div>
       </div>
 
       {formModal.open && <TodoFormModal projectId={projectId} todo={formModal.todo} mode={formModal.mode} onClose={() => setFormModal({ open: false, mode: 'view' })} onSave={handleSaveTodo} />}
