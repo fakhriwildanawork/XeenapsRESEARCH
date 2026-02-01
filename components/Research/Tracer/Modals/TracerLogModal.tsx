@@ -94,9 +94,15 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
     updatedAt: new Date().toISOString()
   });
 
-  const [content, setContent] = useState<TracerLogContent>(initialContent || {
-    description: '',
-    attachments: []
+  const [content, setContent] = useState<TracerLogContent>(() => {
+    if (initialContent) return {
+      description: initialContent.description || '',
+      attachments: Array.isArray(initialContent.attachments) ? initialContent.attachments : []
+    };
+    return {
+      description: '',
+      attachments: []
+    };
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -106,7 +112,12 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
     if (log?.logJsonId && !initialContent) {
       const load = async () => {
         const data = await fetchFileContent(log.logJsonId, log.storageNodeUrl);
-        if (data) setContent(data);
+        if (data) {
+          setContent({
+            description: data.description || '',
+            attachments: Array.isArray(data.attachments) ? data.attachments : []
+          });
+        }
         setIsLoadingContent(false);
       };
       load();
@@ -125,7 +136,6 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
         previewUrl = URL.createObjectURL(file);
       }
 
-      // Optimistic Thumbnail with Spinner
       const placeholder: TracerLogAttachment = {
         type: 'FILE',
         label: file.name,
@@ -136,10 +146,8 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
 
       setContent(prev => ({ ...prev, attachments: [...prev.attachments, placeholder] }));
 
-      // Background Upload
       const uploadPromise = uploadVaultFile(file).then(result => {
         if (result) {
-          /* Fix: uploadVaultFile result type is { fileId: string, nodeUrl: string }, so we use file.type for the MIME check instead of result.mimeType */
           const finalUrl = file.type.startsWith('image/') 
             ? `https://lh3.googleusercontent.com/d/${result.fileId}`
             : `https://drive.google.com/file/d/${result.fileId}/view`;
@@ -180,7 +188,6 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
     e.preventDefault();
     if (!formData.title.trim()) return;
     
-    // Wait for uploads
     if (uploadPromises.current.size > 0) {
       showXeenapsToast('info', 'Finishing file uploads...');
       await Promise.all(uploadPromises.current.values());
@@ -200,7 +207,6 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
     <div className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
       <div className="bg-white rounded-[2.5rem] w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20">
         
-        {/* HEADER */}
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
            <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
@@ -261,7 +267,7 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                     {content.attachments.map((at, idx) => {
+                     {(content.attachments || []).map((at, idx) => {
                         const isPending = at.fileId?.startsWith('pending_');
                         const isImage = at.mimeType?.startsWith('image/') || at.url?.includes('lh3.googleusercontent');
                         
