@@ -312,6 +312,8 @@ function doPost(e) {
     if (action === 'linkTracerReference') return createJsonResponse(linkTracerReferenceToRegistry(body.item));
     // NEW: unlinkTracerReference
     if (action === 'unlinkTracerReference') return createJsonResponse(unlinkTracerReferenceFromRegistry(body.id));
+    // NEW: saveReferenceContent
+    if (action === 'saveReferenceContent') return createJsonResponse(saveReferenceContentToRegistry(body.item, body.content));
     
     // NEW: Tracer Todo
     if (action === 'saveTracerTodo') return createJsonResponse(saveTracerTodoToRegistry(body.item));
