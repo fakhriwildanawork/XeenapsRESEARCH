@@ -18,10 +18,11 @@ import TodoCompletionModal from '../Modals/TodoCompletionModal';
 interface TodoTabProps {
   projectId: string;
   todos: TracerTodo[];
+  setTodos: React.Dispatch<React.SetStateAction<TracerTodo[]>>;
   onRefresh: () => Promise<void>;
 }
 
-const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, onRefresh }) => {
+const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [viewAnchorDate, setViewAnchorDate] = useState(new Date());
   const [formModal, setFormModal] = useState<{ open: boolean; todo?: TracerTodo; mode: 'view' | 'edit' }>({ open: false, mode: 'view' });
@@ -56,7 +57,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, onRefresh }) => {
   };
 
   const getPriorityColor = (todo: TracerTodo) => {
-    // Robust status check (String/Boolean safe)
+    // Robust status check (String/Boolean/Pending safe)
     const isDone = todo.isDone === true || String(todo.isDone).toUpperCase() === 'TRUE';
     if (isDone) return 'bg-green-500';
     
@@ -78,19 +79,35 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, onRefresh }) => {
 
   const handleSaveTodo = async (data: TracerTodo) => {
     setFormModal({ open: false, mode: 'view' });
-    if (await saveTracerTodo(data)) await onRefresh();
+    
+    // OPTIMISTIC UPDATE: Instant UI Reflection
+    setTodos(prev => {
+      const exists = prev.find(t => t.id === data.id);
+      if (exists) return prev.map(t => t.id === data.id ? data : t);
+      return [...prev, data];
+    });
+
+    if (await saveTracerTodo(data)) {
+      await onRefresh(); // Silent Sync
+    }
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (await showXeenapsDeleteConfirm(1)) {
-      if (await deleteTracerTodo(id)) await onRefresh();
+      // OPTIMISTIC DELETE: Instant UI Reflection
+      setTodos(prev => prev.filter(t => t.id !== id));
+      
+      if (await deleteTracerTodo(id)) {
+        await onRefresh(); // Silent Sync
+      }
     }
   };
 
   const handleFinalizeCompletion = async (completedDate: string, remarks: string) => {
     if (!completionModal.todo) return;
     setCompletionModal({ open: false });
+    
     const updated: TracerTodo = { 
       ...completionModal.todo, 
       isDone: true, 
@@ -98,7 +115,13 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, onRefresh }) => {
       completionRemarks: remarks,
       updatedAt: new Date().toISOString()
     };
-    if (await saveTracerTodo(updated)) await onRefresh();
+
+    // OPTIMISTIC COMPLETION: Force green instantly
+    setTodos(prev => prev.map(t => t.id === updated.id ? updated : t));
+
+    if (await saveTracerTodo(updated)) {
+      await onRefresh(); // Silent Sync
+    }
   };
 
   const handleCompleteRequest = (e: React.MouseEvent, todo: TracerTodo) => {
@@ -136,8 +159,8 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, onRefresh }) => {
       <section className="bg-white border border-gray-100 rounded-[1.5rem] md:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
         <div className="overflow-x-auto custom-scrollbar-h">
           <div className="w-full min-w-0">
-            {/* GRID HEADER: Column narrowed for visibility */}
-            <div className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[140px_repeat(14,1fr)]'} border-b border-gray-100 bg-gray-50/50`}>
+            {/* GRID HEADER: Narrowed to 120px for better visibility */}
+            <div className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[120px_repeat(14,1fr)]'} border-b border-gray-100 bg-gray-50/50`}>
                <div className="sticky left-0 z-30 bg-white border-r border-gray-200 px-4 py-3 flex items-center shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-gray-400">Execution</span>
                </div>
@@ -169,7 +192,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, onRefresh }) => {
                ) : todos.map(todo => {
                  const isDone = todo.isDone === true || String(todo.isDone).toUpperCase() === 'TRUE';
                  return (
-                 <div key={todo.id} className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[140px_repeat(14,1fr)]'} hover:bg-blue-50/20 transition-all group`}>
+                 <div key={todo.id} className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[120px_repeat(14,1fr)]'} hover:bg-blue-50/20 transition-all group`}>
                     <div 
                       onClick={() => setFormModal({ open: true, todo, mode: 'view' })}
                       className="sticky left-0 z-20 bg-white border-r border-gray-200 px-3 py-3 flex items-center gap-2 cursor-pointer group-hover:bg-[#fcfcfc] shadow-[2px_0_10px_rgba(0,0,0,0.02)]"
@@ -182,7 +205,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, onRefresh }) => {
                              <span className="text-[6px] font-bold text-gray-400 uppercase tracking-tighter">Due: {todo.deadline}</span>
                           </div>
                        </div>
-                       {/* RESTORED ACTION BUTTONS */}
+                       
                        <div className="flex gap-1 ml-1">
                           {!isDone && (
                             <button onClick={(e) => handleCompleteRequest(e, todo)} className="p-1 text-green-500 hover:bg-green-50 rounded transition-all"><Check size={12} strokeWidth={3}/></button>
@@ -196,7 +219,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, onRefresh }) => {
                       const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
                       const colorClass = isActive ? getPriorityColor(todo) : 'bg-transparent';
                       return (
-                        <div key={idx} className={`border-r border-gray-50 flex items-center justify-center p-1 min-h-[48px] ${isToday ? 'bg-[#FED400]/5' : ''}`}>
+                        <div key={idx} className={`border-r border-gray-50 flex items-center justify-center p-0.5 min-h-[48px] ${isToday ? 'bg-[#FED400]/5' : ''}`}>
                            {isActive && (
                              <div 
                                onClick={() => setFormModal({ open: true, todo, mode: 'view' })}

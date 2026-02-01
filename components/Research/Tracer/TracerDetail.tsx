@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { useParams, useNavigate } from 'react-router-dom';
@@ -22,7 +21,6 @@ import {
   MessageSquare,
   FlaskConical,
   Users,
-  // Added missing icon imports
   Plus,
   Clock
 } from 'lucide-react';
@@ -173,7 +171,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
             </div>
           )}
 
-          {activeTab === 'todo' && <TodoTab projectId={project.id} todos={todos} onRefresh={loadAllData} />}
+          {activeTab === 'todo' && <TodoTab projectId={project.id} todos={todos} setTodos={setTodos} onRefresh={() => loadAllData(false)} />}
           {activeTab === 'log' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
                <div className="flex justify-between items-center px-4">
