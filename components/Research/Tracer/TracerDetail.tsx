@@ -247,7 +247,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                <div className="space-y-2">
                   {logs.length === 0 ? <div className="py-20 text-center opacity-20"><Layout size={48} className="mx-auto mb-2" /><p className="text-[10px] font-black uppercase">No entries yet</p></div> : 
                     [...logs].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(l => (
-                      <div key={l.id} onClick={() => handleOpenLog(l)} className="bg-white px-6 py-4 rounded-2xl border border-gray-50 flex items-center gap-4 hover:bg-gray-50 hover:shadow-md transition-all cursor-pointer group">
+                      <div key={l.id} onClick={() => handleOpenLog(l)} className="bg-white px-6 py-4 rounded-2xl border border-gray-200 flex items-center gap-4 hover:bg-gray-50 hover:shadow-md transition-all cursor-pointer group">
                         <div className="px-3 py-1 bg-[#004A74]/5 border border-[#004A74]/10 rounded-full text-[10px] font-black text-[#004A74] whitespace-nowrap font-mono shadow-sm">
                           {formatLogTime(l.createdAt)}
                         </div>
