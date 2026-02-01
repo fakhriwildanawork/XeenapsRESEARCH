@@ -76,9 +76,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
                   <Edit3 size={20} />
                 </button>
               )}
-              <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
-                <X size={28} />
-              </button>
+              <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={28} /></button>
            </div>
         </div>
 
@@ -88,7 +86,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2">
                 <div className="space-y-2">
                    <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.4em]">Inquiry Title</span>
-                   <h1 className="text-2xl md:text-3xl font-black text-[#004A74] uppercase tracking-tighter leading-tight">{formData.title}</h1>
+                   <h1 className="text-2xl md:text-3xl font-black text-[#004A74] leading-tight">{formData.title}</h1>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-50">
@@ -144,7 +142,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
                 <FormField label="To Do Title" required>
                    <input 
                      autoFocus
-                     className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-lg font-black text-[#004A74] uppercase outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all"
+                     className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-lg font-black text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all"
                      value={formData.title}
                      onChange={e => setFormData({...formData, title: e.target.value})}
                      placeholder="WHAT NEEDS TO BE DONE?"

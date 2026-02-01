@@ -124,7 +124,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/research/tracer')} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] rounded-xl transition-all"><ArrowLeft size={18} /></button>
           <div className="min-w-0">
-            <h2 className="text-sm font-black text-[#004A74] uppercase truncate">{project.title || project.label}</h2>
+            <h2 className="text-sm font-black text-[#004A74] truncate">{project.title || project.label}</h2>
             <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Project ID: {project.id.substring(0,8)}</p>
           </div>
         </div>
@@ -143,7 +143,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField label="Audit Project Label" required>
-                     <input className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-[#004A74] uppercase outline-none focus:ring-4 focus:ring-[#004A74]/5 transition-all" value={project.label || ''} onChange={e => handleUpdateField('label', e.target.value)} />
+                     <input className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-[#004A74] outline-none focus:ring-4 focus:ring-[#004A74]/5 transition-all" value={project.label || ''} onChange={e => handleUpdateField('label', e.target.value)} />
                   </FormField>
                   <FormField label="Progress Index">
                      <div className="flex items-center gap-4 bg-gray-50 px-5 py-2 rounded-2xl border border-gray-200 h-[52px]">
@@ -156,7 +156,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                   <FormField label="Project Start Date"><input type="date" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono font-bold text-[#004A74]" value={project.startDate} onChange={e => handleUpdateField('startDate', e.target.value)} /></FormField>
                   <FormField label="Target End Date"><input type="date" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono font-bold text-[#004A74]" value={project.estEndDate} onChange={e => handleUpdateField('estEndDate', e.target.value)} /></FormField>
                </div>
-               <FormField label="Full Research Title"><textarea className="w-full px-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-sm font-bold text-[#004A74] uppercase outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[100px] resize-none" value={project.title} onChange={e => handleUpdateField('title', e.target.value)} /></FormField>
+               <FormField label="Full Research Title"><textarea className="w-full px-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-sm font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[100px] resize-none" value={project.title} onChange={e => handleUpdateField('title', e.target.value)} /></FormField>
                <FormField label="Research Topic / Domain"><div className="relative group"><Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" /><input className="w-full pl-11 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all" value={project.topic || ''} onChange={e => handleUpdateField('topic', e.target.value)} /></div></FormField>
                <FormField label="Problem Justification"><textarea className="w-full px-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-xs font-medium text-gray-600 leading-relaxed outline-none focus:bg-white min-h-[120px] resize-none" value={project.problemStatement || ''} onChange={e => handleUpdateField('problemStatement', e.target.value)} /></FormField>
                <FormField label="The White Space (Gap)"><div className="relative"><div className="absolute top-0 left-0 w-1.5 h-full bg-[#FED400] rounded-l-[1.5rem]" /><textarea className="w-full px-8 py-5 bg-[#004A74]/5 border border-[#004A74]/10 rounded-[1.5rem] text-xs font-bold text-[#004A74] leading-relaxed outline-none focus:bg-white min-h-[120px] resize-none" value={project.researchGap || ''} onChange={e => handleUpdateField('researchGap', e.target.value)} /></div></FormField>

@@ -205,7 +205,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
                     >
                        <div className={`shrink-0 w-1.5 h-8 rounded-full ${getPriorityColor(todo)} shadow-sm`} />
                        <div className="min-w-0 flex-1">
-                          <h4 className="text-[9px] md:text-[11px] font-black text-[#004A74] uppercase truncate leading-tight mb-0.5">{todo.title}</h4>
+                          <h4 className="text-[9px] md:text-[11px] font-black text-[#004A74] truncate leading-tight mb-0.5">{todo.title}</h4>
                           <div className="flex items-center gap-1.5">
                              <Clock size={10} className="text-gray-300" />
                              <span className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter">Deadline: {todo.deadline}</span>
