@@ -23,7 +23,7 @@ const TodoCompletionModal: React.FC<TodoCompletionModalProps> = ({ todo, onClose
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!remarks.trim()) return;
+    if (!remarks.trim() || isSyncing) return;
     
     setIsSyncing(true);
     await onConfirm(completedDate, remarks);
@@ -49,7 +49,7 @@ const TodoCompletionModal: React.FC<TodoCompletionModalProps> = ({ todo, onClose
                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                  <input 
                     type="date"
-                    className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-[#004A74] outline-none"
+                    className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-[#004A74] outline-none focus:ring-4 focus:ring-[#004A74]/5 transition-all"
                     value={completedDate}
                     onChange={e => setCompletedDate(e.target.value)}
                  />
@@ -62,7 +62,7 @@ const TodoCompletionModal: React.FC<TodoCompletionModalProps> = ({ todo, onClose
                  <textarea 
                     autoFocus
                     required
-                    className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-medium text-[#004A74] outline-none focus:bg-white min-h-[120px] resize-none leading-relaxed"
+                    className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-medium text-[#004A74] outline-none focus:bg-white min-h-[120px] resize-none leading-relaxed transition-all focus:ring-4 focus:ring-[#004A74]/5"
                     placeholder="Describe the final outcome..."
                     value={remarks}
                     onChange={e => setRemarks(e.target.value)}
@@ -74,7 +74,8 @@ const TodoCompletionModal: React.FC<TodoCompletionModalProps> = ({ todo, onClose
               <button 
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all"
+                disabled={isSyncing}
+                className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all disabled:opacity-50"
               >
                 Cancel
               </button>

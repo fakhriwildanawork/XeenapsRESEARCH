@@ -13,7 +13,8 @@ import {
   Clock,
   CheckCircle2,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { FormField } from '../../../Common/FormComponents';
 
@@ -27,6 +28,7 @@ interface TodoFormModalProps {
 
 const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: initialMode, onClose, onSave }) => {
   const [mode, setMode] = useState<'view' | 'edit'>(initialMode);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<TracerTodo>(todo || {
     id: crypto.randomUUID(),
     projectId,
@@ -43,9 +45,11 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
     updatedAt: new Date().toISOString()
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ ...formData, updatedAt: new Date().toISOString() });
+    setIsSubmitting(true);
+    await onSave({ ...formData, updatedAt: new Date().toISOString() });
+    setIsSubmitting(false);
   };
 
   return (
@@ -157,7 +161,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
                    </FormField>
                 </div>
 
-                <FormField label="Strategic Keterangan">
+                <FormField label="Strategic Details">
                    <textarea 
                      className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium text-[#004A74] outline-none focus:bg-white min-h-[120px]"
                      value={formData.description}
@@ -176,8 +180,13 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
                 </div>
 
                 <div className="pt-6">
-                   <button type="submit" className="w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
-                      <Save size={18} /> Synchronize Task
+                   <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                   >
+                      {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                      {isSubmitting ? 'SYCHRONIZING...' : 'Synchronize Task'}
                    </button>
                 </div>
              </form>
