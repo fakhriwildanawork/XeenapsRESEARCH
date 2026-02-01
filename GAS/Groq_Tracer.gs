@@ -1,6 +1,7 @@
 /**
  * XEENAPS PKM - GROQ TRACER AI SERVICE
  * Specialized in contextual quote discovery and academic paraphrasing.
+ * Updated to support triple-quote discovery for holistic coverage.
  */
 
 function handleAiTracerQuoteExtraction(payload) {
@@ -45,26 +46,23 @@ function handleAiTracerQuoteExtraction(payload) {
   if (!fullText) return { status: 'error', message: "Extracted content empty." };
 
   const prompt = `ACT AS A PRECISION RESEARCH ASSISTANT.
-  I am looking for a specific quote/paragraph from a paper that matches this CONTEXT: "${contextQuery}".
+  I am looking for exactly THREE (3) distinct and relevant quotes/paragraphs from a paper that match this CONTEXT: "${contextQuery}".
   
   TASK: 
   1. SCAN the provided [DOCUMENT_CONTENT].
-  2. EXTRACT the most relevant paragraph or sequence of sentences verbatim.
-  3. IDENTIFY the surrounding context of that quote.
+  2. IDENTIFY 3 different impactful evidence blocks (paragraphs or groups of sentences).
+  3. EXTRACT "originalText" verbatim for each.
+  4. ARCHITECT an "enhancedText" for each: a sophisticated academic paraphrase that describes the finding purely. 
+     - DO NOT include in-text citations or years in "enhancedText". 
+     - Use high-level vocabulary suitable for a top-tier journal.
   
   --- RULES ---
   - RETURN RAW JSON ONLY.
-  - DO NOT PARAPHRASE in the "originalText" field.
-  - IF NOT FOUND, return an empty string for originalText.
+  - RESPONSE_FORMAT: { "data": [ { "originalText": "...", "enhancedText": "..." }, ... ] }
+  - IF less than 3 are found, return as many as possible (min 1).
   
   [DOCUMENT_CONTENT]:
-  ${fullText.substring(0, 50000)}
-
-  EXPECTED JSON:
-  {
-    "originalText": "The verbatim text from the paper...",
-    "contextFound": "Brief explanation of where/how this matches your query..."
-  }`;
+  ${fullText.substring(0, 50000)}`;
 
   const config = getProviderModel('Groq');
   const model = config.model;
@@ -78,7 +76,7 @@ function handleAiTracerQuoteExtraction(payload) {
         payload: JSON.stringify({
           model: model,
           messages: [
-            { role: "system", content: "You are a scientific data finder. Provide only raw JSON." },
+            { role: "system", content: "You are a scientific data specialist. Provide only raw JSON with 'data' array containing original and enhanced fields." },
             { role: "user", content: prompt }
           ],
           temperature: 0.1,
@@ -88,7 +86,8 @@ function handleAiTracerQuoteExtraction(payload) {
       });
       const responseData = JSON.parse(res.getContentText());
       if (responseData.choices && responseData.choices.length > 0) {
-        return { status: 'success', data: JSON.parse(responseData.choices[0].message.content) };
+        const parsed = JSON.parse(responseData.choices[0].message.content);
+        return { status: 'success', data: parsed.data };
       }
     } catch (err) { console.log("Groq Tracer rotate..."); }
   }

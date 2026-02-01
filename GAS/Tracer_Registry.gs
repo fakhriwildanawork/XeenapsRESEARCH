@@ -45,6 +45,16 @@ function setupTracerDatabase() {
       rSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       rSheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
       rSheet.setFrozenRows(1);
+    } else {
+      // Update headers for references to include sharding
+      const currentHeaders = rSheet.getRange(1, 1, 1, rSheet.getLastColumn()).getValues()[0];
+      const targetHeaders = CONFIG.SCHEMAS.TRACER_REFERENCES;
+      const missingHeaders = targetHeaders.filter(h => !currentHeaders.includes(h));
+      if (missingHeaders.length > 0) {
+        const startCol = currentHeaders.length + 1;
+        rSheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
+        rSheet.getRange(1, startCol, 1, missingHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
+      }
     }
 
     // 4. To Do Sheet
@@ -91,7 +101,7 @@ function getTracerProjectsFromRegistry(page = 1, limit = 25, search = "") {
     });
     
     const totalCount = filtered.length;
-    const paginated = filtered.slice((page - 1) * limit, page * limit);
+    const paginated = filtered.slice((page - 1) * limit, (page * limit));
     
     const items = paginated.map(row => {
       let obj = {};
@@ -307,7 +317,7 @@ function deleteTracerLogFromRegistry(id) {
         return { status: 'success' };
       }
     }
-    return { status: 'error' };
+    return { status: error };
   } catch (e) { return { status: 'error' }; }
 }
 
@@ -351,12 +361,104 @@ function unlinkTracerReferenceFromRegistry(id) {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
     const sheet = ss.getSheetByName("TracerReferences");
     if (!sheet) return { status: 'error' };
+    
     const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idIdx = headers.indexOf('id');
+    const jsonIdIdx = headers.indexOf('contentJsonId');
+    const nodeIdx = headers.indexOf('storageNodeUrl');
+
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === id) { sheet.deleteRow(i + 1); break; }
+      if (data[i][idIdx] === id) {
+        const fileId = data[i][jsonIdIdx];
+        const nodeUrl = data[i][nodeIdx];
+        
+        // Cleanup sharded quotes file
+        if (fileId && nodeUrl) {
+          const myUrl = ScriptApp.getService().getUrl();
+          if (nodeUrl === myUrl || nodeUrl === "") {
+             permanentlyDeleteFile(fileId);
+          } else {
+            UrlFetchApp.fetch(nodeUrl, {
+              method: 'post',
+              contentType: 'application/json',
+              payload: JSON.stringify({ action: 'deleteRemoteFiles', fileIds: [fileId] }),
+              muteHttpExceptions: true
+            });
+          }
+        }
+
+        sheet.deleteRow(i + 1);
+        return { status: 'success' };
+      }
     }
-    return { status: 'success' };
+    return { status: 'error' };
   } catch (e) { return { status: 'error' }; }
+}
+
+/**
+ * SHARDING: Save/Update Reference Content (Saved Quotes)
+ */
+function saveReferenceContentToRegistry(item, content) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
+    let sheet = ss.getSheetByName("TracerReferences");
+    if (!sheet) return { status: 'error', message: 'Sheet missing.' };
+    
+    const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+    const idIdx = headers.indexOf('id');
+    const jsonIdIdx = headers.indexOf('contentJsonId');
+    const nodeIdx = headers.indexOf('storageNodeUrl');
+    
+    const data = sheet.getDataRange().getValues();
+    let rowIndex = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idIdx] === item.id) { rowIndex = i + 1; break; }
+    }
+    if (rowIndex === -1) throw new Error("Reference anchor not found.");
+
+    // Determine storage node
+    let storageTarget;
+    if (item.contentJsonId) {
+      storageTarget = { url: item.storageNodeUrl, isLocal: !item.storageNodeUrl || item.storageNodeUrl === ScriptApp.getService().getUrl() };
+    } else {
+      storageTarget = getViableStorageTarget(CONFIG.STORAGE.CRITICAL_THRESHOLD);
+    }
+    if (!storageTarget) throw new Error("Storage Critical.");
+
+    const jsonFileName = `ref_content_${item.id}.json`;
+    const jsonBody = JSON.stringify(content);
+
+    if (storageTarget.isLocal) {
+      let file;
+      if (item.contentJsonId) {
+        file = DriveApp.getFileById(item.contentJsonId);
+        file.setContent(jsonBody);
+      } else {
+        const folder = DriveApp.getFolderById(CONFIG.FOLDERS.MAIN_LIBRARY);
+        file = folder.createFile(Utilities.newBlob(jsonBody, 'application/json', jsonFileName));
+        item.contentJsonId = file.getId();
+        sheet.getRange(rowIndex, jsonIdIdx + 1).setValue(item.contentJsonId);
+      }
+      item.storageNodeUrl = ScriptApp.getService().getUrl();
+      sheet.getRange(rowIndex, nodeIdx + 1).setValue(item.storageNodeUrl);
+    } else {
+      const res = UrlFetchApp.fetch(storageTarget.url, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({ action: 'saveJsonFile', fileId: item.contentJsonId || null, fileName: jsonFileName, content: jsonBody })
+      });
+      const resJson = JSON.parse(res.getContentText());
+      if (resJson.status === 'success') {
+        item.contentJsonId = resJson.fileId;
+        item.storageNodeUrl = storageTarget.url;
+        sheet.getRange(rowIndex, jsonIdIdx + 1).setValue(item.contentJsonId);
+        sheet.getRange(rowIndex, nodeIdx + 1).setValue(item.storageNodeUrl);
+      }
+    }
+
+    return { status: 'success' };
+  } catch (e) { return { status: 'error', message: e.toString() }; }
 }
 
 // --- TODO HANDLERS ---

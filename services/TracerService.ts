@@ -1,5 +1,4 @@
-
-import { TracerProject, TracerLog, TracerReference, TracerQuote, TracerTodo, GASResponse } from '../types';
+import { TracerProject, TracerLog, TracerReference, TracerReferenceContent, TracerQuote, TracerTodo, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
 /**
@@ -81,7 +80,6 @@ export const saveTracerLog = async (item: TracerLog, content: { description: str
   }
 };
 
-// Added missing deleteTracerLog implementation to handle journal entry deletion
 export const deleteTracerLog = async (id: string): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
   try {
@@ -137,6 +135,37 @@ export const unlinkTracerReference = async (id: string): Promise<boolean> => {
 };
 
 /**
+ * SHARDING: Reference Content (Quotes) Management
+ */
+export const fetchReferenceContent = async (contentJsonId: string, nodeUrl?: string): Promise<TracerReferenceContent | null> => {
+  if (!contentJsonId) return null;
+  try {
+    const targetUrl = nodeUrl || GAS_WEB_APP_URL;
+    if (!targetUrl) return null;
+    const finalUrl = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}action=getFileContent&fileId=${contentJsonId}`;
+    const response = await fetch(finalUrl);
+    const result = await response.json();
+    return result.status === 'success' ? JSON.parse(result.content) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const saveReferenceContent = async (item: TracerReference, content: TracerReferenceContent): Promise<boolean> => {
+  if (!GAS_WEB_APP_URL) return false;
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveReferenceContent', item, content })
+    });
+    const result = await res.json();
+    return result.status === 'success';
+  } catch (e) {
+    return false;
+  }
+};
+
+/**
  * TODO SERVICE: Manage Tasks within Projects
  */
 export const fetchTracerTodos = async (projectId: string): Promise<TracerTodo[]> => {
@@ -180,9 +209,9 @@ export const deleteTracerTodo = async (id: string): Promise<boolean> => {
 };
 
 /**
- * AI TRACER: Quote Extraction via Groq
+ * AI TRACER: Quote Extraction via Groq (Multi-Quote v2)
  */
-export const extractTracerQuote = async (collectionId: string, contextQuery: string): Promise<Partial<TracerQuote> | null> => {
+export const extractTracerQuotes = async (collectionId: string, contextQuery: string): Promise<Array<{ originalText: string; enhancedText: string }> | null> => {
   if (!GAS_WEB_APP_URL) return null;
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
@@ -194,6 +223,7 @@ export const extractTracerQuote = async (collectionId: string, contextQuery: str
       })
     });
     const result = await res.json();
+    // Expected return is an array of objects
     return result.status === 'success' ? result.data : null;
   } catch (e) {
     return null;
@@ -201,7 +231,7 @@ export const extractTracerQuote = async (collectionId: string, contextQuery: str
 };
 
 /**
- * AI TRACER: Academic Enhancement via Groq
+ * AI TRACER: Single Academic Enhancement via Groq
  */
 export const enhanceTracerQuote = async (originalText: string, citation: string): Promise<string | null> => {
   if (!GAS_WEB_APP_URL) return null;

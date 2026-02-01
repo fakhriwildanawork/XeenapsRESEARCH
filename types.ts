@@ -1,4 +1,3 @@
-
 export enum SourceType {
   LINK = 'LINK',
   FILE = 'FILE',
@@ -467,10 +466,24 @@ export interface TracerTodo {
   updatedAt: string;
 }
 
+export interface TracerSavedQuote {
+  id: string;
+  originalText: string;
+  enhancedText: string;
+  lang: string;
+  createdAt: string;
+}
+
+export interface TracerReferenceContent {
+  quotes: TracerSavedQuote[];
+}
+
 export interface TracerReference {
   id: string;
   projectId: string;
   collectionId: string; // Links to LibraryItem
+  contentJsonId: string; // Sharding ID for quotes
+  storageNodeUrl: string; // Sharding node URL
   createdAt: string;
 }
 
