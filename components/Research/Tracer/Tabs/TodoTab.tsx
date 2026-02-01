@@ -208,7 +208,9 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
                           <h4 className="text-[9px] md:text-[11px] font-black text-[#004A74] truncate leading-tight mb-0.5">{todo.title}</h4>
                           <div className="flex items-center gap-1.5">
                              <Clock size={10} className="text-gray-300" />
-                             <span className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter">Deadline: {todo.deadline}</span>
+                             <span className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter">
+  Deadline: {format(new Date(todo.deadline), 'dd MMM yyyy')}
+</span>
                           </div>
                        </div>
                        
