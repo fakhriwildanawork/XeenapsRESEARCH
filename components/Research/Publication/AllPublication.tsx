@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PublicationItem, PublicationStatus } from '../../../types';
 import { fetchPublicationsPaginated, deletePublication, savePublication } from '../../../services/PublicationService';
+import { getCleanedProfileName } from '../../../services/ProfileService';
 import { 
   Plus, 
   Trash2, 
@@ -108,11 +109,14 @@ const AllPublication: React.FC = () => {
     });
 
     if (title) {
+      // Fetch Cleaned Profile Name for dynamic initialization
+      const cleanedAuthorName = await getCleanedProfileName();
+      
       const id = crypto.randomUUID();
       const newItem: PublicationItem = {
         id,
         title,
-        authors: ['Xeenaps User'],
+        authors: [cleanedAuthorName],
         type: 'Journal',
         status: PublicationStatus.DRAFT,
         publisherName: '',
@@ -322,7 +326,7 @@ const AllPublication: React.FC = () => {
                   <div className="flex items-center gap-3 mb-4" onClick={e => e.stopPropagation()}>
                      <button 
                        onClick={() => toggleSelectItem(item.id)}
-                       className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}
+                       className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200'}`}
                      >
                         {selectedIds.includes(item.id) && <Check size={12} strokeWidth={4} />}
                      </button>

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TracerProject, TracerStatus } from '../../../types';
 import { fetchTracerProjects, saveTracerProject, deleteTracerProject } from '../../../services/TracerService';
+import { getCleanedProfileName } from '../../../services/ProfileService';
 import { 
   Plus, 
   Trash2, 
@@ -63,6 +64,9 @@ const TracerMain: React.FC = () => {
     });
 
     if (label) {
+      // Fetch Cleaned Profile Name for dynamic initialization
+      const cleanedAuthorName = await getCleanedProfileName();
+      
       const id = crypto.randomUUID();
       const newItem: TracerProject = {
         id,
@@ -76,7 +80,7 @@ const TracerMain: React.FC = () => {
         population: '',
         keywords: [],
         category: 'Experimental',
-        authors: ['Xeenaps User'],
+        authors: [cleanedAuthorName],
         startDate: new Date().toISOString().split('T')[0],
         estEndDate: '',
         status: TracerStatus.IN_PROGRESS,
@@ -171,4 +175,4 @@ const TracerMain: React.FC = () => {
   );
 };
 
-export default TracerMain; 
+export default TracerMain;

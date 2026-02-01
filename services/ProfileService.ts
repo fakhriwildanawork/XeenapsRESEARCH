@@ -17,6 +17,24 @@ export const fetchUserProfile = async (): Promise<UserProfile | null> => {
   }
 };
 
+/**
+ * NEW: Get profile name stripped of all academic titles (Prefixes & Suffixes)
+ */
+export const getCleanedProfileName = async (): Promise<string> => {
+  const profile = await fetchUserProfile();
+  if (!profile || !profile.fullName) return "Xeenaps User";
+  
+  // 1. Remove Suffixes (everything after first comma)
+  let name = profile.fullName.split(',')[0].trim();
+  
+  // 2. Remove Common Prefixes (Regex for Dr., Prof., Ir., etc.)
+  // Handles dots and optional spaces
+  name = name.replace(/^(Dr\.|Prof\.|Ir\.|Drs\.|Dra\.|H\.|Hj\.|apt\.|Dipl\.|dr\.|drg\.|S\.)\s+/i, '');
+  
+  // 3. Fallback check
+  return name || "Xeenaps User";
+};
+
 export const saveUserProfile = async (profile: UserProfile): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
   try {

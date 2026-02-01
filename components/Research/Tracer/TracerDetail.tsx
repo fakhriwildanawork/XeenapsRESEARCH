@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TracerProject, TracerLog, LibraryItem, TracerStatus, TracerReference } from '../../../types';
 import { fetchTracerProjects, saveTracerProject, fetchTracerLogs, saveTracerLog, fetchTracerReferences, unlinkTracerReference } from '../../../services/TracerService';
+import { getCleanedProfileName } from '../../../services/ProfileService';
 import { 
   ArrowLeft, 
   Layout, 
@@ -40,18 +41,26 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [activeTab, setActiveTab] = useState<'identity' | 'heatmap' | 'log' | 'refs'>('identity');
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [cleanedProfileName, setCleanedProfileName] = useState("Xeenaps User");
 
   useEffect(() => {
     const load = async () => {
       if (!id) return;
-      const res = await fetchTracerProjects(1, 1000);
+      
+      const [cleanedName, res] = await Promise.all([
+        getCleanedProfileName(),
+        fetchTracerProjects(1, 1000)
+      ]);
+      
+      setCleanedProfileName(cleanedName);
+      
       const found = res.items.find(p => p.id === id);
       if (found) {
         // Normalize arrays for stable rendering and prevent circular empty saves
         setProject({
           ...found,
           keywords: Array.isArray(found.keywords) ? found.keywords : [],
-          authors: Array.isArray(found.authors) ? found.authors : ['Xeenaps User']
+          authors: Array.isArray(found.authors) ? found.authors : [cleanedName]
         });
         const logData = await fetchTracerLogs(id);
         setLogs(logData);
@@ -238,7 +247,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                {/* Auxiliary Info: Authors & Status */}
                <div className="pt-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField label="Author Team">
-                     <FormDropdown isMulti multiValues={project.authors} options={['Xeenaps User']} onAddMulti={v => handleUpdateField('authors', [...project.authors, v])} onRemoveMulti={v => handleUpdateField('authors', project.authors.filter(a => a !== v))} placeholder="Add members..." value="" onChange={()=>{}} />
+                     <FormDropdown isMulti multiValues={project.authors} options={[cleanedProfileName]} onAddMulti={v => handleUpdateField('authors', [...project.authors, v])} onRemoveMulti={v => handleUpdateField('authors', project.authors.filter(a => a !== v))} placeholder="Add members..." value="" onChange={()=>{}} />
                   </FormField>
                   <FormField label="Workflow Status">
                      <FormDropdown value={project.status} options={Object.values(TracerStatus)} onChange={v => handleUpdateField('status', v)} placeholder="Status" allowCustom={false} showSearch={false} />
@@ -303,7 +312,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
       `}</style>
-    </FormPageContainer>
+    </div>
   );
 };
 
