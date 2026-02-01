@@ -47,6 +47,16 @@ function setupTracerDatabase() {
       rSheet.setFrozenRows(1);
     }
 
+    // 4. To Do Sheet
+    let tSheet = ss.getSheetByName("TracerTodos");
+    if (!tSheet) {
+      tSheet = ss.insertSheet("TracerTodos");
+      const headers = CONFIG.SCHEMAS.TRACER_TODOS;
+      tSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      tSheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
+      tSheet.setFrozenRows(1);
+    }
+
     return { status: 'success', message: 'Tracer database structure synchronized.' };
   } catch (err) {
     return { status: 'error', message: err.toString() };
@@ -151,6 +161,7 @@ function deleteTracerProjectFromRegistry(id) {
     const sheet = ss.getSheetByName("TracerProjects");
     const lSheet = ss.getSheetByName("TracerLogs");
     const rSheet = ss.getSheetByName("TracerReferences");
+    const tSheet = ss.getSheetByName("TracerTodos");
     
     if (sheet) {
       const data = sheet.getDataRange().getValues();
@@ -160,7 +171,7 @@ function deleteTracerProjectFromRegistry(id) {
       }
     }
     
-    // Cleanup related logs and references
+    // Cleanup related logs, references, and todos
     if (lSheet) {
       const lData = lSheet.getDataRange().getValues();
       const pIdIdx = lData[0].indexOf('projectId');
@@ -173,6 +184,13 @@ function deleteTracerProjectFromRegistry(id) {
       const pIdIdx = rData[0].indexOf('projectId');
       for (let k = rData.length - 1; k >= 1; k--) {
         if (rData[k][pIdIdx] === id) rSheet.deleteRow(k + 1);
+      }
+    }
+    if (tSheet) {
+      const tData = tSheet.getDataRange().getValues();
+      const pIdIdx = tData[0].indexOf('projectId');
+      for (let m = tData.length - 1; m >= 1; m--) {
+        if (tData[m][pIdIdx] === id) tSheet.deleteRow(m + 1);
       }
     }
     return { status: 'success' };
@@ -332,6 +350,78 @@ function unlinkTracerReferenceFromRegistry(id) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
     const sheet = ss.getSheetByName("TracerReferences");
+    if (!sheet) return { status: 'error' };
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === id) { sheet.deleteRow(i + 1); break; }
+    }
+    return { status: 'success' };
+  } catch (e) { return { status: 'error' }; }
+}
+
+// --- TODO HANDLERS ---
+
+function getTracerTodosFromRegistry(projectId) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
+    const sheet = ss.getSheetByName("TracerTodos");
+    if (!sheet) return [];
+    
+    const data = sheet.getDataRange().getDisplayValues();
+    const headers = data[0];
+    const projectIdIdx = headers.indexOf('projectId');
+    const isDoneIdx = headers.indexOf('isDone');
+    
+    return data.slice(1)
+      .filter(r => r[projectIdIdx] === projectId)
+      .map(row => {
+        let obj = {};
+        headers.forEach((h, i) => {
+          let val = row[i];
+          if (h === 'isDone') val = (val === 'true' || val === true);
+          obj[h] = val;
+        });
+        return obj;
+      }).sort((a,b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+  } catch (e) { return []; }
+}
+
+function saveTracerTodoToRegistry(item) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
+    let sheet = ss.getSheetByName("TracerTodos");
+    if (!sheet) { setupTracerDatabase(); sheet = ss.getSheetByName("TracerTodos"); }
+    
+    const headers = CONFIG.SCHEMAS.TRACER_TODOS;
+    const rowData = headers.map(h => {
+      const val = item[h];
+      return (val !== undefined && val !== null) ? val : '';
+    });
+
+    const data = sheet.getDataRange().getValues();
+    const idIdx = headers.indexOf('id');
+    let existingRow = -1;
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idIdx] === item.id) {
+        existingRow = i + 1;
+        break;
+      }
+    }
+
+    if (existingRow > -1) {
+      sheet.getRange(existingRow, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+    return { status: 'success' };
+  } catch (e) { return { status: 'error', message: e.toString() }; }
+}
+
+function deleteTracerTodoFromRegistry(id) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
+    const sheet = ss.getSheetByName("TracerTodos");
     if (!sheet) return { status: 'error' };
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {

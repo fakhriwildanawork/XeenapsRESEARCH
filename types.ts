@@ -436,6 +436,22 @@ export interface TracerLog {
   updatedAt: string;
 }
 
+export interface TracerTodo {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  startDate: string;
+  deadline: string;
+  linkLabel: string;
+  linkUrl: string;
+  isDone: boolean;
+  completedDate: string;
+  completionRemarks: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TracerReference {
   id: string;
   projectId: string;

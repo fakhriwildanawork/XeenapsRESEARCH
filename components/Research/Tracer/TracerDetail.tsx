@@ -26,11 +26,13 @@ import {
   Users,
   Search,
   Zap,
-  Tag
+  Tag,
+  CheckSquare
 } from 'lucide-react';
 import { FormPageContainer, FormField, FormDropdown } from '../../Common/FormComponents';
 import { showXeenapsToast } from '../../../utils/toastUtils';
 import ReferenceTab from './Tabs/ReferenceTab';
+import TodoTab from './Tabs/TodoTab';
 
 /**
  * TRACER DETAIL SKELETON
@@ -71,7 +73,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   
   const [project, setProject] = useState<TracerProject | null>(null);
   const [logs, setLogs] = useState<TracerLog[]>([]);
-  const [activeTab, setActiveTab] = useState<'identity' | 'heatmap' | 'log' | 'refs'>('identity');
+  const [activeTab, setActiveTab] = useState<'identity' | 'todo' | 'log' | 'refs'>('identity');
   const [isLoading, setIsLoading] = useState(true);
   const [cleanedProfileName, setCleanedProfileName] = useState("Xeenaps User");
 
@@ -115,7 +117,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
 
   const tabs = [
     { id: 'identity', label: 'Identity', icon: User },
-    { id: 'heatmap', label: 'Heatmap', icon: Flame },
+    { id: 'todo', label: 'To Do', icon: CheckSquare },
     { id: 'log', label: 'Journal', icon: Layout },
     { id: 'refs', label: 'References', icon: BookOpen }
   ] as const;
@@ -293,26 +295,8 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
             </div>
           )}
 
-          {activeTab === 'heatmap' && (
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2">
-               <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-8 flex items-center gap-2"><Flame size={16} className="text-[#FED400]" /> 30-Day Activity Pulse</h3>
-                  <div className="flex gap-2 overflow-x-auto pb-4 custom-scrollbar">
-                     {[...Array(30)].map((_, i) => {
-                        const date = new Date(); date.setDate(date.getDate() - (29 - i));
-                        const dateStr = date.toISOString().split('T')[0];
-                        const count = logs.filter(l => l.date.split('T')[0] === dateStr).length;
-                        const opacity = count > 0 ? Math.min(1, 0.2 + (count * 0.2)) : 0.05;
-                        return (
-                          <div key={i} className="flex flex-col items-center gap-2 shrink-0">
-                             <div className="w-8 h-8 rounded-lg shadow-inner transition-all hover:scale-110" style={{ backgroundColor: count > 0 ? `rgba(0, 74, 116, ${opacity})` : '#f3f4f6', border: count > 0 ? '1px solid rgba(0, 74, 116, 0.2)' : '1px solid #eee' }} />
-                             <span className="text-[7px] font-bold text-gray-300 uppercase">{date.getDate()}</span>
-                          </div>
-                        );
-                     })}
-                  </div>
-               </div>
-            </div>
+          {activeTab === 'todo' && (
+            <TodoTab projectId={project.id} />
           )}
 
           {activeTab === 'log' && (

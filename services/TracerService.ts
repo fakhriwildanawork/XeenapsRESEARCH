@@ -1,4 +1,4 @@
-import { TracerProject, TracerLog, TracerReference, TracerQuote, GASResponse } from '../types';
+import { TracerProject, TracerLog, TracerReference, TracerQuote, TracerTodo, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
 /**
@@ -112,6 +112,49 @@ export const unlinkTracerReference = async (id: string): Promise<boolean> => {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'unlinkTracerReference', id })
+    });
+    const result = await res.json();
+    return result.status === 'success';
+  } catch (e) {
+    return false;
+  }
+};
+
+/**
+ * TODO SERVICE: Manage Tasks within Projects
+ */
+export const fetchTracerTodos = async (projectId: string): Promise<TracerTodo[]> => {
+  if (!GAS_WEB_APP_URL) return [];
+  try {
+    const url = `${GAS_WEB_APP_URL}?action=getTracerTodos&projectId=${projectId}`;
+    const res = await fetch(url);
+    const result = await res.json();
+    return result.data || [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveTracerTodo = async (item: TracerTodo): Promise<boolean> => {
+  if (!GAS_WEB_APP_URL) return false;
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveTracerTodo', item })
+    });
+    const result = await res.json();
+    return result.status === 'success';
+  } catch (e) {
+    return false;
+  }
+};
+
+export const deleteTracerTodo = async (id: string): Promise<boolean> => {
+  if (!GAS_WEB_APP_URL) return false;
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteTracerTodo', id })
     });
     const result = await res.json();
     return result.status === 'success';

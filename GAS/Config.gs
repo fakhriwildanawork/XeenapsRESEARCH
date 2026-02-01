@@ -97,6 +97,9 @@ const CONFIG = {
     ],
     TRACER_REFERENCES: [
       'id', 'projectId', 'collectionId', 'createdAt'
+    ],
+    TRACER_TODOS: [
+      'id', 'projectId', 'title', 'description', 'startDate', 'deadline', 'linkLabel', 'linkUrl', 'isDone', 'completedDate', 'completionRemarks', 'createdAt', 'updatedAt'
     ]
   }
 };

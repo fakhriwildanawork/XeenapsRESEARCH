@@ -69,6 +69,13 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result });
     }
 
+    // NEW: Tracer Todo Retrieval
+    if (action === 'getTracerTodos') {
+      const projectId = e.parameter.projectId;
+      const result = getTracerTodosFromRegistry(projectId);
+      return createJsonResponse({ status: 'success', data: result });
+    }
+
     // NEW: getReviews (LITERATURE REVIEW MODULE)
     if (action === 'getReviews') {
       const page = parseInt(e.parameter.page || "1");
@@ -305,6 +312,10 @@ function doPost(e) {
     if (action === 'linkTracerReference') return createJsonResponse(linkTracerReferenceToRegistry(body.item));
     // NEW: unlinkTracerReference
     if (action === 'unlinkTracerReference') return createJsonResponse(unlinkTracerReferenceFromRegistry(body.id));
+    
+    // NEW: Tracer Todo
+    if (action === 'saveTracerTodo') return createJsonResponse(saveTracerTodoToRegistry(body.item));
+    if (action === 'deleteTracerTodo') return createJsonResponse(deleteTracerTodoFromRegistry(body.id));
 
     // NEW: aiTracerProxy
     if (action === 'aiTracerProxy') {
