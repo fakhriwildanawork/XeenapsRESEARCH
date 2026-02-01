@@ -1,3 +1,4 @@
+
 import { TracerProject, TracerLog, TracerReference, TracerQuote, TracerTodo, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
@@ -72,6 +73,21 @@ export const saveTracerLog = async (item: TracerLog, content: { description: str
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'saveTracerLog', item, content })
+    });
+    const result = await res.json();
+    return result.status === 'success';
+  } catch (e) {
+    return false;
+  }
+};
+
+// Added missing deleteTracerLog implementation to handle journal entry deletion
+export const deleteTracerLog = async (id: string): Promise<boolean> => {
+  if (!GAS_WEB_APP_URL) return false;
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteTracerLog', id })
     });
     const result = await res.json();
     return result.status === 'success';

@@ -7,7 +7,9 @@ import {
   saveTracerProject, 
   fetchTracerLogs, 
   fetchTracerReferences, 
-  fetchTracerTodos 
+  fetchTracerTodos,
+  saveTracerLog,
+  deleteTracerLog
 } from '../../../services/TracerService';
 import { getCleanedProfileName } from '../../../services/ProfileService';
 import { 
@@ -27,6 +29,7 @@ import {
 import { FormPageContainer, FormField, FormDropdown } from '../../Common/FormComponents';
 import ReferenceTab from './Tabs/ReferenceTab';
 import TodoTab from './Tabs/TodoTab';
+import TracerLogModal from './Modals/TracerLogModal';
 import { BRAND_ASSETS } from '../../../assets';
 
 const TracerDetailSkeleton: React.FC = () => (
@@ -63,6 +66,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [activeTab, setActiveTab] = useState<'identity' | 'todo' | 'log' | 'refs'>('identity');
   const [isLoading, setIsLoading] = useState(true);
   const [cleanedProfileName, setCleanedProfileName] = useState("Xeenaps User");
+  const [logModal, setLogModal] = useState<{ open: boolean; log?: TracerLog }>({ open: false });
 
   const loadAllData = useCallback(async (showSkeleton = false) => {
     if (!id) return;
@@ -106,6 +110,29 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     const updated = { ...project, [f]: v, updatedAt: new Date().toISOString() };
     setProject(updated);
     await saveTracerProject(updated);
+  };
+
+  const handleSaveLogItem = async (logItem: TracerLog, content: { description: string }) => {
+    const isEdit = logs.some(l => l.id === logItem.id);
+    
+    // OPTIMISTIC UPDATE: Update UI immediately
+    setLogs(prev => {
+      if (isEdit) return prev.map(l => l.id === logItem.id ? logItem : l);
+      return [logItem, ...prev];
+    });
+    setLogModal({ open: false });
+
+    // Background Silent Sync
+    await saveTracerLog(logItem, content);
+  };
+
+  const handleDeleteLogItem = async (logId: string) => {
+    // Optimistic Delete: Update UI immediately
+    setLogs(prev => prev.filter(l => l.id !== logId));
+    setLogModal({ open: false });
+    
+    // Background Silent Sync
+    await deleteTracerLog(logId);
   };
 
   const tabs = [
@@ -176,16 +203,16 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
                <div className="flex justify-between items-center px-4">
                   <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Layout size={18} /> Research Journal</h3>
-                  <button className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"><Plus size={16} /> New Entry</button>
+                  <button onClick={() => setLogModal({ open: true })} className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"><Plus size={16} /> New Entry</button>
                </div>
                <div className="space-y-4">
                   {logs.length === 0 ? <div className="py-20 text-center opacity-20"><Layout size={48} className="mx-auto mb-2" /><p className="text-[10px] font-black uppercase">No entries yet</p></div> : 
                     logs.map(l => (
-                      <div key={l.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 flex gap-4 hover:shadow-xl transition-all cursor-pointer group">
+                      <div key={l.id} onClick={() => setLogModal({ open: true, log: l })} className="bg-white p-6 rounded-[2rem] border border-gray-100 flex gap-4 hover:shadow-xl transition-all cursor-pointer group">
                         <div className="shrink-0 w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#004A74] group-hover:text-white transition-all"><Clock size={20} /></div>
                         <div className="flex-1">
                           <p className="text-[9px] font-black text-[#FED400] bg-[#004A74] inline-block px-2 py-0.5 rounded-md uppercase mb-2">{new Date(l.date).toLocaleDateString()}</p>
-                          <h4 className="text-sm font-black text-[#004A74] uppercase">{l.title}</h4>
+                          <h4 className="text-sm font-black text-[#004A74]">{l.title}</h4>
                         </div>
                         <ChevronRight size={24} className="text-gray-200 mt-4" />
                       </div>
@@ -196,6 +223,17 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
           {activeTab === 'refs' && <ReferenceTab projectId={project.id} libraryItems={libraryItems} references={references} onRefresh={loadAllData} />}
         </div>
       </div>
+      
+      {logModal.open && (
+        <TracerLogModal 
+          projectId={project.id} 
+          log={logModal.log} 
+          onClose={() => setLogModal({ open: false })} 
+          onSave={handleSaveLogItem}
+          onDelete={handleDeleteLogItem}
+        />
+      )}
+
       <style>{`.custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }`}</style>
     </FormPageContainer>
   );
