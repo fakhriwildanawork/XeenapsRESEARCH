@@ -21,7 +21,8 @@ import {
   FileIcon,
   ImageIcon,
   Eye,
-  CloudUpload
+  CloudUpload,
+  ExternalLink
 } from 'lucide-react';
 import { FormField } from '../../../Common/FormComponents';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
@@ -144,11 +145,12 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
         mimeType: file.type
       };
 
-      setContent(prev => ({ ...prev, attachments: [...prev.attachments, placeholder] }));
+      setContent(prev => ({ ...prev, attachments: [...(prev.attachments || []), placeholder] }));
 
       const uploadPromise = uploadVaultFile(file).then(result => {
         if (result) {
-          const finalUrl = file.type.startsWith('image/') 
+          const isImage = file.type.startsWith('image/');
+          const finalUrl = isImage
             ? `https://lh3.googleusercontent.com/d/${result.fileId}`
             : `https://drive.google.com/file/d/${result.fileId}/view`;
 
@@ -172,7 +174,7 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
   };
 
   const handleAddLink = () => {
-    setContent(prev => ({ ...prev, attachments: [...prev.attachments, { type: 'LINK', label: '', url: '' }] }));
+    setContent(prev => ({ ...prev, attachments: [...(prev.attachments || []), { type: 'LINK', label: '', url: '' }] }));
   };
 
   const handleRemoveAttachment = async (idx: number) => {
@@ -234,21 +236,21 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
              </div>
            ) : (
              <>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Entry Date" required>
-                     <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                        <input type="date" className="w-full pl-11 pr-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74] outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} required />
-                     </div>
-                  </FormField>
-                  <FormField label="Quick Reference ID">
-                     <div className="px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-[10px] font-mono font-bold text-gray-400 uppercase flex items-center gap-2"><Clock size={12} /> {formData.id.substring(0,8)}</div>
-                  </FormField>
+               <div className="grid grid-cols-1 md:grid-cols-10 gap-6">
+                  <div className="md:col-span-3">
+                    <FormField label="Entry Date" required>
+                       <div className="relative">
+                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                          <input type="date" className="w-full pl-11 pr-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74] outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} required />
+                       </div>
+                    </FormField>
+                  </div>
+                  <div className="md:col-span-7">
+                    <FormField label="Log Title" required>
+                       <input autoFocus className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="E.G., Phase 1 Data Collection" required />
+                    </FormField>
+                  </div>
                </div>
-
-               <FormField label="Log Title" required>
-                  <input autoFocus className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="E.G., PHASE 1: DATA COLLECTION COMPLETED" required />
-               </FormField>
 
                <FormField label="Narrative Synthesis">
                   <RichEditor value={content.description} onChange={v => setContent({...content, description: v})} />
@@ -269,11 +271,26 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                      {(content.attachments || []).map((at, idx) => {
                         const isPending = at.fileId?.startsWith('pending_');
-                        const isImage = at.mimeType?.startsWith('image/') || at.url?.includes('lh3.googleusercontent');
+                        const isImage = at.mimeType?.startsWith('image/') || (at.url && at.url.includes('lh3.googleusercontent'));
                         
+                        // Fungsionalitas view sesuai protokol yang diminta
+                        const handleView = () => {
+                          if (isPending) return;
+                          let targetUrl = at.url;
+                          if (at.type === 'FILE' && at.fileId) {
+                            targetUrl = isImage 
+                              ? `https://lh3.googleusercontent.com/d/${at.fileId}`
+                              : `https://drive.google.com/file/d/${at.fileId}/view`;
+                          }
+                          if (targetUrl) window.open(targetUrl, '_blank');
+                        };
+
                         return (
                           <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4 group animate-in slide-in-from-bottom-2 relative overflow-hidden">
-                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#004A74]/30 shadow-sm overflow-hidden shrink-0 relative">
+                            <div 
+                              onClick={handleView}
+                              className={`w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#004A74]/30 shadow-sm overflow-hidden shrink-0 relative ${!isPending ? 'cursor-pointer hover:bg-gray-100 transition-all' : ''}`}
+                            >
                                 {isImage ? (
                                    <img src={at.url} className="w-full h-full object-cover" />
                                 ) : at.type === 'LINK' ? (
@@ -284,6 +301,11 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
                                 {isPending && (
                                   <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
                                     <Loader2 size={12} className="animate-spin text-[#004A74]" />
+                                  </div>
+                                )}
+                                {!isPending && (
+                                  <div className="absolute inset-0 bg-[#004A74]/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                                    <Eye size={12} className="text-[#004A74]" />
                                   </div>
                                 )}
                             </div>
@@ -300,7 +322,14 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
                                     setContent({...content, attachments: newAt});
                                   }} />
                                 ) : (
-                                   <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{at.type}</span>
+                                   <div className="flex items-center justify-between pr-2">
+                                      <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{at.type}</span>
+                                      {!isPending && (
+                                        <button type="button" onClick={handleView} className="text-[#004A74]/40 hover:text-[#004A74] transition-all">
+                                          <ExternalLink size={10} />
+                                        </button>
+                                      )}
+                                   </div>
                                 )}
                             </div>
                             <button type="button" onClick={() => handleRemoveAttachment(idx)} className="p-2 text-red-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
