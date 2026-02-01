@@ -343,20 +343,49 @@ function getTracerReferencesFromRegistry(projectId) {
   } catch (e) { return []; }
 }
 
+/**
+ * LINK REFERENCE: Updated with Proactive Initialization of sharded JSON
+ */
 function linkTracerReferenceToRegistry(item) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
     let sheet = ss.getSheetByName("TracerReferences");
     if (!sheet) { setupTracerDatabase(); sheet = ss.getSheetByName("TracerReferences"); }
     
-    // ENSURE ID IS GENERATED
+    // 1. IDENTITY GEN
     if (!item.id) item.id = Utilities.getUuid();
     if (!item.createdAt) item.createdAt = new Date().toISOString();
 
+    // 2. PROACTIVE SHARDING: Create empty JSON file { "quotes": [] }
+    const storageTarget = getViableStorageTarget(CONFIG.STORAGE.CRITICAL_THRESHOLD);
+    if (storageTarget) {
+      const jsonFileName = `ref_content_${item.id}.json`;
+      const initialContent = JSON.stringify({ quotes: [] });
+
+      if (storageTarget.isLocal) {
+        const folder = DriveApp.getFolderById(CONFIG.FOLDERS.MAIN_LIBRARY);
+        const file = folder.createFile(Utilities.newBlob(initialContent, 'application/json', jsonFileName));
+        item.contentJsonId = file.getId();
+        item.storageNodeUrl = ScriptApp.getService().getUrl();
+      } else {
+        const res = UrlFetchApp.fetch(storageTarget.url, {
+          method: 'post',
+          contentType: 'application/json',
+          payload: JSON.stringify({ action: 'saveJsonFile', fileName: jsonFileName, content: initialContent })
+        });
+        const resJson = JSON.parse(res.getContentText());
+        if (resJson.status === 'success') {
+          item.contentJsonId = resJson.fileId;
+          item.storageNodeUrl = storageTarget.url;
+        }
+      }
+    }
+
+    // 3. REGISTRY SYNC
     const headers = CONFIG.SCHEMAS.TRACER_REFERENCES;
     const rowData = headers.map(h => item[h] || '');
     sheet.appendRow(rowData);
-    // CRITICAL FIX: Return the full item with the generated ID
+
     return { status: 'success', data: item };
   } catch (e) { return { status: 'error', message: e.toString() }; }
 }
@@ -403,6 +432,7 @@ function unlinkTracerReferenceFromRegistry(id) {
 
 /**
  * SHARDING: Save/Update Reference Content (Saved Quotes)
+ * Includes Row Discovery Failover and Guard Logic
  */
 function saveReferenceContentToRegistry(item, content) {
   try {
@@ -425,7 +455,7 @@ function saveReferenceContentToRegistry(item, content) {
       if (data[i][idIdx] === item.id) { rowIndex = i + 1; break; }
     }
     
-    // FAILOVER DISCOVERY: BY PROJECT + COLLECTION (Handles race conditions with optimistic IDs)
+    // FAILOVER DISCOVERY: BY PROJECT + COLLECTION (Handles race conditions)
     if (rowIndex === -1 && item.projectId && item.collectionId) {
       for (let i = 1; i < data.length; i++) {
         if (data[i][pIdIdx] === item.projectId && data[i][cIdIdx] === item.collectionId) {
@@ -451,7 +481,7 @@ function saveReferenceContentToRegistry(item, content) {
 
     if (storageTarget.isLocal) {
       let file;
-      // CORE FIX: Guard getFileById with truthiness check
+      // CORE GUARD: Verify ID before fetching from Drive
       if (item.contentJsonId && item.contentJsonId.trim() !== "") {
         file = DriveApp.getFileById(item.contentJsonId);
         file.setContent(jsonBody);
@@ -483,7 +513,6 @@ function saveReferenceContentToRegistry(item, content) {
       }
     }
 
-    // CRITICAL FIX: Return sharding metadata to frontend for sync
     return { status: 'success', contentJsonId: item.contentJsonId, storageNodeUrl: item.storageNodeUrl };
   } catch (e) { return { status: 'error', message: e.toString() }; }
 }
@@ -511,7 +540,7 @@ function getTracerTodosFromRegistry(projectId) {
           obj[h] = val;
         });
         return obj;
-      }).sort((a,b) => new Date(a.deadline).getTime() - new Date(a.deadline).getTime());
+      }).sort((a,b) => new Date(b.deadline).getTime() - new Date(a.deadline).getTime());
   } catch (e) { return []; }
 }
 

@@ -106,6 +106,7 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
   const [showCite, setShowCite] = useState(false);
   const [content, setContent] = useState<TracerReferenceContent>({ quotes: [] });
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingContent, setIsLoadingContent] = useState(false); // NEW: Inline parser loader
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [openLangMenu, setOpenLangMenu] = useState<string | null>(null);
 
@@ -120,8 +121,10 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
   useEffect(() => {
     const loadContent = async () => {
       if (localRefRow.contentJsonId) {
+        setIsLoadingContent(true);
         const data = await fetchReferenceContent(localRefRow.contentJsonId, localRefRow.storageNodeUrl);
         if (data) setContent(data);
+        setIsLoadingContent(false);
       }
       setIsLoading(false);
     };
@@ -266,8 +269,22 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
                </div>
 
                <div className="space-y-4">
-                  {isLoading ? (
-                    <div className="space-y-4">{[1,2].map(i => <div key={i} className="h-32 skeleton rounded-3xl" />)}</div>
+                  {(isLoading || isLoadingContent) ? (
+                    <div className="space-y-4">
+                      {[1,2].map(i => (
+                        <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
+                           <div className="space-y-3">
+                              <div className="h-2 w-24 skeleton rounded-full" />
+                              <div className="h-4 w-full skeleton rounded-lg" />
+                              <div className="h-4 w-3/4 skeleton rounded-lg" />
+                           </div>
+                           <div className="pt-6 border-t border-gray-50 space-y-2">
+                              <div className="h-2 w-32 skeleton rounded-full" />
+                              <div className="h-10 w-full skeleton rounded-2xl" />
+                           </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : content.quotes.length === 0 ? (
                     <div className="py-20 text-center opacity-20 bg-white border border-dashed border-gray-200 rounded-[2.5rem]">
                        <Quote size={48} className="mx-auto mb-2 text-[#004A74]" />
