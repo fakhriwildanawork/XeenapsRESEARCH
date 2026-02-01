@@ -19,12 +19,12 @@ import {
   Layers,
   Sparkles,
   ChevronRight,
-  Zap,
   Target,
-  Search,
   MessageSquare,
   FlaskConical,
   Users,
+  Search,
+  Zap,
   Tag
 } from 'lucide-react';
 import { FormPageContainer, FormField, FormDropdown } from '../../Common/FormComponents';
@@ -63,7 +63,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     if (!project) return;
     const updated = { ...project, [f]: v, updatedAt: new Date().toISOString() };
     setProject(updated);
-    // Silent auto-save
+    // Silent auto-save logic
     saveTracerProject(updated);
   };
 
@@ -100,7 +100,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         <div className="max-w-5xl mx-auto">
           
           {activeTab === 'identity' && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
                
                {/* a. 2 column 50% 50%: Label | Progress */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

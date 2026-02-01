@@ -142,8 +142,16 @@ const TracerMain: React.FC = () => {
                 </div>
                 <h3 className="text-base font-black text-[#004A74] uppercase leading-tight line-clamp-2 mb-4 flex-1">{p.title}</h3>
                 <div className="space-y-3 mb-6">
-                   <div className="flex items-center gap-2 text-gray-400"><User size={12} /><span className="text-[10px] font-bold uppercase tracking-tight">{p.authors[0]}</span></div>
-                   <div className="flex items-center gap-2 text-gray-400"><Calendar size={12} /><span className="text-[10px] font-bold uppercase tracking-tight">{p.startDate}</span></div>
+                   <div className="flex items-center gap-2 text-gray-400">
+                     <User size={12} />
+                     <span className="text-[10px] font-bold uppercase tracking-tight">
+                       {Array.isArray(p.authors) ? (p.authors[0] || 'Unknown Author') : 'Unknown Author'}
+                     </span>
+                   </div>
+                   <div className="flex items-center gap-2 text-gray-400">
+                     <Calendar size={12} />
+                     <span className="text-[10px] font-bold uppercase tracking-tight">{p.startDate}</span>
+                   </div>
                 </div>
                 <div className="w-full bg-gray-50 h-2 rounded-full overflow-hidden mb-4">
                    <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${p.progress}%` }} />
