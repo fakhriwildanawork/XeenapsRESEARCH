@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { LibraryItem, TracerReference, TracerReferenceContent, TracerSavedQuote } from '../../../../types';
 import { fetchReferenceContent, saveReferenceContent } from '../../../../services/TracerService';
 import { translateReviewRowContent, runReviewSynthesis } from '../../../../services/ReviewService';
-// Added missing GAS_WEB_APP_URL import
 import { GAS_WEB_APP_URL } from '../../../../constants';
 import { 
   X, 
@@ -25,7 +24,6 @@ import { showXeenapsToast } from '../../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
 import QuoteNowModal from './QuoteNowModal';
 import { AcademicCapIcon } from '@heroicons/react/24/outline';
-// Fix: Import FormField from FormComponents to resolve "Cannot find name 'FormField'" error
 import { FormField, FormDropdown } from '../../../Common/FormComponents';
 
 // --- SHARED CITATION MODAL LOGIC FROM LIBRARY ---
@@ -43,8 +41,6 @@ const CitationModal: React.FC<{ item: LibraryItem; onClose: () => void }> = ({ i
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    // Note: Reusing core GAS generateCitations if possible, but for Tracer we might simplify
-    // Fix: Using GAS_WEB_APP_URL instead of process.env.VITE_GAS_URL for consistency
     const response = await fetch(GAS_WEB_APP_URL!, {
       method: 'POST',
       body: JSON.stringify({ action: 'generateCitations', item, style, language })
@@ -77,7 +73,6 @@ const CitationModal: React.FC<{ item: LibraryItem; onClose: () => void }> = ({ i
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-2">
           <div className="grid grid-cols-2 gap-4">
-            {/* FormField is now correctly imported */}
             <FormField label="Style"><FormDropdown value={style} onChange={setStyle} options={styles} placeholder="Select style" allowCustom={false} showSearch={false} /></FormField>
             <FormField label="Language"><FormDropdown value={language} onChange={setLanguage} options={languages} placeholder="Language" allowCustom={false} showSearch={false} /></FormField>
           </div>
@@ -173,7 +168,10 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
   };
 
   return (
-    <div className="fixed inset-0 z-[1200] bg-white animate-in slide-in-from-right duration-500 overflow-hidden flex flex-col">
+    <div 
+      className="fixed top-0 right-0 bottom-0 z-[1200] bg-white animate-in slide-in-from-right duration-500 overflow-hidden flex flex-col transition-all duration-500"
+      style={{ left: 'var(--sidebar-offset, 0px)' }}
+    >
       {isQuoteOpen && <QuoteNowModal item={item} onClose={() => setIsQuoteOpen(false)} onSave={handleAddQuotes} />}
       {showCite && <CitationModal item={item} onClose={() => setShowCite(false)} />}
       

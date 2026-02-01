@@ -45,6 +45,9 @@ function handleAiTracerQuoteExtraction(payload) {
 
   if (!fullText) return { status: 'error', message: "Extracted content empty." };
 
+  // INCREASE CONTEXT WINDOW TO 100,000 CHARS FOR BETTER COVERAGE
+  const contextSnippet = fullText.substring(0, 100000);
+
   const prompt = `ACT AS A PRECISION RESEARCH ASSISTANT.
   I am looking for exactly THREE (3) distinct and relevant quotes/paragraphs from a paper that match this CONTEXT: "${contextQuery}".
   
@@ -62,7 +65,7 @@ function handleAiTracerQuoteExtraction(payload) {
   - IF less than 3 are found, return as many as possible (min 1).
   
   [DOCUMENT_CONTENT]:
-  ${fullText.substring(0, 50000)}`;
+  ${contextSnippet}`;
 
   const config = getProviderModel('Groq');
   const model = config.model;
@@ -86,8 +89,19 @@ function handleAiTracerQuoteExtraction(payload) {
       });
       const responseData = JSON.parse(res.getContentText());
       if (responseData.choices && responseData.choices.length > 0) {
-        const parsed = JSON.parse(responseData.choices[0].message.content);
-        return { status: 'success', data: parsed.data };
+        const rawContent = responseData.choices[0].message.content;
+        
+        // RESILIENT JSON EXTRACTION (HANDLING CHATTER)
+        const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // FALLBACK LOGIC FOR INCONSISTENT AI KEYS
+          const dataArray = parsed.data || parsed.quotes || parsed.results || (Array.isArray(parsed) ? parsed : null);
+          
+          if (dataArray && Array.isArray(dataArray)) {
+            return { status: 'success', data: dataArray };
+          }
+        }
       }
     } catch (err) { console.log("Groq Tracer rotate..."); }
   }
