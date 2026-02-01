@@ -1,3 +1,4 @@
+
 export enum SourceType {
   LINK = 'LINK',
   FILE = 'FILE',
@@ -423,6 +424,20 @@ export interface TracerProject {
   progress: number; // 0 - 100
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TracerLogAttachment {
+  type: 'FILE' | 'LINK';
+  label: string;
+  url?: string;
+  fileId?: string;
+  nodeUrl?: string;
+  mimeType?: string;
+}
+
+export interface TracerLogContent {
+  description: string;
+  attachments: TracerLogAttachment[];
 }
 
 export interface TracerLog {

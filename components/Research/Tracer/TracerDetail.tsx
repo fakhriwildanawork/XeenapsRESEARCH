@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { useParams, useNavigate } from 'react-router-dom';
-import { TracerProject, TracerLog, LibraryItem, TracerStatus, TracerReference, TracerTodo } from '../../../types';
+import { TracerProject, TracerLog, TracerLogContent, LibraryItem, TracerStatus, TracerReference, TracerTodo } from '../../../types';
 import { 
   fetchTracerProjects, 
   saveTracerProject, 
@@ -11,6 +11,7 @@ import {
   saveTracerLog,
   deleteTracerLog
 } from '../../../services/TracerService';
+import { fetchFileContent } from '../../../services/gasService';
 import { getCleanedProfileName } from '../../../services/ProfileService';
 import { 
   ArrowLeft, 
@@ -30,7 +31,9 @@ import { FormPageContainer, FormField, FormDropdown } from '../../Common/FormCom
 import ReferenceTab from './Tabs/ReferenceTab';
 import TodoTab from './Tabs/TodoTab';
 import TracerLogModal from './Modals/TracerLogModal';
-import { BRAND_ASSETS } from '../../../assets';
+
+// --- SAVE MEMORY CACHE ---
+const logContentCache: Record<string, TracerLogContent> = {};
 
 const TracerDetailSkeleton: React.FC = () => (
   <div className="animate-in fade-in duration-500 w-full h-full flex flex-col">
@@ -66,7 +69,9 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [activeTab, setActiveTab] = useState<'identity' | 'todo' | 'log' | 'refs'>('identity');
   const [isLoading, setIsLoading] = useState(true);
   const [cleanedProfileName, setCleanedProfileName] = useState("Xeenaps User");
-  const [logModal, setLogModal] = useState<{ open: boolean; log?: TracerLog }>({ open: false });
+  
+  // LOG MODAL STATE
+  const [logModal, setLogModal] = useState<{ open: boolean; log?: TracerLog; cachedContent?: TracerLogContent }>({ open: false });
 
   const loadAllData = useCallback(async (showSkeleton = false) => {
     if (!id) return;
@@ -112,10 +117,28 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     await saveTracerProject(updated);
   };
 
-  const handleSaveLogItem = async (logItem: TracerLog, content: { description: string }) => {
+  const handleOpenLog = async (log: TracerLog) => {
+    // Check Cache first for instant feel
+    const cached = logContentCache[log.id];
+    setLogModal({ open: true, log, cachedContent: cached });
+    
+    // If not cached, fetch it silently (the modal will handle the internal loading UI)
+    if (!cached && log.logJsonId) {
+      const data = await fetchFileContent(log.logJsonId, log.storageNodeUrl);
+      if (data) {
+        logContentCache[log.id] = data;
+        setLogModal(prev => prev.log?.id === log.id ? { ...prev, cachedContent: data } : prev);
+      }
+    }
+  };
+
+  const handleSaveLogItem = async (logItem: TracerLog, content: TracerLogContent) => {
     const isEdit = logs.some(l => l.id === logItem.id);
     
-    // OPTIMISTIC UPDATE: Update UI immediately
+    // Update local cache
+    logContentCache[logItem.id] = content;
+
+    // OPTIMISTIC UPDATE: Update list immediately
     setLogs(prev => {
       if (isEdit) return prev.map(l => l.id === logItem.id ? logItem : l);
       return [logItem, ...prev];
@@ -127,6 +150,9 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   };
 
   const handleDeleteLogItem = async (logId: string) => {
+    // Clear cache
+    delete logContentCache[logId];
+    
     // Optimistic Delete: Update UI immediately
     setLogs(prev => prev.filter(l => l.id !== logId));
     setLogModal({ open: false });
@@ -208,7 +234,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                <div className="space-y-4">
                   {logs.length === 0 ? <div className="py-20 text-center opacity-20"><Layout size={48} className="mx-auto mb-2" /><p className="text-[10px] font-black uppercase">No entries yet</p></div> : 
                     logs.map(l => (
-                      <div key={l.id} onClick={() => setLogModal({ open: true, log: l })} className="bg-white p-6 rounded-[2rem] border border-gray-100 flex gap-4 hover:shadow-xl transition-all cursor-pointer group">
+                      <div key={l.id} onClick={() => handleOpenLog(l)} className="bg-white p-6 rounded-[2rem] border border-gray-100 flex gap-4 hover:shadow-xl transition-all cursor-pointer group">
                         <div className="shrink-0 w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#004A74] group-hover:text-white transition-all"><Clock size={20} /></div>
                         <div className="flex-1">
                           <p className="text-[9px] font-black text-[#FED400] bg-[#004A74] inline-block px-2 py-0.5 rounded-md uppercase mb-2">{new Date(l.date).toLocaleDateString()}</p>
@@ -228,6 +254,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         <TracerLogModal 
           projectId={project.id} 
           log={logModal.log} 
+          initialContent={logModal.cachedContent}
           onClose={() => setLogModal({ open: false })} 
           onSave={handleSaveLogItem}
           onDelete={handleDeleteLogItem}
