@@ -8,11 +8,13 @@ import {
   Trash2, 
   ChevronLeft, 
   ChevronRight, 
-  Link as LinkIcon,
-  Check,
-  AlertCircle,
-  Calendar,
-  Eye
+  Link as LinkIcon, 
+  Check, 
+  Calendar, 
+  Eye, 
+  Target,
+  // Added missing Zap icon import
+  Zap
 } from 'lucide-react';
 import { showXeenapsToast } from '../../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
@@ -26,6 +28,8 @@ interface TodoTabProps {
 const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
   const [todos, setTodos] = useState<TracerTodo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // viewAnchorDate diletakkan pada Today agar navigasi geser minggu tetap konsisten
   const [viewAnchorDate, setViewAnchorDate] = useState(new Date());
   
   // Modals state
@@ -41,12 +45,12 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
 
   useEffect(() => { loadTodos(); }, [projectId]);
 
-  // --- HEATMAP ENGINE (28 DAYS) ---
-  const heatmapDays = useMemo(() => {
+  // --- GANTT ENGINE: CALCULATE 28 DAYS (TODAY AT INDEX 7) ---
+  const timelineDays = useMemo(() => {
     const days = [];
+    // Anchor logic: Geser ke belakang 6 hari agar Today ada di urutan ke-7
     const start = new Date(viewAnchorDate);
-    // Align to start of week (Sunday)
-    start.setDate(start.getDate() - start.getDay());
+    start.setDate(start.getDate() - 6);
     
     for (let i = 0; i < 28; i++) {
       const d = new Date(start);
@@ -74,26 +78,18 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays <= 3) return 'bg-yellow-400';
-    return 'bg-[#004A74]'; // Primary
+    return 'bg-[#004A74]'; // Primary Blue
   };
 
-  const getDayStatus = (day: Date) => {
-    const dayStr = day.toISOString().split('T')[0];
-    const activeTodos = todos.filter(t => t.startDate <= dayStr && t.deadline >= dayStr);
-    
-    if (activeTodos.length === 0) return null;
-
-    // Prioritas Warna: Merah > Kuning > Biru > Hijau
-    if (activeTodos.some(t => !t.isDone && new Date() > new Date(t.deadline))) return 'bg-red-500';
-    if (activeTodos.some(t => !t.isDone && (new Date(t.deadline).getTime() - new Date().getTime()) <= (3 * 86400000))) return 'bg-yellow-400';
-    if (activeTodos.some(t => !t.isDone)) return 'bg-[#004A74]';
-    return 'bg-green-500';
+  const isDateInTaskRange = (date: Date, todo: TracerTodo) => {
+    const dStr = date.toISOString().split('T')[0];
+    return dStr >= todo.startDate && dStr <= todo.deadline;
   };
 
   // --- CRUD HANDLERS ---
   const handleSaveTodo = async (data: TracerTodo) => {
     if (await saveTracerTodo(data)) {
-      showXeenapsToast('success', 'To Do Synced');
+      showXeenapsToast('success', 'Task Architecture Synced');
       loadTodos();
       setFormModal({ open: false, mode: 'view' });
     }
@@ -131,101 +127,147 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-700">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
       
-      {/* 28-DAY HEATMAP SECTION */}
-      <section className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between mb-6">
-           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">
-             <Calendar size={16} className="text-[#FED400]" /> 28-Day Strategic Pulse
-           </h3>
-           <div className="flex gap-2">
-              <button onClick={() => shiftWeek(-1)} className="p-2 bg-gray-50 hover:bg-[#004A74] hover:text-white rounded-xl transition-all shadow-sm"><ChevronLeft size={16} /></button>
-              <button onClick={() => shiftWeek(1)} className="p-2 bg-gray-50 hover:bg-[#004A74] hover:text-white rounded-xl transition-all shadow-sm"><ChevronRight size={16} /></button>
-           </div>
-        </div>
+      {/* HEADER CONTROLS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
+         <div className="space-y-1">
+            <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-[0.3em] flex items-center gap-2">
+              <Zap size={16} className="text-[#FED400] fill-[#FED400]" /> 28-Day Strategic Pulse
+            </h3>
+            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Gantt-Matrix Intelligence Mode</p>
+         </div>
 
-        <div className="grid grid-cols-7 sm:grid-cols-14 lg:grid-cols-28 gap-1.5 overflow-x-auto pb-4 custom-scrollbar">
-           {heatmapDays.map((day, i) => {
-             const colorClass = getDayStatus(day);
-             const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
-             
-             return (
-               <div key={i} className="flex flex-col items-center gap-1.5 shrink-0">
-                  <div 
-                    title={day.toLocaleDateString()}
-                    className={`w-7 h-7 md:w-8 md:h-8 rounded-lg transition-all hover:scale-110 shadow-inner ${colorClass || 'bg-gray-50'} ${isToday ? 'ring-2 ring-[#FED400] ring-offset-2' : ''}`} 
-                    style={{ border: colorClass ? 'none' : '1px solid #eee' }}
-                  />
-                  <span className={`text-[7px] font-black uppercase ${isToday ? 'text-[#004A74]' : 'text-gray-300'}`}>{day.getDate()}</span>
-               </div>
-             );
-           })}
-        </div>
-      </section>
-
-      {/* TASK LIST SECTION */}
-      <section className="space-y-6">
-        <div className="flex justify-between items-center px-4">
-           <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2">
-             <CheckCircle2 size={18} /> Active Intel Pipeline
-           </h3>
-           <button 
-             onClick={() => setFormModal({ open: true, mode: 'edit' })}
-             className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
-           >
-             <Plus size={16} /> New Task
-           </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {isLoading ? (
-            [...Array(4)].map((_, i) => <div key={i} className="h-32 skeleton rounded-[2rem]" />)
-          ) : todos.length === 0 ? (
-            <div className="col-span-full py-20 text-center opacity-20"><CheckCircle2 size={48} className="mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Pipeline clear</p></div>
-          ) : todos.map(todo => (
-            <div 
-              key={todo.id} 
-              onClick={() => setFormModal({ open: true, todo, mode: 'view' })}
-              className={`group relative bg-white p-6 rounded-[2.5rem] border border-gray-100 flex flex-col hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden border-l-[6px] ${getPriorityColor(todo).replace('bg-', 'border-')}`}
-            >
-              <div className="flex items-start justify-between mb-4">
-                 <div className="flex items-center gap-2">
-                   <div className={`p-1.5 rounded-lg text-white ${getPriorityColor(todo)} shadow-sm`}>
-                      <Clock size={14} />
-                   </div>
-                   <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Target: {todo.deadline}</span>
-                 </div>
-                 <div className="flex gap-1">
-                    {!todo.isDone && (
-                      <button 
-                        onClick={(e) => handleCompleteRequest(e, todo)}
-                        className="p-2 bg-green-50 text-green-500 hover:bg-green-500 hover:text-white rounded-xl transition-all shadow-sm"
-                        title="Mark as Done"
-                      >
-                         <Check size={14} strokeWidth={3} />
-                      </button>
-                    )}
-                    <button onClick={(e) => handleDelete(e, todo.id)} className="p-2 text-red-200 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"><Trash2 size={14} /></button>
-                 </div>
-              </div>
-
-              <h4 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2 mb-4 flex-1">{todo.title}</h4>
-              
-              <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                 <div className="flex items-center gap-3">
-                    {todo.linkUrl && <LinkIcon size={12} className="text-blue-500" />}
-                    <span className="text-[9px] font-bold text-gray-400 uppercase truncate max-w-[150px]">{todo.linkLabel || 'No Reference'}</span>
-                 </div>
-                 <div className="flex items-center gap-1 text-[#004A74] opacity-0 group-hover:opacity-100 transition-all">
-                    <span className="text-[8px] font-black uppercase">Detail</span>
-                    <ChevronRight size={14} />
-                 </div>
-              </div>
+         <div className="flex items-center gap-2 bg-gray-100 p-1.5 rounded-2xl border border-gray-200">
+            <div className="flex gap-1 mr-2 border-r border-gray-200 pr-2">
+               <button onClick={() => shiftWeek(-1)} className="p-2 bg-white hover:bg-[#004A74] hover:text-white rounded-xl transition-all shadow-sm active:scale-90" title="Previous Week"><ChevronLeft size={16} /></button>
+               <button onClick={() => shiftWeek(1)} className="p-2 bg-white hover:bg-[#004A74] hover:text-white rounded-xl transition-all shadow-sm active:scale-90" title="Next Week"><ChevronRight size={16} /></button>
             </div>
-          ))}
+            <button 
+              onClick={() => setFormModal({ open: true, mode: 'edit' })}
+              className="flex items-center gap-2 px-6 py-2 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:scale-105 active:scale-95 transition-all"
+            >
+              <Plus size={16} /> Add Task
+            </button>
+         </div>
+      </div>
+
+      {/* GANTT MATRIX CONTAINER */}
+      <section className="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
+        <div className="overflow-x-auto custom-scrollbar-h">
+          <div className="min-w-[1400px]">
+            {/* GRID HEADER: 29 COLUMNS */}
+            <div className="grid grid-cols-[300px_repeat(28,1fr)] border-b border-gray-100 bg-gray-50/50">
+               {/* Col 1: Task Label */}
+               <div className="sticky left-0 z-30 bg-white border-r border-gray-200 px-6 py-4 flex items-center shadow-[4px_0_15px_rgba(0,0,0,0.02)]">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Execution Pipeline</span>
+               </div>
+               
+               {/* Col 2-29: Timeline Headers */}
+               {timelineDays.map((day, idx) => {
+                 const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
+                 const dayNames = ['S','M','T','W','T','F','S'];
+                 
+                 return (
+                   <div key={idx} className={`flex flex-col items-center justify-center py-3 border-r border-gray-50 transition-all ${isToday ? 'bg-[#FED400]/10' : ''}`}>
+                      <span className={`text-[8px] font-black uppercase mb-0.5 ${isToday ? 'text-[#004A74]' : 'text-gray-300'}`}>{dayNames[day.getDay()]}</span>
+                      <span className={`text-[10px] font-black ${isToday ? 'text-[#004A74] bg-[#FED400] w-6 h-6 flex items-center justify-center rounded-lg shadow-sm' : 'text-gray-400'}`}>
+                        {day.getDate()}
+                      </span>
+                   </div>
+                 );
+               })}
+            </div>
+
+            {/* GRID BODY: TASK ROWS */}
+            <div className="divide-y divide-gray-50">
+               {isLoading ? (
+                 [...Array(3)].map((_, i) => (
+                    <div key={i} className="grid grid-cols-[300px_repeat(28,1fr)] h-16 animate-pulse">
+                       <div className="bg-gray-50 border-r border-gray-100" />
+                       {[...Array(28)].map((_, j) => <div key={j} className="bg-white border-r border-gray-50" />)}
+                    </div>
+                 ))
+               ) : todos.length === 0 ? (
+                 <div className="py-20 text-center opacity-20">
+                    <CheckCircle2 size={48} className="mx-auto mb-2 text-[#004A74]" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Pipeline Clear • No Tasks Detected</p>
+                 </div>
+               ) : todos.map(todo => (
+                 <div key={todo.id} className="grid grid-cols-[300px_repeat(28,1fr)] hover:bg-blue-50/20 transition-all group">
+                    {/* Sticky Task Identity */}
+                    <div 
+                      onClick={() => setFormModal({ open: true, todo, mode: 'view' })}
+                      className="sticky left-0 z-20 bg-white border-r border-gray-200 px-6 py-4 flex items-center gap-3 cursor-pointer group-hover:bg-[#fcfcfc] shadow-[4px_0_15px_rgba(0,0,0,0.02)]"
+                    >
+                       <div className={`shrink-0 w-2 h-8 rounded-full ${getPriorityColor(todo)}`} />
+                       <div className="min-w-0 flex-1">
+                          <h4 className="text-[11px] font-black text-[#004A74] uppercase truncate group-hover:underline transition-all">{todo.title}</h4>
+                          <div className="flex items-center gap-2 mt-0.5">
+                             <Clock size={10} className="text-gray-300" />
+                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Deadline: {todo.deadline}</span>
+                          </div>
+                       </div>
+                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all ml-2">
+                          {!todo.isDone && (
+                            <button onClick={(e) => handleCompleteRequest(e, todo)} className="p-1.5 bg-green-50 text-green-500 hover:bg-green-500 hover:text-white rounded-lg transition-all"><Check size={12} strokeWidth={3}/></button>
+                          )}
+                          <button onClick={(e) => handleDelete(e, todo.id)} className="p-1.5 text-red-200 hover:text-red-500 rounded-lg transition-all"><Trash2 size={12} /></button>
+                       </div>
+                    </div>
+
+                    {/* Timeline Blocks */}
+                    {timelineDays.map((day, idx) => {
+                      const isActive = isDateInTaskRange(day, todo);
+                      const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
+                      const colorClass = isActive ? getPriorityColor(todo) : 'bg-transparent';
+                      
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`border-r border-gray-50 flex items-center justify-center p-1.5 min-h-[64px] ${isToday ? 'bg-[#FED400]/5' : ''}`}
+                        >
+                           {isActive && (
+                             <div 
+                               onClick={() => setFormModal({ open: true, todo, mode: 'view' })}
+                               className={`w-full h-full rounded-md shadow-sm transition-all hover:scale-105 cursor-pointer ${colorClass}`}
+                               title={`${todo.title} (${day.toLocaleDateString()})`}
+                             />
+                           )}
+                        </div>
+                      );
+                    })}
+                 </div>
+               ))}
+            </div>
+          </div>
         </div>
       </section>
+
+      {/* FOOTER LEGEND */}
+      <div className="flex flex-wrap items-center gap-6 px-6 py-4 bg-white/50 rounded-3xl border border-gray-100 backdrop-blur-sm">
+         <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Color Index:</span>
+         <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm" />
+            <span className="text-[8px] font-bold text-gray-500 uppercase">Completed</span>
+         </div>
+         <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm" />
+            <span className="text-[8px] font-bold text-gray-500 uppercase">Overdue</span>
+         </div>
+         <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-yellow-400 shadow-sm" />
+            <span className="text-[8px] font-bold text-gray-500 uppercase">Critical (≤ 3d)</span>
+         </div>
+         <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#004A74] shadow-sm" />
+            <span className="text-[8px] font-bold text-gray-500 uppercase">Scheduled</span>
+         </div>
+         <div className="ml-auto flex items-center gap-2 opacity-30">
+            <Target size={12} className="text-[#004A74]" />
+            <span className="text-[8px] font-black uppercase tracking-[0.4em] text-[#004A74]">Xeenaps Tracer Protocol</span>
+         </div>
+      </div>
 
       {/* MODALS */}
       {formModal.open && (
@@ -247,9 +289,10 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
       )}
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
+        .custom-scrollbar-h::-webkit-scrollbar { height: 6px; }
+        .custom-scrollbar-h::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar-h::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
+        .custom-scrollbar-h::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
       `}</style>
     </div>
   );
