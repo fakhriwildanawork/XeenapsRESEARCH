@@ -24,12 +24,14 @@ export const getCleanedProfileName = async (): Promise<string> => {
   const profile = await fetchUserProfile();
   if (!profile || !profile.fullName) return "Xeenaps User";
   
-  // 1. Remove Suffixes (everything after first comma)
+  // 1. Remove Suffixes (Everything after the first comma is considered a degree/title)
   let name = profile.fullName.split(',')[0].trim();
   
-  // 2. Remove Common Prefixes (Regex for Dr., Prof., Ir., etc.)
-  // Handles dots and optional spaces
-  name = name.replace(/^(Dr\.|Prof\.|Ir\.|Drs\.|Dra\.|H\.|Hj\.|apt\.|Dipl\.|dr\.|drg\.|S\.)\s+/i, '');
+  // 2. Remove All Prefixes (Any word ending with a dot at the start of the string)
+  // This identifies academic titles like Dr., Ir., Prof., etc., recursively.
+  // Regex explanation: ^ matches start, ([A-Za-z]+\.\s*) matches words with dots + space.
+  // The + quantifier after the group ensures all consecutive prefixes are removed.
+  name = name.replace(/^([A-Za-z]+\.\s*)+/i, '').trim();
   
   // 3. Fallback check
   return name || "Xeenaps User";
