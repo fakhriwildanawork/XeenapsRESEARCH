@@ -32,6 +32,39 @@ import { FormPageContainer, FormField, FormDropdown } from '../../Common/FormCom
 import { showXeenapsToast } from '../../../utils/toastUtils';
 import ReferenceTab from './Tabs/ReferenceTab';
 
+/**
+ * TRACER DETAIL SKELETON
+ * Premium UI structure mimicking the identity tab for smooth transitions.
+ */
+const TracerDetailSkeleton: React.FC = () => (
+  <div className="animate-in fade-in duration-500 w-full h-full flex flex-col">
+    <div className="px-6 md:px-10 py-6 border-b border-gray-50 flex items-center justify-between">
+       <div className="flex items-center gap-4">
+          <div className="w-10 h-10 skeleton rounded-xl" />
+          <div className="space-y-2">
+             <div className="h-4 w-48 skeleton rounded-md" />
+             <div className="h-3 w-24 skeleton rounded-md" />
+          </div>
+       </div>
+       <div className="flex gap-1 bg-gray-50 p-1 rounded-2xl">
+          {[1,2,3,4].map(i => <div key={i} className="w-24 h-9 skeleton rounded-xl" />)}
+       </div>
+    </div>
+    <div className="p-10 space-y-8 max-w-5xl mx-auto w-full">
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="h-16 skeleton rounded-2xl" />
+          <div className="h-16 skeleton rounded-2xl" />
+       </div>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="h-16 skeleton rounded-2xl" />
+          <div className="h-16 skeleton rounded-2xl" />
+       </div>
+       <div className="h-32 skeleton rounded-[2rem]" />
+       <div className="h-16 skeleton rounded-2xl" />
+    </div>
+  </div>
+);
+
 const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -40,7 +73,6 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [logs, setLogs] = useState<TracerLog[]>([]);
   const [activeTab, setActiveTab] = useState<'identity' | 'heatmap' | 'log' | 'refs'>('identity');
   const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [cleanedProfileName, setCleanedProfileName] = useState("Xeenaps User");
 
   useEffect(() => {
@@ -88,7 +120,12 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     { id: 'refs', label: 'References', icon: BookOpen }
   ] as const;
 
-  if (isLoading) return <div className="p-20 text-center animate-pulse uppercase font-black text-[#004A74]">Synchronizing Audit Trail...</div>;
+  if (isLoading) return (
+    <FormPageContainer>
+      <TracerDetailSkeleton />
+    </FormPageContainer>
+  );
+  
   if (!project) return null;
 
   return (
@@ -312,7 +349,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
       `}</style>
-    </div>
+    </FormPageContainer>
   );
 };
 

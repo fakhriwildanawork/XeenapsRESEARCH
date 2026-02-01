@@ -81,7 +81,7 @@ const TracerMain: React.FC = () => {
         keywords: [],
         category: 'Experimental',
         authors: [cleanedAuthorName],
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: new Date().toLocaleDateString('sv'), // TODAY() fix
         estEndDate: '',
         status: TracerStatus.IN_PROGRESS,
         progress: 0, // Initialized as 0
@@ -161,7 +161,7 @@ const TracerMain: React.FC = () => {
                 <div className="w-full bg-gray-50 h-2 rounded-full overflow-hidden mb-4">
                    <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${p.progress}%` }} />
                 </div>
-                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{p.progress}% Completed</span>
                    <ChevronRight size={18} className="text-gray-300 group-hover:text-[#FED400] transition-colors" />
                 </div>
