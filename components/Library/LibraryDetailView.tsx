@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -543,7 +542,13 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
 
   const handleBack = () => {
     const state = location.state as any;
-    if (state?.returnToTeaching) {
+    if (state?.returnToTracerProject) {
+      // SMART REDIRECTION TO TRACER: Reopen the specific project and ref modal
+      navigate(`/research/tracer/${state.returnToTracerProject}`, { 
+        state: { reopenReference: state.returnToRef }, 
+        replace: true 
+      });
+    } else if (state?.returnToTeaching) {
       // SMART REDIRECTION TO TEACHING: Back to the specific session and Substance tab
       navigate(`/teaching/${state.returnToTeaching}`, { 
         state: { activeTab: state.activeTab || 'substance' }, 

@@ -96,7 +96,7 @@ const CONFIG = {
       'id', 'projectId', 'date', 'title', 'logJsonId', 'storageNodeUrl', 'createdAt', 'updatedAt'
     ],
     TRACER_REFERENCES: [
-      'id', 'projectId', 'collectionId', 'createdAt'
+      'id', 'projectId', 'collectionId', 'contentJsonId', 'storageNodeUrl', 'createdAt'
     ],
     TRACER_TODOS: [
       'id', 'projectId', 'title', 'description', 'startDate', 'deadline', 'linkLabel', 'linkUrl', 'isDone', 'completedDate', 'completionRemarks', 'createdAt', 'updatedAt'

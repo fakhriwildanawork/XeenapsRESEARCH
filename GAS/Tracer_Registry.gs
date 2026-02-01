@@ -349,6 +349,10 @@ function linkTracerReferenceToRegistry(item) {
     let sheet = ss.getSheetByName("TracerReferences");
     if (!sheet) { setupTracerDatabase(); sheet = ss.getSheetByName("TracerReferences"); }
     
+    // ENSURE ID IS GENERATED
+    if (!item.id) item.id = Utilities.getUuid();
+    if (!item.createdAt) item.createdAt = new Date().toISOString();
+
     const headers = CONFIG.SCHEMAS.TRACER_REFERENCES;
     const rowData = headers.map(h => item[h] || '');
     sheet.appendRow(rowData);

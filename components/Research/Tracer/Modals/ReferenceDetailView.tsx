@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+// @ts-ignore
+import { useNavigate } from 'react-router-dom';
 import { LibraryItem, TracerReference, TracerReferenceContent, TracerSavedQuote } from '../../../../types';
 import { fetchReferenceContent, saveReferenceContent } from '../../../../services/TracerService';
-import { translateReviewRowContent, runReviewSynthesis } from '../../../../services/ReviewService';
+import { translateReviewRowContent } from '../../../../services/ReviewService';
 import { GAS_WEB_APP_URL } from '../../../../constants';
 import { 
   X, 
@@ -9,7 +11,6 @@ import {
   Quote, 
   Sparkles, 
   ArrowLeft, 
-  Award, 
   Plus, 
   Languages, 
   Trash2, 
@@ -18,7 +19,8 @@ import {
   ChevronRight,
   Loader2,
   Calendar,
-  Globe
+  Globe,
+  ExternalLink
 } from 'lucide-react';
 import { showXeenapsToast } from '../../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
@@ -81,6 +83,7 @@ const CitationModal: React.FC<{ item: LibraryItem; onClose: () => void }> = ({ i
           </button>
           {results && (
             <div className="space-y-6 animate-in slide-in-from-top-4 duration-500 pb-4">
+              <div className="h-px bg-gray-100 w-full" />
               <div className="space-y-2"><div className="flex justify-between px-1"><span className="text-[9px] font-black text-gray-400 uppercase">In-Text</span><button onClick={() => copyToClipboard(editableParenthetical)} className="text-[#004A74] hover:scale-110 transition-transform"><Copy size={14} /></button></div><textarea value={editableParenthetical} onChange={e=>setEditableParenthetical(e.target.value)} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold text-[#004A74] outline-none" rows={2}/></div>
               <div className="space-y-2"><div className="flex justify-between px-1"><span className="text-[9px] font-black text-gray-400 uppercase">Bibliography</span><button onClick={() => copyToClipboard(editableBibliography)} className="text-[#004A74] hover:scale-110 transition-transform"><Copy size={14} /></button></div><textarea value={editableBibliography} onChange={e=>setEditableBibliography(e.target.value)} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold text-[#004A74] outline-none" rows={4}/></div>
             </div>
@@ -98,6 +101,7 @@ interface ReferenceDetailViewProps {
 }
 
 const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow, onClose }) => {
+  const navigate = useNavigate();
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const [showCite, setShowCite] = useState(false);
   const [content, setContent] = useState<TracerReferenceContent>({ quotes: [] });
@@ -167,6 +171,23 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
     showXeenapsToast('success', 'Copied to clipboard');
   };
 
+  const handleViewFile = () => {
+    let targetUrl = '';
+    if (item.fileId) targetUrl = `https://drive.google.com/file/d/${item.fileId}/view`;
+    else if (item.url) targetUrl = item.url;
+    if (targetUrl) window.open(targetUrl, '_blank');
+  };
+
+  const handleGoToLibrary = () => {
+    navigate('/', { 
+      state: { 
+        openItem: item, 
+        returnToTracerProject: refRow.projectId,
+        returnToRef: item 
+      } 
+    });
+  };
+
   return (
     <div 
       className="fixed top-0 right-0 bottom-0 z-[1200] bg-white animate-in slide-in-from-right duration-500 overflow-hidden flex flex-col transition-all duration-500"
@@ -183,9 +204,16 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Knowledge Anchor Perspective</p>
             </div>
          </div>
-         <div className="flex items-center gap-3">
+         <div className="flex items-center gap-2">
+            <button onClick={handleViewFile} className="p-2.5 text-cyan-600 hover:bg-cyan-50 rounded-xl transition-all shadow-sm" title="Open Source File">
+               <Eye size={20} strokeWidth={2.5} />
+            </button>
+            <button onClick={handleGoToLibrary} className="p-2.5 text-[#004A74] hover:bg-gray-100 rounded-xl transition-all shadow-sm" title="Go to Library Detail">
+               <ExternalLink size={20} strokeWidth={2.5} />
+            </button>
+            <div className="w-px h-6 bg-gray-100 mx-1" />
             <button onClick={() => setShowCite(true)} className="flex items-center gap-2 px-6 py-2 bg-[#FED400] text-[#004A74] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 transition-all">CITE</button>
-            <button onClick={onClose} className="p-2.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all active:scale-90"><X size={28} /></button>
+            <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all active:scale-90"><X size={28} /></button>
          </div>
       </header>
 
@@ -204,11 +232,6 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
                   <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{item.publisher} • {item.year}</span>
                </div>
             </header>
-
-            <section className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
-               <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><BookOpen size={16} /> Document Abstract</h3>
-               <div className="text-sm leading-relaxed text-[#004A74] font-medium" dangerouslySetInnerHTML={{ __html: item.abstract || 'No abstract content available.' }} />
-            </section>
 
             {/* SAVED QUOTES SECTION */}
             <section className="space-y-6 pt-4">

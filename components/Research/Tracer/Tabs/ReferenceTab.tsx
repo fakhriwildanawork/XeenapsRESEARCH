@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LibraryItem, TracerReference } from '../../../../types';
 import { linkTracerReference, unlinkTracerReference } from '../../../../services/TracerService';
 import { fetchLibraryPaginated } from '../../../../services/gasService';
@@ -22,13 +22,21 @@ interface ReferenceTabProps {
   libraryItems: LibraryItem[];
   references: TracerReference[];
   onRefresh: () => Promise<void>;
+  reopenedRef?: (LibraryItem & { refRow: TracerReference }) | null;
 }
 
-const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, onRefresh }) => {
+const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, onRefresh, reopenedRef }) => {
   const [localSearch, setLocalSearch] = useState('');
   const [searchResults, setSearchResults] = useState<LibraryItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRef, setSelectedRef] = useState<LibraryItem & { refRow?: TracerReference } | null>(null);
+
+  // AUTO-OPEN LOGIC
+  useEffect(() => {
+    if (reopenedRef) {
+      setSelectedRef(reopenedRef);
+    }
+  }, [reopenedRef]);
 
   const handleSearch = async () => {
     if (localSearch.length < 3) return;

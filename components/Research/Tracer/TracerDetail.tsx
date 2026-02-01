@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { TracerProject, TracerLog, TracerLogContent, LibraryItem, TracerStatus, TracerReference, TracerTodo } from '../../../types';
 import { 
   fetchTracerProjects, 
@@ -60,6 +60,7 @@ const TracerDetailSkeleton: React.FC = () => (
 const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [project, setProject] = useState<TracerProject | null>(null);
   const [logs, setLogs] = useState<TracerLog[]>([]);
@@ -69,6 +70,9 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [activeTab, setActiveTab] = useState<'identity' | 'todo' | 'log' | 'refs'>('identity');
   const [isLoading, setIsLoading] = useState(true);
   const [cleanedProfileName, setCleanedProfileName] = useState("Xeenaps User");
+
+  // RE-OPEN STATE (FROM LIBRARY DETAIL NAVIGATION)
+  const [initialReopenRef, setInitialReopenRef] = useState<any>(null);
   
   // LOG MODAL STATE
   const [logModal, setLogModal] = useState<{ open: boolean; log?: TracerLog; cachedContent?: TracerLogContent }>({ open: false });
@@ -98,13 +102,26 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         setLogs(resLogs);
         setTodos(resTodos);
         setReferences(resRefs);
+
+        // CHECK FOR RE-OPEN REFERENCE STATE
+        const state = location.state as any;
+        if (state?.reopenReference) {
+           const refItem = state.reopenReference;
+           const refRow = resRefs.find(r => r.collectionId === refItem.id);
+           if (refRow) {
+              setActiveTab('refs');
+              setInitialReopenRef({ ...refItem, refRow });
+           }
+           // CLEANUP STATE
+           navigate(location.pathname, { replace: true, state: {} });
+        }
       } else {
         navigate('/research/tracer');
       }
     } finally {
       setIsLoading(false);
     }
-  }, [id, navigate]);
+  }, [id, navigate, location.state]);
 
   useEffect(() => {
     loadAllData(true);
@@ -231,7 +248,8 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                <FormField label="Targeted Population / Data"><div className="relative"><Users className="absolute left-4 top-5 w-4 h-4 text-gray-300" /><textarea className="w-full pl-11 pr-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-xs font-medium text-gray-600 leading-relaxed outline-none focus:bg-white min-h-[120px] resize-none" value={project.population || ''} onChange={e => handleUpdateField('population', e.target.value)} /></div></FormField>
                <FormField label="Strategic Keywords"><FormDropdown isMulti multiValues={project.keywords || []} options={[]} onAddMulti={v => handleUpdateField('keywords', [...(project.keywords || []), v])} onRemoveMulti={v => handleUpdateField('keywords', (project.keywords || []).filter(k => k !== v))} placeholder="Keywords..." value="" onChange={()=>{}} /></FormField>
                <div className="pt-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Author Team"><FormDropdown isMulti multiValues={project.authors} options={[cleanedProfileName]} onAddMulti={v => handleUpdateField('authors', [...project.authors, v])} onRemoveMulti={v => handleUpdateField('authors', project.authors.filter(a => a !== v))} placeholder="Add members..." value="" onChange={()=>{}} /></FormField>
+                  {/* Fix: Cleaned syntax in FormDropdown props for Author Team and ensured project.authors is handled safely */}
+                  <FormField label="Author Team"><FormDropdown isMulti multiValues={project.authors || []} options={[cleanedProfileName]} onAddMulti={v => handleUpdateField('authors', [...(project.authors || []), v])} onRemoveMulti={v => handleUpdateField('authors', (project.authors || []).filter(a => a !== v))} placeholder="Add members..." value="" onChange={()=>{}} /></FormField>
                   <FormField label="Workflow Status"><FormDropdown value={project.status} options={Object.values(TracerStatus)} onChange={v => handleUpdateField('status', v)} placeholder="Status" allowCustom={false} showSearch={false} /></FormField>
                </div>
             </div>
@@ -261,7 +279,15 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                </div>
             </div>
           )}
-          {activeTab === 'refs' && <ReferenceTab projectId={project.id} libraryItems={libraryItems} references={references} onRefresh={loadAllData} />}
+          {activeTab === 'refs' && (
+             <ReferenceTab 
+               projectId={project.id} 
+               libraryItems={libraryItems} 
+               references={references} 
+               onRefresh={loadAllData} 
+               reopenedRef={initialReopenRef}
+             />
+          )}
         </div>
       </div>
       
