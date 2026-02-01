@@ -106,11 +106,11 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
   const [showCite, setShowCite] = useState(false);
   const [content, setContent] = useState<TracerReferenceContent>({ quotes: [] });
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingContent, setIsLoadingContent] = useState(false); // NEW: Inline parser loader
+  const [isLoadingContent, setIsLoadingContent] = useState(false); // FOR INLINE SKELETON
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [openLangMenu, setOpenLangMenu] = useState<string | null>(null);
 
-  // CRITICAL: Manage local metadata to prevent data loss on sharding handshake
+  // CRITICAL: Manage local metadata to prevent stale state loops
   const [localRefRow, setLocalRefRow] = useState<TracerReference>(refRow);
 
   const LANG_OPTIONS = [
@@ -120,22 +120,28 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
 
   useEffect(() => {
     const loadContent = async () => {
+      // ONLY LOAD IF JSON ID EXISTS
       if (localRefRow.contentJsonId) {
         setIsLoadingContent(true);
-        const data = await fetchReferenceContent(localRefRow.contentJsonId, localRefRow.storageNodeUrl);
-        if (data) setContent(data);
-        setIsLoadingContent(false);
+        try {
+          const data = await fetchReferenceContent(localRefRow.contentJsonId, localRefRow.storageNodeUrl);
+          if (data) setContent(data);
+        } catch (e) {
+          console.error("Failed to fetch quotes", e);
+        } finally {
+          setIsLoadingContent(false);
+        }
       }
       setIsLoading(false);
     };
     loadContent();
-  }, [localRefRow]);
+  }, [localRefRow.contentJsonId, localRefRow.storageNodeUrl]);
 
   const handleSaveContent = async (newContent: TracerReferenceContent) => {
-    // Background Sync
+    // Background Sync with current metadata
     const result = await saveReferenceContent(localRefRow, newContent);
     if (result) {
-        // Sync sharding metadata locally for subsequent instant operations
+        // ESSENTIAL: Update localRefRow with newly assigned IDs if this was first write
         setLocalRefRow(prev => ({
             ...prev,
             contentJsonId: result.contentJsonId,
@@ -169,7 +175,7 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
           ...content,
           quotes: content.quotes.map(q => q.id === quote.id ? { ...q, enhancedText: cleanText, lang: langCode } : q)
         };
-        setContent(updated); // Optimistic
+        setContent(updated); // Optimistic UI
         await handleSaveContent(updated);
         showXeenapsToast('success', 'Translation synchronized');
       }
@@ -270,6 +276,7 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
 
                <div className="space-y-4">
                   {(isLoading || isLoadingContent) ? (
+                    /* INLINE SKELETON LOADING AREA */
                     <div className="space-y-4">
                       {[1,2].map(i => (
                         <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">

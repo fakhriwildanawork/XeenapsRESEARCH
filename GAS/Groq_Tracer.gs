@@ -82,7 +82,7 @@ function handleAiTracerQuoteExtraction(payload) {
             { role: "system", content: "You are a professional academic data extractor. You scan entire documents to find the most relevant contextual evidence. Always respond in raw JSON." },
             { role: "user", content: prompt }
           ],
-          temperature: 0.4, // INCREASED FROM 0.1 TO PREVENT MONOTONY
+          temperature: 0.4, // TUNED FOR BETTER EXPLORATION
           response_format: { type: "json_object" }
         }),
         muteHttpExceptions: true

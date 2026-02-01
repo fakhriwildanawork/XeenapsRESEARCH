@@ -440,12 +440,12 @@ function saveReferenceContentToRegistry(item, content) {
     let sheet = ss.getSheetByName("TracerReferences");
     if (!sheet) return { status: 'error', message: 'Sheet missing.' };
     
-    const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
-    const idIdx = headers.indexOf('id');
-    const pIdIdx = headers.indexOf('projectId');
-    const cIdIdx = headers.indexOf('collectionId');
-    const jsonIdIdx = headers.indexOf('contentJsonId');
-    const nodeIdx = headers.indexOf('storageNodeUrl');
+    const actualHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const idIdx = actualHeaders.indexOf('id');
+    const pIdIdx = actualHeaders.indexOf('projectId');
+    const cIdIdx = actualHeaders.indexOf('collectionId');
+    const jsonIdIdx = actualHeaders.indexOf('contentJsonId');
+    const nodeIdx = actualHeaders.indexOf('storageNodeUrl');
     
     const data = sheet.getDataRange().getValues();
     let rowIndex = -1;
@@ -469,7 +469,7 @@ function saveReferenceContentToRegistry(item, content) {
 
     // Determine storage node
     let storageTarget;
-    if (item.contentJsonId) {
+    if (item.contentJsonId && item.contentJsonId.trim() !== "") {
       storageTarget = { url: item.storageNodeUrl, isLocal: !item.storageNodeUrl || item.storageNodeUrl === ScriptApp.getService().getUrl() };
     } else {
       storageTarget = getViableStorageTarget(CONFIG.STORAGE.CRITICAL_THRESHOLD);
@@ -489,10 +489,10 @@ function saveReferenceContentToRegistry(item, content) {
         const folder = DriveApp.getFolderById(CONFIG.FOLDERS.MAIN_LIBRARY);
         file = folder.createFile(Utilities.newBlob(jsonBody, 'application/json', jsonFileName));
         item.contentJsonId = file.getId();
-        sheet.getRange(rowIndex, jsonIdIdx + 1).setValue(item.contentJsonId);
+        if (jsonIdIdx > -1) sheet.getRange(rowIndex, jsonIdIdx + 1).setValue(item.contentJsonId);
       }
       item.storageNodeUrl = ScriptApp.getService().getUrl();
-      sheet.getRange(rowIndex, nodeIdx + 1).setValue(item.storageNodeUrl);
+      if (nodeIdx > -1) sheet.getRange(rowIndex, nodeIdx + 1).setValue(item.storageNodeUrl);
     } else {
       const res = UrlFetchApp.fetch(storageTarget.url, {
         method: 'post',
@@ -508,8 +508,8 @@ function saveReferenceContentToRegistry(item, content) {
       if (resJson.status === 'success') {
         item.contentJsonId = resJson.fileId;
         item.storageNodeUrl = storageTarget.url;
-        sheet.getRange(rowIndex, jsonIdIdx + 1).setValue(item.contentJsonId);
-        sheet.getRange(rowIndex, nodeIdx + 1).setValue(item.storageNodeUrl);
+        if (jsonIdIdx > -1) sheet.getRange(rowIndex, jsonIdIdx + 1).setValue(item.contentJsonId);
+        if (nodeIdx > -1) sheet.getRange(rowIndex, nodeIdx + 1).setValue(item.storageNodeUrl);
       }
     }
 
