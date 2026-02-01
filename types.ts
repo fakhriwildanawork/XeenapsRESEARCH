@@ -407,6 +407,14 @@ export enum TracerStatus {
 export interface TracerProject {
   id: string;
   title: string;
+  label: string;
+  topic: string;
+  problemStatement: string;
+  researchGap: string;
+  researchQuestion: string;
+  methodology: string;
+  population: string;
+  keywords: string[];
   category: string;
   authors: string[];
   startDate: string;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported member
 import { useNavigate } from 'react-router-dom';
@@ -68,6 +67,14 @@ const TracerMain: React.FC = () => {
       const newItem: TracerProject = {
         id,
         title,
+        label: title.substring(0, 20).toUpperCase(),
+        topic: '',
+        problemStatement: '',
+        researchGap: '',
+        researchQuestion: '',
+        methodology: '',
+        population: '',
+        keywords: [],
         category: 'Experimental',
         authors: ['Xeenaps User'],
         startDate: new Date().toISOString().split('T')[0],

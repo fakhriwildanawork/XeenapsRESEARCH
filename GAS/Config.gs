@@ -29,7 +29,7 @@ const CONFIG = {
     CONSULTATION: '1tWeM09na8DY0pjU5wwnLNvzl_BIK6pB90m2WToF98Ts',
     NOTEBOOK: '1LxDILaoTFkHV9ZRx67YUhLQmHANeySdvR8AcYO8NMQs',
     LITERATURE_REVIEW: '1l8P-jSZsj6Q6OuBjPDpM3nCNpDcxeoreYebhr0RMz_Y',
-    TRACER: '1-Placeholder-Tracer-Spreadsheet-ID' 
+    TRACER: '1TKp9891UDP5dgH94PtgZmiDeEh0fNCuaOyic1v5GlOE' 
   },
   SCHEMAS: {
     LIBRARY: [
@@ -90,7 +90,7 @@ const CONFIG = {
       'id', 'label', 'centralQuestion', 'reviewJsonId', 'storageNodeUrl', 'isFavorite', 'createdAt', 'updatedAt'
     ],
     TRACER_PROJECTS: [
-      'id', 'title', 'category', 'authors', 'startDate', 'estEndDate', 'status', 'progress', 'createdAt', 'updatedAt'
+      'id', 'title', 'label', 'topic', 'problemStatement', 'researchGap', 'researchQuestion', 'methodology', 'population', 'keywords', 'category', 'authors', 'startDate', 'estEndDate', 'status', 'progress', 'createdAt', 'updatedAt'
     ],
     TRACER_LOGS: [
       'id', 'projectId', 'date', 'title', 'logJsonId', 'storageNodeUrl', 'createdAt', 'updatedAt'

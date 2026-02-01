@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { useParams, useNavigate } from 'react-router-dom';
@@ -19,7 +18,14 @@ import {
   Calendar,
   Layers,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Zap,
+  Target,
+  Search,
+  MessageSquare,
+  FlaskConical,
+  Users,
+  Tag
 } from 'lucide-react';
 import { FormPageContainer, FormField, FormDropdown } from '../../Common/FormComponents';
 import { showXeenapsToast } from '../../../utils/toastUtils';
@@ -41,7 +47,10 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
       const res = await fetchTracerProjects(1, 1000);
       const found = res.items.find(p => p.id === id);
       if (found) {
-        setProject(found);
+        setProject({
+          ...found,
+          keywords: Array.isArray(found.keywords) ? found.keywords : []
+        });
         const logData = await fetchTracerLogs(id);
         setLogs(logData);
       } else navigate('/research/tracer');
@@ -54,7 +63,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     if (!project) return;
     const updated = { ...project, [f]: v, updatedAt: new Date().toISOString() };
     setProject(updated);
-    // Silent auto-save logic should be here
+    // Silent auto-save
     saveTracerProject(updated);
   };
 
@@ -92,33 +101,142 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
           
           {activeTab === 'identity' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-               <div className="bg-[#004A74] p-10 rounded-[3rem] text-white relative overflow-hidden shadow-2xl">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 -translate-y-24 translate-x-24 rounded-full" />
-                  <div className="relative z-10 space-y-6">
-                     <FormField label={<span className="text-white/50">Full Research Title</span>}>
-                        <textarea className="w-full bg-transparent border-none text-2xl font-black uppercase tracking-tight focus:ring-0 resize-none p-0" value={project.title} onChange={e => handleUpdateField('title', e.target.value)} />
-                     </FormField>
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-white/10">
-                        <div>
-                           <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1">Category</p>
-                           <FormDropdown value={project.category} options={['Experimental','Observation','Descriptive','R&D']} onChange={v => handleUpdateField('category', v)} placeholder="Category" />
-                        </div>
-                        <div>
-                           <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1">Status</p>
-                           <FormDropdown value={project.status} options={Object.values(TracerStatus)} onChange={v => handleUpdateField('status', v)} placeholder="Status" />
-                        </div>
-                        <div className="col-span-2 md:col-span-1">
-                           <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1">Progress Index</p>
-                           <div className="flex items-center gap-3">
-                              <input type="range" className="flex-1 accent-[#FED400]" min="0" max="100" value={project.progress} onChange={e => handleUpdateField('progress', parseInt(e.target.value))} />
-                              <span className="font-black text-lg text-[#FED400]">{project.progress}%</span>
-                           </div>
-                        </div>
+               
+               {/* a. 2 column 50% 50%: Label | Progress */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField label="Audit Project Label" required>
+                     <input 
+                        className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-bold text-[#004A74] uppercase outline-none focus:ring-4 focus:ring-[#004A74]/5 transition-all"
+                        value={project.label || ''}
+                        onChange={e => handleUpdateField('label', e.target.value)}
+                        placeholder="SHORT LABEL..."
+                     />
+                  </FormField>
+                  <FormField label="Progress Index">
+                     <div className="flex items-center gap-4 bg-gray-50 px-5 py-2 rounded-2xl border border-gray-200 h-[52px]">
+                        <input type="range" className="flex-1 accent-[#004A74]" min="0" max="100" value={project.progress} onChange={e => handleUpdateField('progress', parseInt(e.target.value))} />
+                        <span className="font-black text-sm text-[#004A74] w-10 text-right">{project.progress}%</span>
                      </div>
-                  </div>
+                  </FormField>
                </div>
-               <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                  <FormField label="Author Identity & Team"><FormDropdown isMulti multiValues={project.authors} options={['Xeenaps User']} onAddMulti={v => handleUpdateField('authors', [...project.authors, v])} onRemoveMulti={v => handleUpdateField('authors', project.authors.filter(a => a !== v))} placeholder="Add members..." value="" onChange={()=>{}} /></FormField>
+
+               {/* b. 2 Column 50% 50: Start Date-Target Date */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField label="Project Start Date">
+                     <input type="date" className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-mono font-bold text-[#004A74]" value={project.startDate} onChange={e => handleUpdateField('startDate', e.target.value)} />
+                  </FormField>
+                  <FormField label="Target / Estimated End Date">
+                     <input type="date" className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-mono font-bold text-[#004A74]" value={project.estEndDate} onChange={e => handleUpdateField('estEndDate', e.target.value)} />
+                  </FormField>
+               </div>
+
+               {/* c. Full width research title */}
+               <FormField label="Full Research Title">
+                  <textarea 
+                     className="w-full px-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-sm font-bold text-[#004A74] uppercase outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[100px] resize-none"
+                     value={project.title}
+                     onChange={e => handleUpdateField('title', e.target.value)}
+                     placeholder="OFFICIAL RESEARCH TITLE..."
+                  />
+               </FormField>
+
+               {/* d. Full width Research Topic (Domain/topik riset) */}
+               <FormField label="Research Topic / Domain">
+                  <div className="relative group">
+                     <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#004A74]" />
+                     <input 
+                        className="w-full pl-11 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all"
+                        value={project.topic || ''}
+                        onChange={e => handleUpdateField('topic', e.target.value)}
+                        placeholder="e.g. SUSTAINABLE ARCHITECTURE, QUANTUM COMPUTING..."
+                     />
+                  </div>
+               </FormField>
+
+               {/* e. Full width Problem justification */}
+               <FormField label="Problem Justification">
+                  <textarea 
+                     className="w-full px-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-xs font-medium text-gray-600 leading-relaxed outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[120px] resize-none"
+                     value={project.problemStatement || ''}
+                     onChange={e => handleUpdateField('problemStatement', e.target.value)}
+                     placeholder="Describe the urgency and core issues being addressed..."
+                  />
+               </FormField>
+
+               {/* f. Full width The White Space (Gap) */}
+               <FormField label="The White Space (Gap)">
+                  <div className="relative">
+                     <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FED400] rounded-l-[1.5rem]" />
+                     <textarea 
+                        className="w-full px-8 py-5 bg-[#004A74]/5 border border-[#004A74]/10 rounded-[1.5rem] text-xs font-bold text-[#004A74] leading-relaxed outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[120px] resize-none"
+                        value={project.researchGap || ''}
+                        onChange={e => handleUpdateField('researchGap', e.target.value)}
+                        placeholder="What have previous studies missed? Define your unique niche..."
+                     />
+                  </div>
+               </FormField>
+
+               {/* g. Full width Investigation Question */}
+               <FormField label="Investigation Question">
+                  <div className="relative">
+                     <MessageSquare className="absolute left-4 top-5 w-4 h-4 text-gray-300" />
+                     <textarea 
+                        className="w-full pl-11 pr-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-sm font-bold text-[#004A74] italic leading-relaxed outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[100px] resize-none"
+                        value={project.researchQuestion || ''}
+                        onChange={e => handleUpdateField('researchQuestion', e.target.value)}
+                        placeholder="What are the primary questions this research aims to answer?"
+                     />
+                  </div>
+               </FormField>
+
+               {/* h. Full width Approach & Methodology */}
+               <FormField label="Approach & Methodology">
+                  <div className="relative">
+                     <FlaskConical className="absolute left-4 top-5 w-4 h-4 text-gray-300" />
+                     <textarea 
+                        className="w-full pl-11 pr-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-xs font-medium text-gray-600 leading-relaxed outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[120px] resize-none"
+                        value={project.methodology || ''}
+                        onChange={e => handleUpdateField('methodology', e.target.value)}
+                        placeholder="Describe technical procedures, paradigms, and analytical tools..."
+                     />
+                  </div>
+               </FormField>
+
+               {/* i. Full width Targeted Population */}
+               <FormField label="Targeted Population / Data">
+                  <div className="relative">
+                     <Users className="absolute left-4 top-5 w-4 h-4 text-gray-300" />
+                     <textarea 
+                        className="w-full pl-11 pr-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-xs font-medium text-gray-600 leading-relaxed outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[100px] resize-none"
+                        value={project.population || ''}
+                        onChange={e => handleUpdateField('population', e.target.value)}
+                        placeholder="Define subjects, data sources, or specific demographics..."
+                     />
+                  </div>
+               </FormField>
+
+               {/* j. Full width Keywords */}
+               <FormField label="Strategic Keywords">
+                  <FormDropdown 
+                     isMulti 
+                     multiValues={project.keywords || []} 
+                     options={[]} 
+                     onAddMulti={v => handleUpdateField('keywords', [...(project.keywords || []), v])} 
+                     onRemoveMulti={v => handleUpdateField('keywords', (project.keywords || []).filter(k => k !== v))} 
+                     placeholder="Type keywords and press enter..." 
+                     value="" 
+                     onChange={()=>{}} 
+                  />
+               </FormField>
+
+               {/* Auxiliary Info: Authors & Status */}
+               <div className="pt-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField label="Author Team">
+                     <FormDropdown isMulti multiValues={project.authors} options={['Xeenaps User']} onAddMulti={v => handleUpdateField('authors', [...project.authors, v])} onRemoveMulti={v => handleUpdateField('authors', project.authors.filter(a => a !== v))} placeholder="Add members..." value="" onChange={()=>{}} />
+                  </FormField>
+                  <FormField label="Workflow Status">
+                     <FormDropdown value={project.status} options={Object.values(TracerStatus)} onChange={v => handleUpdateField('status', v)} placeholder="Status" allowCustom={false} showSearch={false} />
+                  </FormField>
                </div>
             </div>
           )}
