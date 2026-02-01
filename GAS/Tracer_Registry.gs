@@ -15,6 +15,16 @@ function setupTracerDatabase() {
       pSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       pSheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
       pSheet.setFrozenRows(1);
+    } else {
+      // Sync headers for existing sheet (Prevents column shift errors)
+      const currentHeaders = pSheet.getRange(1, 1, 1, pSheet.getLastColumn()).getValues()[0];
+      const targetHeaders = CONFIG.SCHEMAS.TRACER_PROJECTS;
+      const missingHeaders = targetHeaders.filter(h => !currentHeaders.includes(h));
+      if (missingHeaders.length > 0) {
+        const startCol = currentHeaders.length + 1;
+        pSheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
+        pSheet.getRange(1, startCol, 1, missingHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
+      }
     }
 
     // 2. Logs Sheet (Activity Journal)
@@ -51,7 +61,7 @@ function getTracerProjectsFromRegistry(page = 1, limit = 25, search = "") {
     const sheet = ss.getSheetByName("TracerProjects");
     if (!sheet) return { items: [], totalCount: 0 };
     
-    // CHANGE: Using getValues instead of getDisplayValues for data integrity
+    // Using getValues for data type integrity
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     const rawItems = data.slice(1);
@@ -62,7 +72,13 @@ function getTracerProjectsFromRegistry(page = 1, limit = 25, search = "") {
       filtered = rawItems.filter(r => r.some(cell => String(cell).toLowerCase().includes(s)));
     }
     
-    filtered.sort((a, b) => new Date(b[headers.indexOf('updatedAt')]).getTime() - new Date(a[headers.indexOf('updatedAt')]).getTime());
+    // Initial ID index for sorting fallback
+    const updatedAtIdx = headers.indexOf('updatedAt');
+    filtered.sort((a, b) => {
+      const timeA = a[updatedAtIdx] ? new Date(a[updatedAtIdx]).getTime() : 0;
+      const timeB = b[updatedAtIdx] ? new Date(b[updatedAtIdx]).getTime() : 0;
+      return timeB - timeA;
+    });
     
     const totalCount = filtered.length;
     const paginated = filtered.slice((page - 1) * limit, page * limit);
@@ -71,14 +87,19 @@ function getTracerProjectsFromRegistry(page = 1, limit = 25, search = "") {
       let obj = {};
       headers.forEach((h, i) => {
         let val = row[i];
-        // CHANGE: Explicitly parse authors and keywords as Arrays
+        
+        // Handle JSON array fields
         if (h === 'authors' || h === 'keywords') {
           try { 
             val = (typeof val === 'string' && val !== '') ? JSON.parse(val) : (Array.isArray(val) ? val : []); 
-          } catch(e) { 
-            val = []; 
-          }
+          } catch(e) { val = []; }
         }
+        
+        // Handle Date objects from Spreadsheet
+        if (val instanceof Date) {
+          val = val.toISOString();
+        }
+        
         obj[h] = val;
       });
       return obj;
@@ -94,16 +115,25 @@ function saveTracerProjectToRegistry(item) {
     let sheet = ss.getSheetByName("TracerProjects");
     if (!sheet) { setupTracerDatabase(); sheet = ss.getSheetByName("TracerProjects"); }
     
-    const headers = CONFIG.SCHEMAS.TRACER_PROJECTS;
-    const rowData = headers.map(h => {
+    // Dynamic Mapping: Get headers from sheet to handle any column shifts
+    const actualHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const idIdx = actualHeaders.indexOf('id');
+    
+    if (idIdx === -1) {
+      setupTracerDatabase(); // Force repair
+      return { status: 'error', message: 'ID column missing. Repair initiated.' };
+    }
+
+    const rowData = actualHeaders.map(h => {
       const val = item[h];
-      return (Array.isArray(val) || (typeof val === 'object' && val !== null)) ? JSON.stringify(val) : (val !== undefined ? val : '');
+      if (val === undefined || val === null) return '';
+      return (Array.isArray(val) || (typeof val === 'object')) ? JSON.stringify(val) : val;
     });
 
     const data = sheet.getDataRange().getValues();
     let existingRow = -1;
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === item.id) { existingRow = i + 1; break; }
+      if (data[i][idIdx] === item.id) { existingRow = i + 1; break; }
     }
 
     if (existingRow > -1) {
@@ -124,22 +154,25 @@ function deleteTracerProjectFromRegistry(id) {
     
     if (sheet) {
       const data = sheet.getDataRange().getValues();
+      const idIdx = data[0].indexOf('id');
       for (let i = 1; i < data.length; i++) {
-        if (data[i][0] === id) { sheet.deleteRow(i + 1); break; }
+        if (data[i][idIdx] === id) { sheet.deleteRow(i + 1); break; }
       }
     }
     
     // Cleanup related logs and references
     if (lSheet) {
       const lData = lSheet.getDataRange().getValues();
+      const pIdIdx = lData[0].indexOf('projectId');
       for (let j = lData.length - 1; j >= 1; j--) {
-        if (lData[j][1] === id) lSheet.deleteRow(j + 1);
+        if (lData[j][pIdIdx] === id) lSheet.deleteRow(j + 1);
       }
     }
     if (rSheet) {
       const rData = rSheet.getDataRange().getValues();
+      const pIdIdx = rData[0].indexOf('projectId');
       for (let k = rData.length - 1; k >= 1; k--) {
-        if (rData[k][1] === id) rSheet.deleteRow(k + 1);
+        if (rData[k][pIdIdx] === id) rSheet.deleteRow(k + 1);
       }
     }
     return { status: 'success' };

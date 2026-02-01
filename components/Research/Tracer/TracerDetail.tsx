@@ -47,9 +47,11 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
       const res = await fetchTracerProjects(1, 1000);
       const found = res.items.find(p => p.id === id);
       if (found) {
+        // Normalize arrays for stable rendering and prevent circular empty saves
         setProject({
           ...found,
-          keywords: Array.isArray(found.keywords) ? found.keywords : []
+          keywords: Array.isArray(found.keywords) ? found.keywords : [],
+          authors: Array.isArray(found.authors) ? found.authors : ['Xeenaps User']
         });
         const logData = await fetchTracerLogs(id);
         setLogs(logData);
@@ -65,6 +67,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     
     const updated = { ...project, [f]: v, updatedAt: new Date().toISOString() };
     setProject(updated);
+    
     // Silent auto-save logic
     saveTracerProject(updated);
   };
@@ -210,7 +213,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                   <div className="relative">
                      <Users className="absolute left-4 top-5 w-4 h-4 text-gray-300" />
                      <textarea 
-                        className="w-full pl-11 pr-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-xs font-medium text-gray-600 leading-relaxed outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[100px] resize-none"
+                        className="w-full pl-11 pr-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-xs font-medium text-gray-600 leading-relaxed outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[120px] resize-none"
                         value={project.population || ''}
                         onChange={e => handleUpdateField('population', e.target.value)}
                         placeholder="Define subjects, data sources, or specific demographics..."
