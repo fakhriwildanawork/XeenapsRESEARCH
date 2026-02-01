@@ -12,6 +12,7 @@ import {
   Zap
 } from 'lucide-react';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
+import { showXeenapsToast } from '../../../../utils/toastUtils';
 import TodoFormModal from '../Modals/TodoFormModal';
 import TodoCompletionModal from '../Modals/TodoCompletionModal';
 
@@ -162,7 +163,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
       <section className="bg-white border border-gray-100 rounded-[1.5rem] md:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
         <div className="overflow-x-auto custom-scrollbar-h">
           <div className="w-full min-w-0">
-            {/* GRID HEADER: Execution column widened to 220px, dates narrowed */}
+            {/* GRID HEADER: Format Tanggal DD MMM YYYY */}
             <div className={`grid ${isMobile ? 'grid-cols-[140px_repeat(7,1fr)]' : 'grid-cols-[220px_repeat(14,1fr)]'} border-b border-gray-100 bg-gray-50/50`}>
                <div className="sticky left-0 z-30 bg-white border-r border-gray-200 px-5 py-3 flex items-center shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-[#004A74]">Project Execution Logs</span>
@@ -175,20 +176,22 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
                  
                  return (
                    <div key={idx} className={`flex flex-col items-center justify-center py-3 border-r border-gray-50 transition-all ${isToday ? 'bg-[#FED400]/10' : ''}`}>
-                      <span className={`text-[7px] md:text-[8px] font-black uppercase mb-0.5 ${isToday ? 'text-[#004A74]' : 'text-gray-300'}`}>{dayNames[day.getDay()]}</span>
-                      <span className={`text-[9px] md:text-[10px] font-black ${isToday ? 'text-[#004A74] bg-[#FED400] w-6 h-6 flex items-center justify-center rounded-lg shadow-sm' : 'text-[#004A74]'}`}>
-                        {day.getDate()}
-                      </span>
-                      <div className="flex flex-col items-center -space-y-1">
-                        <span className="text-[6px] font-black text-gray-400 uppercase">{monthNames[day.getMonth()]}</span>
-                        <span className="text-[6px] font-black text-gray-300 uppercase">{day.getFullYear()}</span>
+                      <span className={`text-[7px] md:text-[8px] font-black uppercase mb-1 ${isToday ? 'text-[#004A74]' : 'text-gray-300'}`}>{dayNames[day.getDay()]}</span>
+                      <div className="flex flex-col items-center leading-none">
+                        <span className={`text-[10px] md:text-[11px] font-black ${isToday ? 'text-[#004A74] bg-[#FED400] w-6 h-6 flex items-center justify-center rounded-lg shadow-sm' : 'text-[#004A74]'}`}>
+                          {String(day.getDate()).padStart(2, '0')}
+                        </span>
+                        <div className="flex flex-col items-center -space-y-1 mt-1">
+                          <span className="text-[6px] font-black text-gray-400 uppercase">{monthNames[day.getMonth()]}</span>
+                          <span className="text-[6px] font-black text-gray-300 uppercase">{day.getFullYear()}</span>
+                        </div>
                       </div>
                    </div>
                  );
                })}
             </div>
 
-            {/* GRID BODY: TASK ROWS */}
+            {/* GRID BODY: Heatmap Siku & Seamless (No Padding, No Rounded) */}
             <div className="divide-y divide-gray-50">
                {sortedTodos.length === 0 ? (
                  <div className="py-20 text-center opacity-20">
@@ -225,11 +228,11 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
                       const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
                       const colorClass = isActive ? getPriorityColor(todo) : 'bg-transparent';
                       return (
-                        <div key={idx} className={`border-r border-gray-50 flex items-center justify-center p-0.5 min-h-[56px] ${isToday ? 'bg-[#FED400]/5' : ''}`}>
+                        <div key={idx} className={`border-r border-gray-50 flex items-center justify-center p-0 min-h-[56px] ${isToday ? 'bg-[#FED400]/5' : ''}`}>
                            {isActive && (
                              <div 
                                onClick={() => setFormModal({ open: true, todo, mode: 'view' })}
-                               className={`w-full h-full rounded-sm shadow-sm transition-all hover:scale-[1.03] cursor-pointer ${colorClass}`}
+                               className={`w-full h-full rounded-none transition-all hover:scale-105 cursor-pointer ${colorClass}`}
                              />
                            )}
                         </div>
