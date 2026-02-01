@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TracerTodo } from '../../../../types';
-import { fetchTracerTodos, saveTracerTodo, deleteTracerTodo } from '../../../../services/TracerService';
+import { saveTracerTodo, deleteTracerTodo } from '../../../../services/TracerService';
 import { 
   CheckCircle2, 
   Clock, 
@@ -9,9 +9,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Check, 
-  Target,
-  Zap,
-  Loader2
+  Zap
 } from 'lucide-react';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
 import TodoFormModal from '../Modals/TodoFormModal';
@@ -19,13 +17,12 @@ import TodoCompletionModal from '../Modals/TodoCompletionModal';
 
 interface TodoTabProps {
   projectId: string;
+  todos: TracerTodo[];
+  onRefresh: () => Promise<void>;
 }
 
-const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
-  const [todos, setTodos] = useState<TracerTodo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, onRefresh }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  
   const [viewAnchorDate, setViewAnchorDate] = useState(new Date());
   const [formModal, setFormModal] = useState<{ open: boolean; todo?: TracerTodo; mode: 'view' | 'edit' }>({ open: false, mode: 'view' });
   const [completionModal, setCompletionModal] = useState<{ open: boolean; todo?: TracerTodo }>({ open: false });
@@ -36,15 +33,6 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const loadTodos = async () => {
-    setIsLoading(true);
-    const data = await fetchTracerTodos(projectId);
-    setTodos(data);
-    setIsLoading(false);
-  };
-
-  useEffect(() => { loadTodos(); }, [projectId]);
-
   // --- GANTT ENGINE: ADAPTIVE 14/7 DAYS ---
   const numDays = isMobile ? 7 : 14;
   const todayOffset = isMobile ? 3 : 6;
@@ -53,7 +41,6 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
     const days = [];
     const start = new Date(viewAnchorDate);
     start.setDate(start.getDate() - todayOffset);
-    
     for (let i = 0; i < numDays; i++) {
       const d = new Date(start);
       d.setDate(d.getDate() + i);
@@ -69,16 +56,17 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
   };
 
   const getPriorityColor = (todo: TracerTodo) => {
-    if (todo.isDone) return 'bg-green-500';
+    // Robust status check (String/Boolean safe)
+    const isDone = todo.isDone === true || String(todo.isDone).toUpperCase() === 'TRUE';
+    if (isDone) return 'bg-green-500';
+    
     const today = new Date();
     today.setHours(0,0,0,0);
     const deadline = new Date(todo.deadline);
-    
     if (today > deadline) return 'bg-red-500';
     
     const diffTime = deadline.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
     if (diffDays <= 3) return 'bg-yellow-400';
     return 'bg-[#004A74]';
   };
@@ -88,27 +76,21 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
     return dStr >= todo.startDate && dStr <= todo.deadline;
   };
 
-  // --- STANDARD CRUD HANDLERS (No Toasts, No Optimistic UI) ---
   const handleSaveTodo = async (data: TracerTodo) => {
     setFormModal({ open: false, mode: 'view' });
-    if (await saveTracerTodo(data)) {
-      loadTodos();
-    }
+    if (await saveTracerTodo(data)) await onRefresh();
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (await showXeenapsDeleteConfirm(1)) {
-      if (await deleteTracerTodo(id)) {
-        loadTodos();
-      }
+      if (await deleteTracerTodo(id)) await onRefresh();
     }
   };
 
   const handleFinalizeCompletion = async (completedDate: string, remarks: string) => {
     if (!completionModal.todo) return;
     setCompletionModal({ open: false });
-    
     const updated: TracerTodo = { 
       ...completionModal.todo, 
       isDone: true, 
@@ -116,10 +98,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
       completionRemarks: remarks,
       updatedAt: new Date().toISOString()
     };
-    
-    if (await saveTracerTodo(updated)) {
-      loadTodos();
-    }
+    if (await saveTracerTodo(updated)) await onRefresh();
   };
 
   const handleCompleteRequest = (e: React.MouseEvent, todo: TracerTodo) => {
@@ -153,12 +132,12 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
          </div>
       </div>
 
-      {/* GANTT MATRIX CONTAINER - Compacted for visibilty */}
+      {/* GANTT MATRIX CONTAINER */}
       <section className="bg-white border border-gray-100 rounded-[1.5rem] md:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
         <div className="overflow-x-auto custom-scrollbar-h">
           <div className="w-full min-w-0">
-            {/* GRID HEADER: Reduced column widths */}
-            <div className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[180px_repeat(14,1fr)]'} border-b border-gray-100 bg-gray-50/50`}>
+            {/* GRID HEADER: Column narrowed for visibility */}
+            <div className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[140px_repeat(14,1fr)]'} border-b border-gray-100 bg-gray-50/50`}>
                <div className="sticky left-0 z-30 bg-white border-r border-gray-200 px-4 py-3 flex items-center shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-gray-400">Execution</span>
                </div>
@@ -182,35 +161,30 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
 
             {/* GRID BODY: TASK ROWS */}
             <div className="divide-y divide-gray-50">
-               {isLoading ? (
-                 [...Array(5)].map((_, i) => (
-                    <div key={i} className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[180px_repeat(14,1fr)]'} h-12`}>
-                       <div className="bg-gray-50 border-r border-gray-100 p-4"><div className="w-full h-2 skeleton rounded-full" /></div>
-                       {[...Array(numDays)].map((_, j) => <div key={j} className="bg-white border-r border-gray-50 p-2"><div className="w-full h-full skeleton rounded-md opacity-20" /></div>)}
-                    </div>
-                 ))
-               ) : todos.length === 0 ? (
+               {todos.length === 0 ? (
                  <div className="py-20 text-center opacity-20">
                     <CheckCircle2 size={48} className="mx-auto mb-2 text-[#004A74]" />
                     <p className="text-[10px] font-black uppercase tracking-widest">Pipeline Clear</p>
                  </div>
-               ) : todos.map(todo => (
-                 <div key={todo.id} className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[180px_repeat(14,1fr)]'} hover:bg-blue-50/20 transition-all group`}>
+               ) : todos.map(todo => {
+                 const isDone = todo.isDone === true || String(todo.isDone).toUpperCase() === 'TRUE';
+                 return (
+                 <div key={todo.id} className={`grid ${isMobile ? 'grid-cols-[120px_repeat(7,1fr)]' : 'grid-cols-[140px_repeat(14,1fr)]'} hover:bg-blue-50/20 transition-all group`}>
                     <div 
                       onClick={() => setFormModal({ open: true, todo, mode: 'view' })}
                       className="sticky left-0 z-20 bg-white border-r border-gray-200 px-3 py-3 flex items-center gap-2 cursor-pointer group-hover:bg-[#fcfcfc] shadow-[2px_0_10px_rgba(0,0,0,0.02)]"
                     >
-                       <div className={`shrink-0 w-1.5 h-6 rounded-full ${getPriorityColor(todo)}`} />
+                       <div className={`shrink-0 w-1 h-6 rounded-full ${getPriorityColor(todo)}`} />
                        <div className="min-w-0 flex-1">
                           <h4 className="text-[9px] md:text-[10px] font-black text-[#004A74] uppercase truncate leading-tight">{todo.title}</h4>
                           <div className="flex items-center gap-1 mt-0.5">
                              <Clock size={8} className="text-gray-300" />
-                             <span className="text-[6px] md:text-[7px] font-bold text-gray-400 uppercase tracking-tighter">Due: {todo.deadline}</span>
+                             <span className="text-[6px] font-bold text-gray-400 uppercase tracking-tighter">Due: {todo.deadline}</span>
                           </div>
                        </div>
                        {/* RESTORED ACTION BUTTONS */}
                        <div className="flex gap-1 ml-1">
-                          {!todo.isDone && (
+                          {!isDone && (
                             <button onClick={(e) => handleCompleteRequest(e, todo)} className="p-1 text-green-500 hover:bg-green-50 rounded transition-all"><Check size={12} strokeWidth={3}/></button>
                           )}
                           <button onClick={(e) => handleDelete(e, todo.id)} className="p-1 text-red-200 hover:text-red-500 rounded transition-all"><Trash2 size={12} /></button>
@@ -221,7 +195,6 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
                       const isActive = isDateInTaskRange(day, todo);
                       const isToday = day.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
                       const colorClass = isActive ? getPriorityColor(todo) : 'bg-transparent';
-                      
                       return (
                         <div key={idx} className={`border-r border-gray-50 flex items-center justify-center p-1 min-h-[48px] ${isToday ? 'bg-[#FED400]/5' : ''}`}>
                            {isActive && (
@@ -234,7 +207,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
                       );
                     })}
                  </div>
-               ))}
+               );})}
             </div>
           </div>
         </div>
@@ -242,47 +215,16 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId }) => {
 
       {/* COMPACTED LEGEND */}
       <div className="flex flex-wrap items-center justify-center gap-4 px-6 py-3 bg-white/50 rounded-2xl border border-gray-100 backdrop-blur-sm">
-         <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-[7px] font-black text-gray-500 uppercase">Done</span>
-         </div>
-         <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span className="text-[7px] font-black text-gray-500 uppercase">Alert</span>
-         </div>
-         <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-yellow-400" />
-            <span className="text-[7px] font-black text-gray-500 uppercase">Critical</span>
-         </div>
-         <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#004A74]" />
-            <span className="text-[7px] font-black text-gray-500 uppercase">Active</span>
-         </div>
+         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500" /><span className="text-[7px] font-black text-gray-500 uppercase">Done</span></div>
+         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500" /><span className="text-[7px] font-black text-gray-500 uppercase">Alert</span></div>
+         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-yellow-400" /><span className="text-[7px] font-black text-gray-500 uppercase">Critical</span></div>
+         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#004A74]" /><span className="text-[7px] font-black text-gray-500 uppercase">Active</span></div>
       </div>
 
-      {formModal.open && (
-        <TodoFormModal 
-          projectId={projectId}
-          todo={formModal.todo}
-          mode={formModal.mode}
-          onClose={() => setFormModal({ open: false, mode: 'view' })}
-          onSave={handleSaveTodo}
-        />
-      )}
+      {formModal.open && <TodoFormModal projectId={projectId} todo={formModal.todo} mode={formModal.mode} onClose={() => setFormModal({ open: false, mode: 'view' })} onSave={handleSaveTodo} />}
+      {completionModal.open && <TodoCompletionModal todo={completionModal.todo!} onClose={() => setCompletionModal({ open: false })} onConfirm={handleFinalizeCompletion} />}
 
-      {completionModal.open && (
-        <TodoCompletionModal 
-          todo={completionModal.todo!}
-          onClose={() => setCompletionModal({ open: false })}
-          onConfirm={handleFinalizeCompletion}
-        />
-      )}
-
-      <style>{`
-        .custom-scrollbar-h::-webkit-scrollbar { height: 4px; }
-        .custom-scrollbar-h::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar-h::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
-      `}</style>
+      <style>{`.custom-scrollbar-h::-webkit-scrollbar { height: 4px; } .custom-scrollbar-h::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar-h::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }`}</style>
     </div>
   );
 };

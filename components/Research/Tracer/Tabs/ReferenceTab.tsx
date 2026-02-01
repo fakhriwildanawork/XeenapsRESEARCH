@@ -1,20 +1,13 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LibraryItem, TracerReference } from '../../../../types';
-import { fetchTracerReferences, linkTracerReference, unlinkTracerReference } from '../../../../services/TracerService';
+import { linkTracerReference, unlinkTracerReference } from '../../../../services/TracerService';
 import { fetchLibraryPaginated } from '../../../../services/gasService';
 import { 
-  BookOpen, 
-  Search, 
   Plus, 
   Trash2, 
   ChevronRight, 
   Loader2, 
-  Eye, 
   Quote,
-  Sparkles,
-  ExternalLink,
-  /* Added missing icon import */
   Library
 } from 'lucide-react';
 import { SmartSearchBox } from '../../../Common/SearchComponents';
@@ -24,24 +17,15 @@ import ReferenceDetailView from '../Modals/ReferenceDetailView';
 interface ReferenceTabProps {
   projectId: string;
   libraryItems: LibraryItem[];
+  references: TracerReference[];
+  onRefresh: () => Promise<void>;
 }
 
-const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems }) => {
-  const [refs, setRefs] = useState<TracerReference[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, onRefresh }) => {
   const [localSearch, setLocalSearch] = useState('');
   const [searchResults, setSearchResults] = useState<LibraryItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRef, setSelectedRef] = useState<LibraryItem | null>(null);
-
-  const loadRefs = async () => {
-    setIsLoading(true);
-    const data = await fetchTracerReferences(projectId);
-    setRefs(data);
-    setIsLoading(false);
-  };
-
-  useEffect(() => { loadRefs(); }, [projectId]);
 
   const handleSearch = async () => {
     if (localSearch.length < 3) return;
@@ -52,14 +36,13 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems }) 
   };
 
   const handleLink = async (lib: LibraryItem) => {
-    if (refs.some(r => r.collectionId === lib.id)) {
+    if (references.some(r => r.collectionId === lib.id)) {
       showXeenapsToast('warning', 'Already linked');
       return;
     }
     const success = await linkTracerReference({ projectId, collectionId: lib.id });
     if (success) {
-      showXeenapsToast('success', 'Reference anchored');
-      loadRefs();
+      await onRefresh();
       setSearchResults([]);
       setLocalSearch('');
     }
@@ -68,12 +51,11 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems }) 
   const handleUnlink = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (await unlinkTracerReference(id)) {
-      showXeenapsToast('success', 'Reference unlinked');
-      loadRefs();
+      await onRefresh();
     }
   };
 
-  const associatedItems = refs.map(r => {
+  const associatedItems = references.map(r => {
     const lib = libraryItems.find(it => it.id === r.collectionId);
     return lib ? { ...lib, refRowId: r.id } : null;
   }).filter(Boolean) as (LibraryItem & { refRowId: string })[];
@@ -109,7 +91,7 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems }) 
       <section className="space-y-6">
          <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#004A74]">Project Reference Pool</h3>
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {isLoading ? <div className="col-span-full h-32 skeleton rounded-[2rem]" /> : associatedItems.length === 0 ? (
+            {associatedItems.length === 0 ? (
               <div className="col-span-full py-20 text-center opacity-20"><Library size={48} className="mx-auto mb-2" /><p className="text-[10px] font-black uppercase">No references linked</p></div>
             ) : associatedItems.map(lib => (
               <div key={lib.id} onClick={() => setSelectedRef(lib)} className="group bg-white p-6 rounded-[2rem] border border-gray-100 flex flex-col hover:shadow-2xl transition-all duration-500 cursor-pointer relative overflow-hidden">
