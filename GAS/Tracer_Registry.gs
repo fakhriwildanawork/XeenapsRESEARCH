@@ -51,7 +51,8 @@ function getTracerProjectsFromRegistry(page = 1, limit = 25, search = "") {
     const sheet = ss.getSheetByName("TracerProjects");
     if (!sheet) return { items: [], totalCount: 0 };
     
-    const data = sheet.getDataRange().getDisplayValues();
+    // CHANGE: Using getValues instead of getDisplayValues for data integrity
+    const data = sheet.getDataRange().getValues();
     const headers = data[0];
     const rawItems = data.slice(1);
     
@@ -70,8 +71,13 @@ function getTracerProjectsFromRegistry(page = 1, limit = 25, search = "") {
       let obj = {};
       headers.forEach((h, i) => {
         let val = row[i];
-        if (h === 'authors') {
-          try { val = JSON.parse(val || '[]'); } catch(e) { val = [val]; }
+        // CHANGE: Explicitly parse authors and keywords as Arrays
+        if (h === 'authors' || h === 'keywords') {
+          try { 
+            val = (typeof val === 'string' && val !== '') ? JSON.parse(val) : (Array.isArray(val) ? val : []); 
+          } catch(e) { 
+            val = []; 
+          }
         }
         obj[h] = val;
       });
@@ -174,7 +180,10 @@ function saveTracerLogToRegistry(item, content) {
     let existingRow = -1;
 
     for (let i = 1; i < data.length; i++) {
-      if (data[i][idIdx] === item.id) { existingRow = i + 1; break; }
+      if (data[i][idIdx] === item.id) {
+        existingRow = i + 1;
+        break;
+      }
     }
 
     // Sharding payload (Log content is sharded like Notes)

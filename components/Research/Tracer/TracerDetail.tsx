@@ -60,7 +60,9 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   }, [id]);
 
   const handleUpdateField = (f: keyof TracerProject, v: any) => {
-    if (!project) return;
+    // CRITICAL FIX: Guard against auto-saving during initial loading to prevent "Data Reset" bug
+    if (!project || isLoading) return;
+    
     const updated = { ...project, [f]: v, updatedAt: new Date().toISOString() };
     setProject(updated);
     // Silent auto-save logic
@@ -83,7 +85,8 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/research/tracer')} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] rounded-xl transition-all"><ArrowLeft size={18} /></button>
           <div className="min-w-0">
-            <h2 className="text-sm font-black text-[#004A74] uppercase truncate">{project.title}</h2>
+            {/* HEADER FIX: Show label if title is not yet filled */}
+            <h2 className="text-sm font-black text-[#004A74] uppercase truncate">{project.title || project.label}</h2>
             <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Project ID: {project.id.substring(0,8)}</p>
           </div>
         </div>

@@ -51,23 +51,23 @@ const TracerMain: React.FC = () => {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleCreate = async () => {
-    const { value: title } = await Swal.fire({
+    const { value: label } = await Swal.fire({
       title: 'NEW AUDIT TRAIL',
       input: 'text',
-      inputLabel: 'Research Title',
-      inputPlaceholder: 'e.g., DNA Extraction Real-time Log...',
+      inputLabel: 'Project Label',
+      inputPlaceholder: 'e.g., DNA-EXP-01...',
       showCancelButton: true,
       confirmButtonText: 'INITIALIZE',
       ...XEENAPS_SWAL_CONFIG,
-      inputValidator: (v) => !v ? 'Title required' : null
+      inputValidator: (v) => !v ? 'Label required' : null
     });
 
-    if (title) {
+    if (label) {
       const id = crypto.randomUUID();
       const newItem: TracerProject = {
         id,
-        title,
-        label: title.substring(0, 20).toUpperCase(),
+        title: '', // Initialized as empty
+        label: label.toUpperCase(),
         topic: '',
         problemStatement: '',
         researchGap: '',
@@ -80,7 +80,7 @@ const TracerMain: React.FC = () => {
         startDate: new Date().toISOString().split('T')[0],
         estEndDate: '',
         status: TracerStatus.IN_PROGRESS,
-        progress: 0,
+        progress: 0, // Initialized as 0
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -140,12 +140,13 @@ const TracerMain: React.FC = () => {
                    <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full ${getStatusColor(p.status)}`}>{p.status}</span>
                    <button onClick={(e) => handleDelete(e, p.id)} className="p-2 text-gray-300 hover:text-red-500 rounded-lg transition-all"><Trash2 size={16} /></button>
                 </div>
-                <h3 className="text-base font-black text-[#004A74] uppercase leading-tight line-clamp-2 mb-4 flex-1">{p.title}</h3>
+                <h3 className="text-base font-black text-[#004A74] uppercase leading-tight line-clamp-2 mb-4 flex-1">{p.title || p.label}</h3>
                 <div className="space-y-3 mb-6">
                    <div className="flex items-center gap-2 text-gray-400">
                      <User size={12} />
                      <span className="text-[10px] font-bold uppercase tracking-tight">
-                       {Array.isArray(p.authors) ? (p.authors[0] || 'Unknown Author') : 'Unknown Author'}
+                       {/* SAFE NAVIGATION FIX FOR AUTHORS ARRAY */}
+                       {Array.isArray(p.authors) && p.authors.length > 0 ? (p.authors[0] || 'Unknown Author') : 'Unknown Author'}
                      </span>
                    </div>
                    <div className="flex items-center gap-2 text-gray-400">
