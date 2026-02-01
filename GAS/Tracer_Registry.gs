@@ -412,15 +412,30 @@ function saveReferenceContentToRegistry(item, content) {
     
     const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
     const idIdx = headers.indexOf('id');
+    const pIdIdx = headers.indexOf('projectId');
+    const cIdIdx = headers.indexOf('collectionId');
     const jsonIdIdx = headers.indexOf('contentJsonId');
     const nodeIdx = headers.indexOf('storageNodeUrl');
     
     const data = sheet.getDataRange().getValues();
     let rowIndex = -1;
+    
+    // PRIMARY LOOKUP: BY ID
     for (let i = 1; i < data.length; i++) {
       if (data[i][idIdx] === item.id) { rowIndex = i + 1; break; }
     }
-    if (rowIndex === -1) throw new Error("Reference anchor not found.");
+    
+    // FAILOVER DISCOVERY: BY PROJECT + COLLECTION (Handles race conditions with optimistic IDs)
+    if (rowIndex === -1 && item.projectId && item.collectionId) {
+      for (let i = 1; i < data.length; i++) {
+        if (data[i][pIdIdx] === item.projectId && data[i][cIdIdx] === item.collectionId) {
+          rowIndex = i + 1;
+          break;
+        }
+      }
+    }
+    
+    if (rowIndex === -1) throw new Error("Reference anchor not found. Please refresh list.");
 
     // Determine storage node
     let storageTarget;
@@ -436,7 +451,8 @@ function saveReferenceContentToRegistry(item, content) {
 
     if (storageTarget.isLocal) {
       let file;
-      if (item.contentJsonId) {
+      // CORE FIX: Guard getFileById with truthiness check
+      if (item.contentJsonId && item.contentJsonId.trim() !== "") {
         file = DriveApp.getFileById(item.contentJsonId);
         file.setContent(jsonBody);
       } else {
@@ -451,7 +467,12 @@ function saveReferenceContentToRegistry(item, content) {
       const res = UrlFetchApp.fetch(storageTarget.url, {
         method: 'post',
         contentType: 'application/json',
-        payload: JSON.stringify({ action: 'saveJsonFile', fileId: item.contentJsonId || null, fileName: jsonFileName, content: jsonBody })
+        payload: JSON.stringify({ 
+          action: 'saveJsonFile', 
+          fileId: (item.contentJsonId && item.contentJsonId.trim() !== "") ? item.contentJsonId : null, 
+          fileName: jsonFileName, 
+          content: jsonBody 
+        })
       });
       const resJson = JSON.parse(res.getContentText());
       if (resJson.status === 'success') {

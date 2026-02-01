@@ -1,7 +1,7 @@
 /**
  * XEENAPS PKM - GROQ TRACER AI SERVICE
  * Specialized in contextual quote discovery and academic paraphrasing.
- * Updated to support triple-quote discovery for holistic coverage.
+ * Updated to support semantic skimming across the entire document for holistic discovery.
  */
 
 function handleAiTracerQuoteExtraction(payload) {
@@ -45,24 +45,24 @@ function handleAiTracerQuoteExtraction(payload) {
 
   if (!fullText) return { status: 'error', message: "Extracted content empty." };
 
-  // INCREASE CONTEXT WINDOW TO 100,000 CHARS FOR BETTER COVERAGE
+  // MANDATORY: FULL SCAN UP TO 100,000 CHARS
   const contextSnippet = fullText.substring(0, 100000);
 
-  const prompt = `ACT AS A PRECISION RESEARCH ASSISTANT.
-  I am looking for exactly THREE (3) distinct and relevant quotes/paragraphs from a paper that match this CONTEXT: "${contextQuery}".
+  const prompt = `ACT AS A PRECISION RESEARCH ARCHIVIST.
+  YOUR TASK: IDENTIFY THREE (3) DISTINCT EVIDENCE BLOCKS (VERBATIM QUOTES) RELEVANT TO: "${contextQuery}".
+
+  --- SEMANTIC SKIMMING RULES (CRITICAL) ---
+  1. SCAN THE ENTIRE DOCUMENT: Do not just pick the first 3 paragraphs. You must scan the Intro, Body, Results, and Conclusion. 
+  2. DIVERSITY: Ensure the 3 quotes are geographically distant within the document (e.g., one from Intro, one from Results, one from Conclusion).
+  3. CONTEXT RELEVANCE: Prioritize sections that directly explain "${contextQuery}" even if they appear late in the text.
+  4. NO MONOTONY: Do not return redundant information. Each quote must provide a unique semantic angle.
+
+  --- OUTPUT FORMAT ---
+  1. originalText: Exact word-for-word string from the text.
+  2. enhancedText: A sophisticated academic paraphrase (no in-text citations or years).
   
-  TASK: 
-  1. SCAN the provided [DOCUMENT_CONTENT].
-  2. IDENTIFY 3 different impactful evidence blocks (paragraphs or groups of sentences).
-  3. EXTRACT "originalText" verbatim for each.
-  4. ARCHITECT an "enhancedText" for each: a sophisticated academic paraphrase that describes the finding purely. 
-     - DO NOT include in-text citations or years in "enhancedText". 
-     - Use high-level vocabulary suitable for a top-tier journal.
-  
-  --- RULES ---
-  - RETURN RAW JSON ONLY.
-  - RESPONSE_FORMAT: { "data": [ { "originalText": "...", "enhancedText": "..." }, ... ] }
-  - IF less than 3 are found, return as many as possible (min 1).
+  --- JSON SCHEMA ---
+  { "data": [ { "originalText": "...", "enhancedText": "..." }, ... ] }
   
   [DOCUMENT_CONTENT]:
   ${contextSnippet}`;
@@ -79,10 +79,10 @@ function handleAiTracerQuoteExtraction(payload) {
         payload: JSON.stringify({
           model: model,
           messages: [
-            { role: "system", content: "You are a scientific data specialist. Provide only raw JSON with 'data' array containing original and enhanced fields." },
+            { role: "system", content: "You are a professional academic data extractor. You scan entire documents to find the most relevant contextual evidence. Always respond in raw JSON." },
             { role: "user", content: prompt }
           ],
-          temperature: 0.1,
+          temperature: 0.4, // INCREASED FROM 0.1 TO PREVENT MONOTONY
           response_format: { type: "json_object" }
         }),
         muteHttpExceptions: true
@@ -90,14 +90,10 @@ function handleAiTracerQuoteExtraction(payload) {
       const responseData = JSON.parse(res.getContentText());
       if (responseData.choices && responseData.choices.length > 0) {
         const rawContent = responseData.choices[0].message.content;
-        
-        // RESILIENT JSON EXTRACTION (HANDLING CHATTER)
         const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
-          // FALLBACK LOGIC FOR INCONSISTENT AI KEYS
           const dataArray = parsed.data || parsed.quotes || parsed.results || (Array.isArray(parsed) ? parsed : null);
-          
           if (dataArray && Array.isArray(dataArray)) {
             return { status: 'success', data: dataArray };
           }
