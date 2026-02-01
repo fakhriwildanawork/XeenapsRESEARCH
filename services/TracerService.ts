@@ -106,17 +106,17 @@ export const fetchTracerReferences = async (projectId: string): Promise<TracerRe
   }
 };
 
-export const linkTracerReference = async (item: Partial<TracerReference>): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
+export const linkTracerReference = async (item: Partial<TracerReference>): Promise<TracerReference | null> => {
+  if (!GAS_WEB_APP_URL) return null;
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'linkTracerReference', item })
     });
     const result = await res.json();
-    return result.status === 'success';
+    return result.status === 'success' ? result.data : null;
   } catch (e) {
-    return false;
+    return null;
   }
 };
 
@@ -151,17 +151,17 @@ export const fetchReferenceContent = async (contentJsonId: string, nodeUrl?: str
   }
 };
 
-export const saveReferenceContent = async (item: TracerReference, content: TracerReferenceContent): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
+export const saveReferenceContent = async (item: TracerReference, content: TracerReferenceContent): Promise<{contentJsonId: string, storageNodeUrl: string} | null> => {
+  if (!GAS_WEB_APP_URL) return null;
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'saveReferenceContent', item, content })
     });
     const result = await res.json();
-    return result.status === 'success';
+    return result.status === 'success' ? { contentJsonId: result.contentJsonId, storageNodeUrl: result.storageNodeUrl } : null;
   } catch (e) {
-    return false;
+    return null;
   }
 };
 

@@ -356,7 +356,8 @@ function linkTracerReferenceToRegistry(item) {
     const headers = CONFIG.SCHEMAS.TRACER_REFERENCES;
     const rowData = headers.map(h => item[h] || '');
     sheet.appendRow(rowData);
-    return { status: 'success' };
+    // CRITICAL FIX: Return the full item with the generated ID
+    return { status: 'success', data: item };
   } catch (e) { return { status: 'error', message: e.toString() }; }
 }
 
@@ -461,7 +462,8 @@ function saveReferenceContentToRegistry(item, content) {
       }
     }
 
-    return { status: 'success' };
+    // CRITICAL FIX: Return sharding metadata to frontend for sync
+    return { status: 'success', contentJsonId: item.contentJsonId, storageNodeUrl: item.storageNodeUrl };
   } catch (e) { return { status: 'error', message: e.toString() }; }
 }
 
@@ -488,7 +490,7 @@ function getTracerTodosFromRegistry(projectId) {
           obj[h] = val;
         });
         return obj;
-      }).sort((a,b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+      }).sort((a,b) => new Date(a.deadline).getTime() - new Date(a.deadline).getTime());
   } catch (e) { return []; }
 }
 

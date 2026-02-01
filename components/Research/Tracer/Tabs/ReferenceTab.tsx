@@ -21,11 +21,12 @@ interface ReferenceTabProps {
   projectId: string;
   libraryItems: LibraryItem[];
   references: TracerReference[];
+  setReferences: React.Dispatch<React.SetStateAction<TracerReference[]>>;
   onRefresh: () => Promise<void>;
   reopenedRef?: (LibraryItem & { refRow: TracerReference }) | null;
 }
 
-const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, onRefresh, reopenedRef }) => {
+const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, setReferences, onRefresh, reopenedRef }) => {
   const [localSearch, setLocalSearch] = useState('');
   const [searchResults, setSearchResults] = useState<LibraryItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -52,7 +53,7 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
       return;
     }
 
-    // OPTIMISTIC ADD
+    // OPTIMISTIC ADD: Instant UI feedback
     const tempId = crypto.randomUUID();
     const mockRef: TracerReference = {
       id: tempId,
@@ -63,14 +64,20 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
       createdAt: new Date().toISOString()
     };
     
-    // UI update handled via onRefresh for consistency, but we clear search immediately for seamless feel
+    setReferences(prev => [mockRef, ...prev]);
     setSearchResults([]);
     setLocalSearch('');
 
-    const success = await linkTracerReference({ projectId, collectionId: lib.id });
-    if (success) {
-      await onRefresh();
+    // Background Sync
+    const realData = await linkTracerReference({ projectId, collectionId: lib.id });
+    if (realData) {
+      // Synchronize state with real ID from database
+      setReferences(prev => prev.map(r => r.id === tempId ? realData : r));
       showXeenapsToast('success', 'Reference anchored');
+    } else {
+      // Rollback on failure
+      setReferences(prev => prev.filter(r => r.id !== tempId));
+      showXeenapsToast('error', 'Anchoring failed');
     }
   };
 
@@ -78,11 +85,18 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      const originalRefs = [...references];
+      // Optimistic Remove
+      setReferences(prev => prev.filter(t => t.id !== id));
+
       // Background Sync
       const success = await unlinkTracerReference(id);
       if (success) {
-        await onRefresh();
         showXeenapsToast('success', 'Anchor removed');
+      } else {
+        // Rollback
+        setReferences(originalRefs);
+        showXeenapsToast('error', 'Removal failed. Rollback synchronized.');
       }
     }
   };

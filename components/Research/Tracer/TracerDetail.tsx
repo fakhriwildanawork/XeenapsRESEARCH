@@ -248,7 +248,6 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                <FormField label="Targeted Population / Data"><div className="relative"><Users className="absolute left-4 top-5 w-4 h-4 text-gray-300" /><textarea className="w-full pl-11 pr-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-xs font-medium text-gray-600 leading-relaxed outline-none focus:bg-white min-h-[120px] resize-none" value={project.population || ''} onChange={e => handleUpdateField('population', e.target.value)} /></div></FormField>
                <FormField label="Strategic Keywords"><FormDropdown isMulti multiValues={project.keywords || []} options={[]} onAddMulti={v => handleUpdateField('keywords', [...(project.keywords || []), v])} onRemoveMulti={v => handleUpdateField('keywords', (project.keywords || []).filter(k => k !== v))} placeholder="Keywords..." value="" onChange={()=>{}} /></FormField>
                <div className="pt-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Fix: Cleaned syntax in FormDropdown props for Author Team and ensured project.authors is handled safely */}
                   <FormField label="Author Team"><FormDropdown isMulti multiValues={project.authors || []} options={[cleanedProfileName]} onAddMulti={v => handleUpdateField('authors', [...(project.authors || []), v])} onRemoveMulti={v => handleUpdateField('authors', (project.authors || []).filter(a => a !== v))} placeholder="Add members..." value="" onChange={()=>{}} /></FormField>
                   <FormField label="Workflow Status"><FormDropdown value={project.status} options={Object.values(TracerStatus)} onChange={v => handleUpdateField('status', v)} placeholder="Status" allowCustom={false} showSearch={false} /></FormField>
                </div>
@@ -284,6 +283,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                projectId={project.id} 
                libraryItems={libraryItems} 
                references={references} 
+               setReferences={setReferences}
                onRefresh={loadAllData} 
                reopenedRef={initialReopenRef}
              />

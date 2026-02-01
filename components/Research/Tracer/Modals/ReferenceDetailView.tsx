@@ -109,6 +109,9 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [openLangMenu, setOpenLangMenu] = useState<string | null>(null);
 
+  // CRITICAL: Manage local metadata to prevent data loss on sharding handshake
+  const [localRefRow, setLocalRefRow] = useState<TracerReference>(refRow);
+
   const LANG_OPTIONS = [
     { label: "English", code: "en" }, { label: "Indonesian", code: "id" }, { label: "French", code: "fr" },
     { label: "German", code: "de" }, { label: "Spanish", code: "es" }, { label: "Portuguese", code: "pt" }
@@ -116,24 +119,34 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
 
   useEffect(() => {
     const loadContent = async () => {
-      if (refRow.contentJsonId) {
-        const data = await fetchReferenceContent(refRow.contentJsonId, refRow.storageNodeUrl);
+      if (localRefRow.contentJsonId) {
+        const data = await fetchReferenceContent(localRefRow.contentJsonId, localRefRow.storageNodeUrl);
         if (data) setContent(data);
       }
       setIsLoading(false);
     };
     loadContent();
-  }, [refRow]);
+  }, [localRefRow]);
 
   const handleSaveContent = async (newContent: TracerReferenceContent) => {
-    setContent(newContent);
-    await saveReferenceContent(refRow, newContent);
+    // Background Sync
+    const result = await saveReferenceContent(localRefRow, newContent);
+    if (result) {
+        // Sync sharding metadata locally for subsequent instant operations
+        setLocalRefRow(prev => ({
+            ...prev,
+            contentJsonId: result.contentJsonId,
+            storageNodeUrl: result.storageNodeUrl
+        }));
+    }
   };
 
   const handleRemoveQuote = async (quoteId: string) => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      // Optimistic Remove
       const updated = { ...content, quotes: content.quotes.filter(q => q.id !== quoteId) };
+      setContent(updated);
       await handleSaveContent(updated);
       showXeenapsToast('success', 'Quote removed');
     }
@@ -153,6 +166,7 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
           ...content,
           quotes: content.quotes.map(q => q.id === quote.id ? { ...q, enhancedText: cleanText, lang: langCode } : q)
         };
+        setContent(updated); // Optimistic
         await handleSaveContent(updated);
         showXeenapsToast('success', 'Translation synchronized');
       }
@@ -162,7 +176,9 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
   };
 
   const handleAddQuotes = async (newQuotes: TracerSavedQuote[]) => {
+    // Optimistic Add
     const updated = { ...content, quotes: [...newQuotes, ...content.quotes] };
+    setContent(updated);
     await handleSaveContent(updated);
   };
 
@@ -182,7 +198,7 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
     navigate('/', { 
       state: { 
         openItem: item, 
-        returnToTracerProject: refRow.projectId,
+        returnToTracerProject: localRefRow.projectId,
         returnToRef: item 
       } 
     });
