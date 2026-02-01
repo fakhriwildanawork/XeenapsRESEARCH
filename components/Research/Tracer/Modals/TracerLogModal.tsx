@@ -230,27 +230,14 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar p-8 md:p-10 space-y-10">
            {isLoadingContent ? (
              <div className="space-y-10 animate-pulse">
-                <div className="grid grid-cols-2 gap-6"><div className="h-14 skeleton rounded-xl"/><div className="h-14 skeleton rounded-xl"/></div>
                 <div className="h-16 skeleton rounded-2xl"/>
                 <div className="h-48 skeleton rounded-2xl"/>
              </div>
            ) : (
              <>
-               <div className="grid grid-cols-1 md:grid-cols-10 gap-6">
-                  <div className="md:col-span-3">
-                    <FormField label="Entry Date" required>
-                       <div className="relative">
-                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                          <input type="date" className="w-full pl-11 pr-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74] outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} required />
-                       </div>
-                    </FormField>
-                  </div>
-                  <div className="md:col-span-7">
-                    <FormField label="Log Title" required>
-                       <input autoFocus className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="E.G., Phase 1 Data Collection" required />
-                    </FormField>
-                  </div>
-               </div>
+               <FormField label="Log Title" required>
+                  <input autoFocus className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="E.G., Phase 1 Data Collection" required />
+               </FormField>
 
                <FormField label="Narrative Synthesis">
                   <RichEditor value={content.description} onChange={v => setContent({...content, description: v})} />

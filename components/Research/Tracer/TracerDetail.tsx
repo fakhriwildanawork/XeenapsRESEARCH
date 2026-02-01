@@ -161,6 +161,19 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     await deleteTracerLog(logId);
   };
 
+  const formatLogTime = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      const day = d.getDate().toString().padStart(2, '0');
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = months[d.getMonth()];
+      const year = d.getFullYear();
+      const hours = d.getHours().toString().padStart(2, '0');
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      return `${day} ${month} ${year} ${hours}:${minutes}`;
+    } catch { return "-"; }
+  };
+
   const tabs = [
     { id: 'identity', label: 'Identity', icon: User },
     { id: 'todo', label: 'To Do', icon: CheckSquare },
@@ -231,16 +244,18 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                   <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Layout size={18} /> Research Journal</h3>
                   <button onClick={() => setLogModal({ open: true })} className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"><Plus size={16} /> New Entry</button>
                </div>
-               <div className="space-y-4">
+               <div className="space-y-2">
                   {logs.length === 0 ? <div className="py-20 text-center opacity-20"><Layout size={48} className="mx-auto mb-2" /><p className="text-[10px] font-black uppercase">No entries yet</p></div> : 
-                    logs.map(l => (
-                      <div key={l.id} onClick={() => handleOpenLog(l)} className="bg-white p-6 rounded-[2rem] border border-gray-100 flex gap-4 hover:shadow-xl transition-all cursor-pointer group">
-                        <div className="shrink-0 w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#004A74] group-hover:text-white transition-all"><Clock size={20} /></div>
-                        <div className="flex-1">
-                          <p className="text-[9px] font-black text-[#FED400] bg-[#004A74] inline-block px-2 py-0.5 rounded-md uppercase mb-2">{new Date(l.date).toLocaleDateString()}</p>
-                          <h4 className="text-sm font-black text-[#004A74]">{l.title}</h4>
+                    [...logs].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(l => (
+                      <div key={l.id} onClick={() => handleOpenLog(l)} className="bg-white px-6 py-4 rounded-2xl border border-gray-50 flex items-center gap-4 hover:bg-gray-50 hover:shadow-md transition-all cursor-pointer group">
+                        <div className="text-[11px] font-black text-[#004A74]/50 whitespace-nowrap font-mono">
+                          [{formatLogTime(l.createdAt)}]
                         </div>
-                        <ChevronRight size={24} className="text-gray-200 mt-4" />
+                        <div className="w-px h-4 bg-gray-100" />
+                        <h4 className="text-xs font-bold text-[#004A74] truncate flex-1 uppercase tracking-tight">
+                          {l.title}
+                        </h4>
+                        <ChevronRight size={16} className="text-gray-200 group-hover:text-[#FED400] transition-colors" />
                       </div>
                     ))}
                </div>
