@@ -48,15 +48,21 @@ const SharboxMain: React.FC = () => {
     }
   };
 
-  const filteredItems = items.filter(i => 
-    i.title.toLowerCase().includes(search.toLowerCase()) ||
-    (i.senderName || '').toLowerCase().includes(search.toLowerCase()) ||
-    (i.receiverName || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredItems = items.filter(i => {
+    const s = search.toLowerCase();
+    const titleMatch = (i.title || '').toLowerCase().includes(s);
+    const senderMatch = (i.senderName || '').toLowerCase().includes(s);
+    const receiverMatch = (i.receiverName || '').toLowerCase().includes(s);
+    const affiliationMatch = (i.senderAffiliation || '').toLowerCase().includes(s);
+    
+    return titleMatch || senderMatch || receiverMatch || affiliationMatch;
+  });
 
   const formatTimestamp = (iso: string) => {
+    if (!iso) return "-";
     try {
       const d = new Date(iso);
+      if (isNaN(d.getTime())) return "-";
       return `${d.getDate()} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()]} ${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
     } catch { return "-"; }
   };
@@ -124,12 +130,12 @@ const SharboxMain: React.FC = () => {
                         alt="User" 
                       />
                    </div>
-                   <div className="min-w-0">
+                   <div className="min-w-0 flex-1">
                       <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
                         {activeTab === 'Inbox' ? 'FROM' : 'TO'}
                       </p>
                       <h4 className="text-[10px] font-bold text-[#004A74] truncate uppercase">
-                        {activeTab === 'Inbox' ? item.senderName : item.receiverName}
+                        {activeTab === 'Inbox' ? (item.senderName || 'Anonymous') : (item.receiverName || 'Recipient')}
                       </h4>
                    </div>
                    <div className="ml-auto">
@@ -142,13 +148,15 @@ const SharboxMain: React.FC = () => {
                 <div className="mb-4">
                    <div className="flex items-center gap-1.5 mb-2">
                       <SparklesIcon className="w-3 h-3 text-[#FED400]" />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[#004A74]/40">{item.category}</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-[#004A74]/40">{item.category || 'General'}</span>
                    </div>
-                   <h3 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2">{item.title}</h3>
+                   <h3 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2">{item.title || 'Untitled Document'}</h3>
                 </div>
 
                 <div className="space-y-2 mb-6 flex-1">
-                   <p className="text-[10px] font-bold text-gray-500 italic line-clamp-1">{item.authors.join(', ')}</p>
+                   <p className="text-[10px] font-bold text-gray-500 italic line-clamp-1">
+                      {Array.isArray(item.authors) ? item.authors.join(', ') : 'Unknown Authors'}
+                   </p>
                    <div className="flex items-center gap-2 text-gray-400">
                       <ClockIcon className="w-3.5 h-3.5" />
                       <span className="text-[9px] font-bold uppercase tracking-tight">{formatTimestamp(item.timestamp)}</span>

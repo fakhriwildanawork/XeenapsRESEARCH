@@ -118,15 +118,28 @@ function getSharboxItemsFromRegistry(type) {
     
     const headers = data[0];
     const jsonFields = ['authors', 'pubInfo', 'identifiers', 'tags', 'supportingReferences'];
-    
+    const schema = type === 'Inbox' ? CONFIG.SCHEMAS.SHARBOX_INBOX : CONFIG.SCHEMAS.SHARBOX_SENT;
+
     return data.slice(1).map(row => {
       let obj = {};
-      headers.forEach((h, i) => {
-        let val = row[i];
-        if (jsonFields.includes(h)) {
-          try { val = JSON.parse(val || '[]'); } catch(e) { val = (h === 'authors' ? [] : {}); }
+      schema.forEach(schemaKey => {
+        const spreadsheetIdx = headers.indexOf(schemaKey);
+        let val = spreadsheetIdx !== -1 ? row[spreadsheetIdx] : '';
+
+        // Handle JSON fields with safe defaults
+        if (jsonFields.includes(schemaKey)) {
+          try { 
+            val = (val && String(val).trim() !== "") ? JSON.parse(val) : (schemaKey === 'authors' ? [] : {});
+          } catch(e) { 
+            val = (schemaKey === 'authors' ? [] : {}); 
+          }
         }
-        obj[h] = val;
+        
+        // Final fallback for critical fields to prevent UI crashes
+        if (schemaKey === 'title' && !val) val = 'Untitled Document';
+        if (schemaKey === 'authors' && !Array.isArray(val)) val = [];
+        
+        obj[schemaKey] = val;
       });
       return obj;
     }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -170,19 +183,19 @@ function handleClaimSharboxItem(transactionId) {
        let val = sharboxItem[key];
        // JSON Parse safety
        if (['authors', 'pubInfo', 'identifiers', 'tags', 'supportingReferences'].includes(h)) {
-         try { val = JSON.parse(val); } catch(e) {}
+         try { 
+           val = (val && String(val).trim() !== "") ? JSON.parse(val) : (h === 'authors' ? [] : {});
+         } catch(e) {
+           val = (h === 'authors' ? [] : {});
+         }
        }
        collectionItem[h] = val;
     });
 
-    // 2. DATA PERMANENCE: CLONE JSON CONTENT (OPTIONAL/RECOMMENDED)
-    // Here we can fetch content from sharboxItem.extractedJsonId & insightJsonId and re-shard
-    // but for initial version, we use current pointers as they are "Anyone with link" accessible.
-
-    // 3. REGISTER TO LOCAL LIBRARY
+    // 2. REGISTER TO LOCAL LIBRARY
     saveToSheet(CONFIG.SPREADSHEETS.LIBRARY, "Collections", collectionItem);
 
-    // 4. MARK AS CLAIMED
+    // 3. MARK AS CLAIMED
     sheet.getRange(targetRowIndex, statusIdx + 1).setValue('CLAIMED');
 
     return { status: 'success' };
