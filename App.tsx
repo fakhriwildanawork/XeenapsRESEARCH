@@ -25,6 +25,7 @@ const CVMain = React.lazy(() => import('./components/CVArchitect/CVMain'));
 const ColleagueMain = React.lazy(() => import('./components/Colleague/ColleagueMain'));
 const TracerMain = React.lazy(() => import('./components/Research/Tracer/TracerMain'));
 const TracerDetail = React.lazy(() => import('./components/Research/Tracer/TracerDetail'));
+const SharboxMain = React.lazy(() => import('./components/Sharbox/SharboxMain'));
 import { BRAND_ASSETS } from './assets';
 import { GlobalAppLoader } from './components/Common/LoadingComponents';
 
@@ -89,7 +90,7 @@ const App: React.FC = () => {
         <main className="flex-1 flex flex-col px-4 md:px-8 lg:px-12 relative min-w-0 bg-white z-0">
           <Header 
             searchQuery={searchQuery} 
-            setSearchQuery={setSearchQuery} 
+            setSearchQuery={setQuery => setSearchQuery(setQuery)} 
             onRefresh={loadData}
           />
 
@@ -104,6 +105,7 @@ const App: React.FC = () => {
                 <Route path="/notebook" element={<NotebookMain libraryItems={items} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/find-article" element={<FindArticle />} />
                 <Route path="/archived-articles" element={<ArchivedArticle />} />
+                <Route path="/sharbox" element={<SharboxMain />} />
 
                 {/* RESEARCH SUB-ROUTES */}
                 <Route path="/research/*" element={<GapFinderModule items={items} />} />

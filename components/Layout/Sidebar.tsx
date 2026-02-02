@@ -22,7 +22,8 @@ import {
   FileUser,
   Users,
   StickyNote,
-  BookOpen
+  BookOpen,
+  Inbox
 } from 'lucide-react';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
 
@@ -43,6 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
     { name: 'Bookmark', path: '/bookmark', icon: Bookmark },
     { name: 'Notebook', path: '/notebook', icon: StickyNote },
     { name: 'Find Article', path: '/find-article', icon: SearchCode },
+    { name: 'Sharbox', path: '/sharbox', icon: Inbox },
     // Research is handled separately as a dropdown below
     { name: 'Presentations', path: '/presentations', icon: Presentation },
     { name: 'Question Bank', path: '/questions', icon: GraduationCap },
@@ -165,7 +167,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
       {/* Menu Area */}
       <nav className="flex-1 mt-4 lg:mt-6 px-2 space-y-1 lg:space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {/* Static items including Find Article */}
-        {navItems.slice(0, 5).map((item) => {
+        {navItems.slice(0, 6).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink
@@ -253,7 +255,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         </div>
 
         {/* Last static items including Profile */}
-        {navItems.slice(5, 11).map((item) => {
+        {navItems.slice(6, 12).map((item) => {
           const isActive = location.pathname.startsWith(item.path) && (item.path !== '/' || location.pathname === '/');
           return (
             <NavLink

@@ -38,7 +38,7 @@ import {
   BookmarkIcon as BookmarkSolid, 
   StarIcon as StarSolid
 } from '@heroicons/react/24/solid';
-import { StickyNote } from 'lucide-react';
+import { StickyNote, Share2 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { saveLibraryItem, deleteLibraryItem, generateCitations, generateInsight, fetchFileContent, translateInsightSection } from '../../services/gasService';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -48,6 +48,7 @@ import RelatedPresentations from '../Presenter/RelatedPresentations';
 import RelatedQuestion from '../QuestionBank/RelatedQuestion';
 import ConsultationGallery from '../Consultation/ConsultationGallery';
 import NotebookMain from '../Notebook/NotebookMain';
+import ColleaguePickerModal from '../Sharbox/ColleaguePickerModal';
 
 interface LibraryDetailViewProps {
   item: LibraryItem;
@@ -64,7 +65,7 @@ interface LibraryDetailViewProps {
  */
 const MiniTooltip: React.FC<{ text: string }> = ({ text }) => (
   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 translate-y-1 group-hover:translate-y-0 whitespace-nowrap z-[100]">
-    {text}
+    text
     <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#004A74]"></div>
   </div>
 );
@@ -353,6 +354,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const [showQuestions, setShowQuestions] = useState(false); // New state for Question Bank
   const [showConsultations, setShowConsultations] = useState(false); // New state for Consultation
   const [showNotebook, setShowNotebook] = useState(false); // New state for Notebook
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false); // New state for Sharbox
   const [dummySearch, setDummySearch] = useState('');
   
   const [isBookmarked, setIsBookmarked] = useState(!!item.isBookmarked);
@@ -642,6 +644,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
       }}
     >
       {showCiteModal && <CitationModal item={currentItem} onClose={() => setShowCiteModal(false)} />}
+      {isShareModalOpen && <ColleaguePickerModal item={currentItem} onClose={() => setIsShareModalOpen(false)} />}
       
       {/* 1. STICKY TOP AREA: MAINTAIN APP HEADER */}
       <div className="sticky top-0 z-[90] bg-white/95 backdrop-blur-xl border-b border-gray-100">
@@ -667,6 +670,13 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                 className="flex items-center gap-2 px-5 py-2 bg-[#FED400] text-[#004A74] text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md hover:scale-105 transition-all"
               >
                 Cite
+              </button>
+              
+              <button 
+                onClick={() => setIsShareModalOpen(true)}
+                className="flex items-center gap-2 px-5 py-2 bg-[#004A74] text-[#FED400] text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md hover:scale-105 transition-all"
+              >
+                Share
               </button>
               
               {hasViewLink && (
@@ -719,7 +729,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       <StickyNote className="w-4 h-4" /> Notes
                     </button>
                     <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><AcademicCapIcon className="w-4 h-4" /> Export Metadata</button>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share Entry</button>
+                    <button onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share Entry</button>
                     <div className="h-px bg-gray-50 my-1 mx-2" />
                     <button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all">
                       <TrashIcon className="w-4 h-4" /> Delete

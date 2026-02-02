@@ -29,11 +29,20 @@ const CONFIG = {
     CONSULTATION: '1tWeM09na8DY0pjU5wwnLNvzl_BIK6pB90m2WToF98Ts',
     NOTEBOOK: '1LxDILaoTFkHV9ZRx67YUhLQmHANeySdvR8AcYO8NMQs',
     LITERATURE_REVIEW: '1l8P-jSZsj6Q6OuBjPDpM3nCNpDcxeoreYebhr0RMz_Y',
-    TRACER: '1TKp9891UDP5dgH94PtgZmiDeEh0fNCuaOyic1v5GlOE' 
+    TRACER: '1TKp9891UDP5dgH94PtgZmiDeEh0fNCuaOyic1v5GlOE',
+    SHARBOX: '1u4xS9R7N3Y6_J7vR9qK9L2xX7p8M5n9tV2B6W3U1S0' // User will replace with their Sharbox SS ID
   },
   SCHEMAS: {
     LIBRARY: [
       'id', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
+    ],
+    SHARBOX_INBOX: [
+      'id', 'senderName', 'senderPhotoUrl', 'senderAffiliation', 'senderUniqueAppId', 'timestamp', 'status',
+      'id_item', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
+    ],
+    SHARBOX_SENT: [
+      'id', 'receiverName', 'receiverUniqueAppId', 'timestamp', 'status',
+      'id_item', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
     ],
     NOTEBOOK: [
       'id', 'collectionId', 'collectionTitle', 'label', 'searchIndex', 'noteJsonId', 'storageNodeUrl', 'isFavorite', 'isUsed', 'createdAt', 'updatedAt'

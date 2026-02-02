@@ -34,6 +34,13 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: getSharboxItems
+    if (action === 'getSharboxItems') {
+      const type = e.parameter.type || 'Inbox'; // 'Inbox' or 'Sent'
+      const result = getSharboxItemsFromRegistry(type);
+      return createJsonResponse({ status: 'success', data: result });
+    }
+
     // NEW: getNotes (NOTEBOOK MODULE)
     if (action === 'getNotes') {
       const page = parseInt(e.parameter.page || "1");
@@ -307,6 +314,7 @@ function doPost(e) {
   
   try {
     if (action === 'setupDatabase') return createJsonResponse(setupDatabase());
+    if (action === 'setupSharboxDatabase') return createJsonResponse(setupSharboxDatabase());
     if (action === 'setupNotebookDatabase') return createJsonResponse(setupNotebookDatabase());
     if (action === 'setupColleagueDatabase') return createJsonResponse(setupColleagueDatabase());
     if (action === 'setupTeachingDatabase') return createJsonResponse(setupTeachingDatabase());
@@ -320,6 +328,10 @@ function doPost(e) {
     if (action === 'setupReviewDatabase') return createJsonResponse(setupReviewDatabase());
     if (action === 'setupTracerDatabase') return createJsonResponse(setupTracerDatabase());
     
+    // NEW: Sharbox Actions
+    if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(body.targetUniqueAppId, body.receiverName, body.item));
+    if (action === 'claimSharboxItem') return createJsonResponse(handleClaimSharboxItem(body.id));
+
     // NEW: saveNote
     if (action === 'saveNote') return createJsonResponse(saveNoteToRegistry(body.item, body.content));
     // NEW: deleteNote

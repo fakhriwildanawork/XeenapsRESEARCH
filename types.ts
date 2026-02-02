@@ -134,6 +134,27 @@ export interface LibraryItem {
   updatedAt: string;
 }
 
+// --- SHARBOX MODULE TYPES ---
+
+export enum SharboxStatus {
+  UNCLAIMED = 'UNCLAIMED',
+  CLAIMED = 'CLAIMED',
+  SENT = 'SENT'
+}
+
+export interface SharboxItem extends LibraryItem {
+  id: string; // Transaction ID
+  senderName?: string;
+  senderPhotoUrl?: string;
+  senderAffiliation?: string;
+  senderUniqueAppId?: string;
+  receiverName?: string;
+  receiverUniqueAppId?: string;
+  timestamp: string;
+  status: SharboxStatus;
+  id_item: string; // Original library ID
+}
+
 // --- NOTEBOOK MODULE TYPES ---
 
 export interface NoteAttachment {

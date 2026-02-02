@@ -1,0 +1,192 @@
+/**
+ * XEENAPS PKM - SHARBOX REGISTRY MODULE
+ * Handles P2P Cross-Spreadsheet Knowledge Exchange.
+ */
+
+function setupSharboxDatabase() {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
+    
+    // 1. Inbox Sheet
+    let iSheet = ss.getSheetByName("Inbox");
+    if (!iSheet) {
+      iSheet = ss.insertSheet("Inbox");
+      const headers = CONFIG.SCHEMAS.SHARBOX_INBOX;
+      iSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      iSheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
+      iSheet.setFrozenRows(1);
+    }
+
+    // 2. Sent Sheet
+    let sSheet = ss.getSheetByName("Sent");
+    if (!sSheet) {
+      sSheet = ss.insertSheet("Sent");
+      const headers = CONFIG.SCHEMAS.SHARBOX_SENT;
+      sSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sSheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
+      sSheet.setFrozenRows(1);
+    }
+
+    return { status: 'success', message: 'Sharbox structure initialized.' };
+  } catch (err) {
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+/**
+ * Handle Knowledge Sharing (Double Write Logic)
+ */
+function handleSendToSharbox(targetUniqueAppId, receiverName, item) {
+  try {
+    const profile = getProfileFromRegistry();
+    if (!profile) throw new Error("Sender profile not found.");
+
+    // 1. PREPARE PERMISSIONS: Auto-set files to "Anyone with link can view"
+    const fileIdsToShare = [item.fileId, item.extractedJsonId, item.insightJsonId].filter(id => id && id.trim() !== "");
+    fileIdsToShare.forEach(id => {
+       try {
+         DriveApp.getFileById(id).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+       } catch (e) {
+         console.warn("Failed to set permission for file: " + id);
+       }
+    });
+
+    const timestamp = new Date().toISOString();
+    const transactionId = Utilities.getUuid();
+
+    // 2. WRITE TO TARGET (Receiver's Inbox)
+    const targetSS = SpreadsheetApp.openById(targetUniqueAppId);
+    let targetInbox = targetSS.getSheetByName("Inbox");
+    if (!targetInbox) {
+      // Create Inbox if not exists in target SS (User might not have initialized yet)
+      targetInbox = targetSS.insertSheet("Inbox");
+      targetInbox.getRange(1, 1, 1, CONFIG.SCHEMAS.SHARBOX_INBOX.length).setValues([CONFIG.SCHEMAS.SHARBOX_INBOX]);
+    }
+
+    // Map data for SHARBOX_INBOX schema
+    const inboxRow = CONFIG.SCHEMAS.SHARBOX_INBOX.map(h => {
+      if (h === 'id') return transactionId;
+      if (h === 'senderName') return profile.fullName;
+      if (h === 'senderPhotoUrl') return profile.photoUrl;
+      if (h === 'senderAffiliation') return profile.affiliation;
+      if (h === 'senderUniqueAppId') return profile.uniqueAppId;
+      if (h === 'timestamp') return timestamp;
+      if (h === 'status') return 'UNCLAIMED';
+      
+      // Collection Metadata mapping (prefix id_item)
+      const colKey = h === 'id_item' ? 'id' : h;
+      const val = item[colKey];
+      return (Array.isArray(val) || (typeof val === 'object' && val !== null)) ? JSON.stringify(val) : (val !== undefined ? val : '');
+    });
+    targetInbox.appendRow(inboxRow);
+
+    // 3. WRITE TO LOCAL (Sender's Sent)
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
+    let sentSheet = ss.getSheetByName("Sent");
+    if (!sentSheet) { setupSharboxDatabase(); sentSheet = ss.getSheetByName("Sent"); }
+
+    const sentRow = CONFIG.SCHEMAS.SHARBOX_SENT.map(h => {
+      if (h === 'id') return transactionId;
+      if (h === 'receiverName') return receiverName;
+      if (h === 'receiverUniqueAppId') return targetUniqueAppId;
+      if (h === 'timestamp') return timestamp;
+      if (h === 'status') return 'SENT';
+      
+      const colKey = h === 'id_item' ? 'id' : h;
+      const val = item[colKey];
+      return (Array.isArray(val) || (typeof val === 'object' && val !== null)) ? JSON.stringify(val) : (val !== undefined ? val : '');
+    });
+    sentSheet.appendRow(sentRow);
+
+    return { status: 'success' };
+  } catch (e) {
+    return { status: 'error', message: "Double-write failed: " + e.toString() };
+  }
+}
+
+/**
+ * Retrieval logic for Inbox or Sent
+ */
+function getSharboxItemsFromRegistry(type) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
+    const sheet = ss.getSheetByName(type); // 'Inbox' or 'Sent'
+    if (!sheet) return [];
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    
+    const headers = data[0];
+    const jsonFields = ['authors', 'pubInfo', 'identifiers', 'tags', 'supportingReferences'];
+    
+    return data.slice(1).map(row => {
+      let obj = {};
+      headers.forEach((h, i) => {
+        let val = row[i];
+        if (jsonFields.includes(h)) {
+          try { val = JSON.parse(val || '[]'); } catch(e) { val = (h === 'authors' ? [] : {}); }
+        }
+        obj[h] = val;
+      });
+      return obj;
+    }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  } catch (e) { return []; }
+}
+
+/**
+ * Handle Claim/Import knowledge to local Library
+ * Future Proof: Clones JSON content to local Storage Node
+ */
+function handleClaimSharboxItem(transactionId) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
+    const sheet = ss.getSheetByName("Inbox");
+    if (!sheet) throw new Error("Inbox not found.");
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idIdx = headers.indexOf('id');
+    const statusIdx = headers.indexOf('status');
+    const idItemIdx = headers.indexOf('id_item');
+
+    let targetRowIndex = -1;
+    let sharboxItem = {};
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idIdx] === transactionId) {
+        targetRowIndex = i + 1;
+        headers.forEach((h, j) => sharboxItem[h] = data[i][j]);
+        break;
+      }
+    }
+
+    if (targetRowIndex === -1) throw new Error("Item not found.");
+    if (sharboxItem.status === 'CLAIMED') throw new Error("Already claimed.");
+
+    // 1. DATA RECONSTRUCTION for Collections
+    const collectionItem = {};
+    CONFIG.SCHEMAS.LIBRARY.forEach(h => {
+       const key = h === 'id' ? 'id_item' : h;
+       let val = sharboxItem[key];
+       // JSON Parse safety
+       if (['authors', 'pubInfo', 'identifiers', 'tags', 'supportingReferences'].includes(h)) {
+         try { val = JSON.parse(val); } catch(e) {}
+       }
+       collectionItem[h] = val;
+    });
+
+    // 2. DATA PERMANENCE: CLONE JSON CONTENT (OPTIONAL/RECOMMENDED)
+    // Here we can fetch content from sharboxItem.extractedJsonId & insightJsonId and re-shard
+    // but for initial version, we use current pointers as they are "Anyone with link" accessible.
+
+    // 3. REGISTER TO LOCAL LIBRARY
+    saveToSheet(CONFIG.SPREADSHEETS.LIBRARY, "Collections", collectionItem);
+
+    // 4. MARK AS CLAIMED
+    sheet.getRange(targetRowIndex, statusIdx + 1).setValue('CLAIMED');
+
+    return { status: 'success' };
+  } catch (e) {
+    return { status: 'error', message: e.toString() };
+  }
+}

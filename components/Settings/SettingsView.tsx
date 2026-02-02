@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Cog6ToothIcon, 
@@ -10,11 +9,13 @@ import {
   ArrowPathIcon,
   BookOpenIcon,
   IdentificationIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  InboxIcon
 } from '@heroicons/react/24/outline';
 import { StickyNote, BookOpen } from 'lucide-react';
 import { GAS_WEB_APP_URL } from '../../constants';
 import { initializeDatabase, initializeBrainstormingDatabase, initializePublicationDatabase, initializeConsultationDatabase } from '../../services/gasService';
+import { initializeSharboxDatabase } from '../../services/SharboxService';
 import { showXeenapsAlert } from '../../utils/swalUtils';
 
 const SettingsView: React.FC = () => {
@@ -27,6 +28,7 @@ const SettingsView: React.FC = () => {
   const [isInitializingCV, setIsInitializingCV] = useState(false);
   const [isInitializingConsult, setIsInitializingConsult] = useState(false);
   const [isInitializingReview, setIsInitializingReview] = useState(false);
+  const [isInitializingSharbox, setIsInitializingSharbox] = useState(false);
 
   const SPREADSHEET_IDS = {
     LIBRARY: '1ROW4iyHN10DfDWaXL7O54mZi6Da9Xx70vU6oE-YW-I8',
@@ -36,7 +38,8 @@ const SettingsView: React.FC = () => {
     CONSULTATION: '1tWeM09na8DY0pjU5wwnLNvzl_BIK6pB90m2WToF98Ts',
     NOTEBOOK: '1LxDILaoTFkHV9ZRx67YUhLQmHANeySdvR8AcYO8NMQs',
     CV_REGISTRY: '1w_-GyH_gTansPBt_6tSR9twcAV0tQi4dan9rUfKdyKw',
-    LITERATURE_REVIEW: '1l8P-jSZsj6Q6OuBjPDpM3nCNpDcxeoreYebhr0RMz_Y'
+    LITERATURE_REVIEW: '1l8P-jSZsj6Q6OuBjPDpM3nCNpDcxeoreYebhr0RMz_Y',
+    SHARBOX: '1u4xS9R7N3Y6_J7vR9qK9L2xX7p8M5n9tV2B6W3U1S0'
   };
 
   const openSheet = (id: string) => {
@@ -227,6 +230,27 @@ const SettingsView: React.FC = () => {
     }
   };
 
+  const handleInitSharboxDatabase = async () => {
+    setIsInitializingSharbox(true);
+    try {
+      const result = await initializeSharboxDatabase();
+      if (result.status === 'success') {
+        showXeenapsAlert({
+          icon: 'success',
+          title: 'SHARBOX READY',
+          text: 'Sharbox Inbox and Sent sheets have been successfully initialized.',
+          confirmButtonText: 'GREAT'
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err: any) {
+      showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
+    } finally {
+      setIsInitializingSharbox(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
       <div className="glass p-8 rounded-[2rem] border-white/40 shadow-2xl">
@@ -361,6 +385,21 @@ const SettingsView: React.FC = () => {
               Initialize
             </button>
           </div>
+
+          <div className="p-4 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
+            <h3 className="text-[10px] font-black mb-3 flex items-center gap-2 uppercase tracking-widest">
+              <InboxIcon className="w-4 h-4 text-[#FED400]" />
+              Sharbox
+            </h3>
+            <button 
+              onClick={handleInitSharboxDatabase}
+              disabled={isInitializingSharbox || !isConfigured}
+              className="w-full py-2.5 bg-[#FED400] text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
+            >
+              {isInitializingSharbox ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
+              Initialize
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
@@ -441,6 +480,17 @@ const SettingsView: React.FC = () => {
                 <p className="text-sm text-gray-500 group-hover:text-white/70">Manage generated CV documents and metadata.</p>
               </div>
               <IdentificationIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
+            </button>
+
+            <button 
+              onClick={() => openSheet(SPREADSHEET_IDS.SHARBOX)}
+              className="group flex items-center justify-between p-6 bg-white/40 hover:bg-[#004A74] rounded-2xl border border-white/60 transition-all duration-500 text-left shadow-sm"
+            >
+              <div>
+                <h4 className="font-bold text-[#004A74] group-hover:text-white group-hover:scale-105 transition-all origin-left">Sharbox Registry</h4>
+                <p className="text-sm text-gray-500 group-hover:text-white/70">Manage peer-to-peer data exchange logs.</p>
+              </div>
+              <InboxIcon className="w-8 h-8 opacity-20 group-hover:opacity-100 transition-opacity" />
             </button>
 
             <button 
