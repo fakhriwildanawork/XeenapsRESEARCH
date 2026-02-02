@@ -113,7 +113,7 @@ const TracerMain: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-500 overflow-hidden">
+    <div className="flex flex-col animate-in fade-in duration-500">
       <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8 shrink-0">
         <div className="flex items-center gap-4">
            <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
@@ -130,7 +130,7 @@ const TracerMain: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="custom-scrollbar">
         {isLoading ? <CardGridSkeleton count={8} /> : projects.length === 0 ? (
           <div className="py-40 text-center flex flex-col items-center justify-center space-y-4 opacity-20">
              <Target size={80} strokeWidth={1} />

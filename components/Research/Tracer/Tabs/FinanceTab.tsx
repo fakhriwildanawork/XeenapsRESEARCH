@@ -326,19 +326,19 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
          </div>
       </div>
 
-      {/* 3. TABLE LEDGER */}
+      {/* 3. TABLE LEDGER - SCALED FOR MOBILE */}
       <div className="flex-1">
         <StandardTableContainer>
           <StandardTableWrapper>
             <table className="w-full text-left border-separate border-spacing-0 min-w-[1200px] table-fixed">
                <thead className="sticky top-0 z-20">
                   <tr>
-                     <StandardTh width="160px">Timestamp</StandardTh>
-                     <StandardTh width="180px">Credit (+)</StandardTh>
-                     <StandardTh width="180px">Debit (-)</StandardTh>
-                     <StandardTh width="200px">Ledger Balance</StandardTh>
-                     <StandardTh width="400px" className="text-left">Narrative / Description</StandardTh>
-                     <StandardTh width="100px" className="sticky right-0 bg-gray-50">Action</StandardTh>
+                     <StandardTh width="160px" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Timestamp</StandardTh>
+                     <StandardTh width="180px" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Credit (+)</StandardTh>
+                     <StandardTh width="180px" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Debit (-)</StandardTh>
+                     <StandardTh width="200px" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Ledger Balance</StandardTh>
+                     <StandardTh width="400px" className="text-left px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Narrative / Description</StandardTh>
+                     <StandardTh width="100px" className="sticky right-0 bg-gray-50 px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Action</StandardTh>
                   </tr>
                </thead>
                <tbody className="divide-y divide-gray-50">
@@ -351,32 +351,32 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                        const isLastEntry = idx === 0; 
                        return (
                         <StandardTr key={item.id} onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="cursor-pointer">
-                           <StandardTd className="text-[10px] font-mono font-bold text-gray-400">
+                           <StandardTd className="px-2 md:px-4 py-2 md:py-4 text-[9px] md:text-[10px] font-mono font-bold text-gray-400">
                               <div className="flex items-center gap-2">
                                  <Clock size={12} className="text-gray-200" />
                                  {formatDisplayTime(item.date)}
                               </div>
                            </StandardTd>
-                           <StandardTd className="text-center font-black text-green-600">
+                           <StandardTd className="px-2 md:px-4 py-2 md:py-4 text-[9px] md:text-sm text-center font-black text-green-600">
                               {item.credit > 0 ? `+ ${formatMoney(item.credit)}` : '-'}
                            </StandardTd>
-                           <StandardTd className="text-center font-black text-red-500">
+                           <StandardTd className="px-2 md:px-4 py-2 md:py-4 text-[9px] md:text-sm text-center font-black text-red-500">
                               {item.debit > 0 ? `- ${formatMoney(item.debit)}` : '-'}
                            </StandardTd>
-                           <StandardTd className="text-center font-black text-[#004A74] bg-gray-50/50">
+                           <StandardTd className="px-2 md:px-4 py-2 md:py-4 text-[9px] md:text-sm text-center font-black text-[#004A74] bg-gray-50/50">
                               {formatMoney(item.balance)}
                            </StandardTd>
-                           <StandardTd className="w-[400px] overflow-hidden">
+                           <StandardTd className="px-2 md:px-4 py-2 md:py-4 w-[400px] overflow-hidden text-[9px] md:text-sm">
                               <div className="flex items-center gap-2 min-w-0 w-full">
-                                 <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap block flex-1 min-w-0">{item.description}</span>
+                                 <span className="font-bold text-gray-600 truncate whitespace-nowrap block flex-1 min-w-0">{item.description}</span>
                                  {item.attachmentsJsonId && <div className="w-1.5 h-1.5 rounded-full bg-[#FED400] shrink-0" />}
                               </div>
                            </StandardTd>
-                           <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
+                           <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] px-2 md:px-4 py-2 md:py-4">
                               <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
-                                 <button onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="p-2 text-blue-500 hover:bg-white rounded-lg transition-all"><Eye size={16} /></button>
+                                 <button onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="p-1 md:p-2 text-blue-500 hover:bg-white rounded-lg transition-all"><Eye size={16} /></button>
                                  {isLastEntry && (
-                                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 hover:bg-white rounded-lg transition-all"><Trash2 size={16} /></button>
+                                   <button onClick={(e) => handleDelete(e, item.id)} className="p-1 md:p-2 text-red-200 hover:text-red-500 hover:bg-white rounded-lg transition-all"><Trash2 size={16} /></button>
                                  )}
                               </div>
                            </StandardTd>
