@@ -41,7 +41,7 @@ const CONFIG = {
       'id_item', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
     ],
     SHARBOX_SENT: [
-      'id', 'receiverName', 'receiverPhotoUrl', 'receiverUniqueAppId', 'message', 'timestamp', 'status',
+      'id', 'receiverName', 'receiverPhotoUrl', 'receiverUniqueAppId', 'receiverEmail', 'receiverPhone', 'receiverSocialMedia', 'message', 'timestamp', 'status',
       'id_item', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
     ],
     NOTEBOOK: [

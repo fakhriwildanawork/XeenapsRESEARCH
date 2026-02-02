@@ -112,7 +112,12 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
       selectedColleague.name, 
       selectedColleague.photoUrl || '', 
       message,
-      selectedItem
+      selectedItem,
+      {
+        email: selectedColleague.email,
+        phone: selectedColleague.phone,
+        socialMedia: selectedColleague.socialMedia
+      }
     );
     
     if (success) {

@@ -25,6 +25,14 @@ function setupSharboxDatabase() {
       sSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       sSheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
       sSheet.setFrozenRows(1);
+    } else {
+      // Auto-update Sent sheet headers to include contacts
+      const currentHeaders = sSheet.getRange(1, 1, 1, sSheet.getLastColumn()).getValues()[0];
+      const targetHeaders = CONFIG.SCHEMAS.SHARBOX_SENT;
+      const missing = targetHeaders.filter(h => !currentHeaders.includes(h));
+      if (missing.length > 0) {
+        sSheet.getRange(1, currentHeaders.length + 1, 1, missing.length).setValues([missing]).setFontWeight("bold").setBackground("#f3f3f3");
+      }
     }
 
     return { status: 'success', message: 'Sharbox structure initialized.' };
@@ -35,8 +43,9 @@ function setupSharboxDatabase() {
 
 /**
  * Handle Knowledge Sharing (Double Write Logic)
+ * UPDATED: Persists receiver contact info.
  */
-function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, message, item) {
+function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, message, item, receiverContacts) {
   try {
     const profile = getProfileFromRegistry();
     if (!profile) throw new Error("Sender profile not found.");
@@ -94,6 +103,9 @@ function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, 
       if (h === 'receiverName') return receiverName;
       if (h === 'receiverPhotoUrl') return receiverPhotoUrl;
       if (h === 'receiverUniqueAppId') return targetUniqueAppId;
+      if (h === 'receiverEmail') return (receiverContacts && receiverContacts.email) || '';
+      if (h === 'receiverPhone') return (receiverContacts && receiverContacts.phone) || '';
+      if (h === 'receiverSocialMedia') return (receiverContacts && receiverContacts.socialMedia) || '';
       if (h === 'message') return message || '';
       if (h === 'timestamp') return timestamp;
       if (h === 'status') return 'SENT';

@@ -1,4 +1,4 @@
-import { SharboxItem, LibraryItem, GASResponse } from '../types';
+import { SharboxItem, LibraryItem, GASResponse, ColleagueItem } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
 /**
@@ -34,7 +34,8 @@ export const shareToColleague = async (
   receiverName: string, 
   receiverPhotoUrl: string,
   message: string,
-  item: LibraryItem
+  item: LibraryItem,
+  receiverContacts?: { email?: string, phone?: string, socialMedia?: string }
 ): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
   try {
@@ -46,7 +47,8 @@ export const shareToColleague = async (
         receiverName, 
         receiverPhotoUrl,
         message,
-        item 
+        item,
+        receiverContacts
       })
     });
     const result = await res.json();

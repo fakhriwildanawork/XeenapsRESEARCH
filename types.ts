@@ -154,6 +154,9 @@ export interface SharboxItem extends LibraryItem {
   receiverName?: string;
   receiverPhotoUrl?: string;
   receiverUniqueAppId?: string;
+  receiverEmail?: string;
+  receiverPhone?: string;
+  receiverSocialMedia?: string;
   message?: string;
   timestamp: string;
   status: SharboxStatus;
@@ -392,7 +395,7 @@ export interface TeachingItem {
   updatedAt: string;
 }
 
-// --- RESEARCH PROJECT TYPES ---
+// --- RESEARCH PROJECT RESEARCH PROJECT TYPES ---
 
 export enum ResearchStatus {
   DRAFT = 'Draft',

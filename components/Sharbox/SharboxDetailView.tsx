@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SharboxItem, PubInfo, Identifiers, SharboxStatus } from '../../types';
+import { SharboxItem, PubInfo, Identifiers, SharboxStatus, SupportingData } from '../../types';
 import { 
   XMarkIcon, 
   ArrowLeftIcon,
@@ -9,21 +9,22 @@ import {
   ShieldCheckIcon,
   EnvelopeIcon,
   PhoneIcon,
-  ShareIcon,
   BuildingLibraryIcon,
   BookOpenIcon,
-  HashtagIcon,
-  TagIcon,
   SparklesIcon,
   ClipboardDocumentListIcon,
   ClipboardDocumentCheckIcon,
   ExclamationTriangleIcon,
-  ClockIcon,
   ArrowPathIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  LinkIcon,
+  VideoCameraIcon,
+  DocumentDuplicateIcon,
+  ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
 import { BRAND_ASSETS } from '../../assets';
 import { fetchFileContent } from '../../services/gasService';
+import { showXeenapsToast } from '../../utils/toastUtils';
 
 interface SharboxDetailViewProps {
   item: SharboxItem;
@@ -32,9 +33,22 @@ interface SharboxDetailViewProps {
 }
 
 /**
- * Enhanced List Component Replicated from LibraryDetailView
+ * Enhanced List Component with Inline Skeleton Support
  */
-const ElegantList: React.FC<{ text?: any; className?: string }> = ({ text, className = "" }) => {
+const ElegantList: React.FC<{ text?: any; className?: string; isLoading?: boolean }> = ({ text, className = "", isLoading }) => {
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="flex gap-3 items-center">
+            <div className="w-6 h-6 rounded-full skeleton shrink-0" />
+            <div className="h-4 w-full skeleton rounded-lg" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (text === null || text === undefined || text === 'N/A') return null;
   const isNarrative = typeof text === 'string' && (text.includes('<span') || text.includes('<b') || text.length > 500);
   if (isNarrative) {
@@ -94,7 +108,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
 
   const pubInfo: PubInfo = useMemo(() => parseJsonField(currentItem.pubInfo), [currentItem.pubInfo]);
   const identifiers: Identifiers = useMemo(() => parseJsonField(currentItem.identifiers), [currentItem.identifiers]);
-  const tags = useMemo(() => parseJsonField(currentItem.tags, { keywords: [], labels: [] }), [currentItem.tags]);
+  const supportingData: SupportingData = useMemo(() => parseJsonField(currentItem.supportingReferences, { references: [], videoUrl: null }), [currentItem.supportingReferences]);
 
   const profile = useMemo(() => {
     if (activeTab === 'Inbox') {
@@ -114,13 +128,18 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
         photo: currentItem.receiverPhotoUrl || BRAND_ASSETS.USER_DEFAULT,
         affiliation: 'Authorized Network Member',
         uniqueId: currentItem.receiverUniqueAppId || 'XN-PRIVATE',
-        email: '-',
-        phone: '-',
-        social: '-',
+        email: currentItem.receiverEmail || '-',
+        phone: currentItem.receiverPhone || '-',
+        social: currentItem.receiverSocialMedia || '-',
         label: 'RECIPIENT'
       };
     }
   }, [currentItem, activeTab]);
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showXeenapsToast('success', 'Reference Copied!');
+  };
 
   return (
     <div 
@@ -193,7 +212,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
             </div>
           </section>
 
-          {/* 3. DOCUMENT METADATA BLOCK (Matching LibraryDetailView) */}
+          {/* 3. DOCUMENT METADATA BLOCK */}
           <section className="bg-gray-50/50 p-8 md:p-12 rounded-[3rem] border border-gray-100 space-y-6">
             <div className="flex flex-wrap gap-1.5">
               <span className="px-3 py-1 bg-[#004A74] text-white text-[8px] font-black uppercase tracking-widest rounded-full">{currentItem.type}</span>
@@ -228,7 +247,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
             </div>
           </section>
 
-          {/* 4. ABSTRACT & INSIGHTS (Matching aesthetic) */}
+          {/* 4. ABSTRACT & INSIGHTS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4 md:col-span-2">
               <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><BookOpenIcon className="w-4 h-4" /> Verbatim Abstract</h3>
@@ -237,19 +256,74 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
 
             <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4 md:col-span-2">
               <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><ClipboardDocumentListIcon className="w-4 h-4" /> AI Summary</h3>
-              <div className="text-sm leading-relaxed text-[#004A74] font-medium" dangerouslySetInnerHTML={{ __html: currentItem.summary || 'Summary pending initialization.' }} />
+              {isFetchingInsights ? (
+                <div className="space-y-3">
+                  <div className="h-4 w-full skeleton rounded-md" />
+                  <div className="h-4 w-full skeleton rounded-md" />
+                  <div className="h-4 w-3/4 skeleton rounded-md" />
+                </div>
+              ) : (
+                <div className="text-sm leading-relaxed text-[#004A74] font-medium" dangerouslySetInnerHTML={{ __html: currentItem.summary || 'Summary pending initialization.' }} />
+              )}
             </div>
 
             <div className="bg-green-50 p-6 rounded-[2.5rem] border border-green-100/50 shadow-sm space-y-4">
               <h3 className="text-[9px] font-black uppercase tracking-widest text-green-600/50 flex items-center gap-2"><ClipboardDocumentCheckIcon className="w-4 h-4" /> Strengths</h3>
-              <ElegantList text={currentItem.strength} />
+              <ElegantList text={currentItem.strength} isLoading={isFetchingInsights} />
             </div>
 
             <div className="bg-red-50 p-6 rounded-[2.5rem] border border-red-100/50 shadow-sm space-y-4">
               <h3 className="text-[9px] font-black uppercase tracking-widest text-red-600/50 flex items-center gap-2"><ExclamationTriangleIcon className="w-4 h-4" /> Weaknesses</h3>
-              <ElegantList text={currentItem.weakness} />
+              <ElegantList text={currentItem.weakness} isLoading={isFetchingInsights} />
+            </div>
+
+            <div className="bg-[#004A74]/5 p-6 rounded-[2.5rem] border border-[#004A74]/10 shadow-sm space-y-4 md:col-span-2">
+              <h3 className="text-[9px] font-black uppercase tracking-widest text-[#004A74]/40 flex items-center gap-2"><ChatBubbleBottomCenterTextIcon className="w-4 h-4" /> Unfamiliar Terminology</h3>
+              <ElegantList text={currentItem.unfamiliarTerminology || currentItem.quickTipsForYou} isLoading={isFetchingInsights} />
             </div>
           </div>
+
+          {/* 5. SUPPORTING RESOURCES */}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10 border-t border-gray-100">
+             <div className="space-y-6">
+                <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><LinkIcon className="w-4 h-4" /> Supporting References</h3>
+                <div className="space-y-4">
+                  {supportingData.references && supportingData.references.length > 0 ? supportingData.references.map((ref, idx) => {
+                    const urlMatch = ref.match(/https?:\/\/[^\s<]+/);
+                    const url = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : null;
+                    return (
+                      <div key={idx} className="bg-gray-50/50 p-5 rounded-3xl border border-gray-100 flex flex-col gap-4 transition-all hover:bg-white group">
+                        <div className="flex gap-4">
+                          <span className="shrink-0 w-7 h-7 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center shadow-sm">{idx + 1}</span>
+                          <p className="text-xs font-bold text-[#004A74]/80 leading-relaxed flex-1" dangerouslySetInnerHTML={{ __html: ref }} />
+                        </div>
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleCopy(ref.replace(/<[^>]*>/g, ''))} className="flex items-center gap-2 px-3 py-1.5 bg-white text-[#004A74] rounded-lg border border-gray-100 text-[9px] font-black uppercase tracking-tight shadow-sm hover:bg-[#FED400] transition-all"><DocumentDuplicateIcon className="w-3.5 h-3.5" /> Copy</button>
+                          {url && <button onClick={() => window.open(url, '_blank')} className="flex items-center gap-2 px-3 py-1.5 bg-[#004A74] text-white rounded-lg text-[9px] font-black uppercase tracking-tight shadow-sm hover:scale-105 transition-all"><ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" /> Visit</button>}
+                        </div>
+                      </div>
+                    );
+                  }) : <p className="text-[10px] font-bold text-gray-300 uppercase italic py-10 text-center">No supporting links.</p>}
+                </div>
+             </div>
+
+             <div className="bg-[#004A74] p-8 md:p-10 rounded-[3rem] text-white space-y-6 flex flex-col">
+                <h3 className="text-[9px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2"><VideoCameraIcon className="w-4 h-4" /> Visual Insights</h3>
+                <div className="flex-1 flex flex-col justify-center">
+                   {supportingData.videoUrl ? (
+                     <div className="aspect-video rounded-[2rem] overflow-hidden bg-black shadow-2xl border-4 border-white/10">
+                        <iframe className="w-full h-full" src={supportingData.videoUrl} frameBorder="0" allowFullScreen></iframe>
+                     </div>
+                   ) : (
+                     <div className="aspect-video rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center space-y-4">
+                        <VideoCameraIcon className="w-12 h-12 text-white/10" />
+                        <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">Visual node unavailable</p>
+                     </div>
+                   )}
+                </div>
+                <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Multimedia triangulation anchors knowledge 40% faster than text alone."</p>
+             </div>
+          </section>
 
           <footer className="py-20 text-center opacity-20">
              <BuildingLibraryIcon className="w-12 h-12 mx-auto mb-4 text-[#004A74]" />
