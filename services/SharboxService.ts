@@ -74,3 +74,21 @@ export const claimSharboxItem = async (transactionId: string): Promise<boolean> 
     return false;
   }
 };
+
+export const deleteSharboxItem = async (id: string, type: 'Inbox' | 'Sent'): Promise<boolean> => {
+  if (!GAS_WEB_APP_URL) return false;
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        action: 'deleteSharboxItem', 
+        id, 
+        type 
+      })
+    });
+    const result = await res.json();
+    return result.status === 'success';
+  } catch (e) {
+    return false;
+  }
+};

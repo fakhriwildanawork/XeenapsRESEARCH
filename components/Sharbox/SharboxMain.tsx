@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { SharboxItem, SharboxStatus } from '../../types';
-import { fetchSharboxItems, claimSharboxItem } from '../../services/SharboxService';
+import { fetchSharboxItems, claimSharboxItem, deleteSharboxItem } from '../../services/SharboxService';
 import { 
   InboxIcon, 
   PaperAirplaneIcon, 
@@ -19,6 +19,7 @@ import { SmartSearchBox } from '../Common/SearchComponents';
 import { StandardFilterButton } from '../Common/ButtonComponents';
 import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
+import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { BRAND_ASSETS } from '../../assets';
 import SharboxWorkflowModal from './SharboxWorkflowModal';
 import SharboxDetailView from './SharboxDetailView';
@@ -56,6 +57,20 @@ const SharboxMain: React.FC = () => {
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (confirmed) {
+      const success = await deleteSharboxItem(id, activeTab);
+      if (success) {
+        showXeenapsToast('success', 'Record removed');
+        loadItems();
+      } else {
+        showXeenapsToast('error', 'Delete failed');
+      }
+    }
+  };
+
   const filteredItems = items.filter(i => {
     const s = search.toLowerCase();
     const titleMatch = (i.title || '').toLowerCase().includes(s);
@@ -84,6 +99,7 @@ const SharboxMain: React.FC = () => {
           item={selectedItem} 
           activeTab={activeTab} 
           onClose={() => setSelectedItem(null)} 
+          onRefresh={loadItems}
         />
       )}
 
@@ -167,7 +183,14 @@ const SharboxMain: React.FC = () => {
                         {activeTab === 'Inbox' ? (item.senderName || 'Anonymous') : (item.receiverName || 'Recipient')}
                       </h4>
                    </div>
-                   <div className="ml-auto">
+                   <div className="ml-auto flex items-center gap-1.5">
+                     <button 
+                       onClick={(e) => handleDelete(e, item.id)}
+                       className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+                       title="Delete"
+                     >
+                       <TrashIcon className="w-4 h-4" />
+                     </button>
                      {item.status === SharboxStatus.CLAIMED && (
                         <CheckCircleIcon className="w-5 h-5 text-green-500" />
                      )}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SharboxItem, PubInfo, Identifiers, SharboxStatus, SupportingData } from '../../types';
+import { SharboxItem, PubInfo, Identifiers, SharboxStatus, SupportingData, ColleagueItem } from '../../types';
 import { 
   XMarkIcon, 
   ArrowLeftIcon,
@@ -20,16 +20,23 @@ import {
   LinkIcon,
   VideoCameraIcon,
   DocumentDuplicateIcon,
-  ArrowTopRightOnSquareIcon
+  ArrowTopRightOnSquareIcon,
+  TrashIcon,
+  EyeIcon,
+  UserPlusIcon
 } from '@heroicons/react/24/outline';
 import { BRAND_ASSETS } from '../../assets';
 import { fetchFileContent } from '../../services/gasService';
+import { deleteSharboxItem } from '../../services/SharboxService';
 import { showXeenapsToast } from '../../utils/toastUtils';
+import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
+import ColleagueForm from '../Colleague/ColleagueForm';
 
 interface SharboxDetailViewProps {
   item: SharboxItem;
   activeTab: 'Inbox' | 'Sent';
   onClose: () => void;
+  onRefresh?: () => void;
 }
 
 /**
@@ -81,9 +88,10 @@ const ElegantList: React.FC<{ text?: any; className?: string; isLoading?: boolea
   );
 };
 
-const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, onClose }) => {
+const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, onClose, onRefresh }) => {
   const [currentItem, setCurrentItem] = useState<SharboxItem>(item);
   const [isFetchingInsights, setIsFetchingInsights] = useState(false);
+  const [isColleagueFormOpen, setIsColleagueFormOpen] = useState(false);
 
   useEffect(() => {
     const loadJsonInsights = async () => {
@@ -136,9 +144,55 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
     }
   }, [currentItem, activeTab]);
 
+  const colleagueData: ColleagueItem | undefined = useMemo(() => {
+    if (activeTab !== 'Inbox') return undefined;
+    return {
+      id: crypto.randomUUID(),
+      name: currentItem.senderName || '',
+      uniqueAppId: currentItem.senderUniqueAppId || '',
+      affiliation: currentItem.senderAffiliation || '',
+      email: currentItem.senderEmail || '',
+      phone: currentItem.senderPhone || '',
+      socialMedia: currentItem.senderSocialMedia || '',
+      photoUrl: currentItem.senderPhotoUrl || '',
+      isFavorite: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }, [currentItem, activeTab]);
+
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     showXeenapsToast('success', 'Reference Copied!');
+  };
+
+  const handleViewCollection = () => {
+    let targetUrl = '';
+    if (currentItem.fileId) {
+      targetUrl = `https://drive.google.com/file/d/${currentItem.fileId}/view`;
+    } else if (currentItem.url) {
+      targetUrl = currentItem.url;
+    }
+    
+    if (targetUrl) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      showXeenapsToast('warning', 'No source file available');
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (confirmed) {
+      const success = await deleteSharboxItem(currentItem.id, activeTab);
+      if (success) {
+        showXeenapsToast('success', 'Record removed');
+        onRefresh?.();
+        onClose();
+      } else {
+        showXeenapsToast('error', 'Delete failed');
+      }
+    }
   };
 
   return (
@@ -151,9 +205,19 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
         <button onClick={onClose} className="flex items-center gap-2 text-[#004A74] font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 px-3 py-2 rounded-xl transition-all">
           <ArrowLeftIcon className="w-4 h-4 stroke-[3]" /> Back to Sharbox
         </button>
-        <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
-          <XMarkIcon className="w-8 h-8" />
-        </button>
+
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleDelete}
+            className="p-2 text-red-300 hover:bg-red-50 hover:text-red-500 rounded-full transition-all"
+            title="Delete Record"
+          >
+            <TrashIcon className="w-8 h-8" />
+          </button>
+          <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
+            <XMarkIcon className="w-8 h-8" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -175,11 +239,21 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
 
                {/* Bio Info */}
                <div className="flex-1 space-y-6 text-center md:text-left">
-                  <div className="space-y-1">
-                    <h2 className="text-2xl md:text-4xl font-black tracking-tighter uppercase leading-none">{profile.name}</h2>
-                    <p className="text-[#FED400] text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center justify-center md:justify-start gap-2">
-                       <AcademicCapIcon className="w-4 h-4" /> {profile.affiliation}
-                    </p>
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <h2 className="text-2xl md:text-4xl font-black tracking-tighter uppercase leading-none">{profile.name}</h2>
+                      <p className="text-[#FED400] text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center justify-center md:justify-start gap-2">
+                        <AcademicCapIcon className="w-4 h-4" /> {profile.affiliation}
+                      </p>
+                    </div>
+                    {activeTab === 'Inbox' && (
+                      <button 
+                        onClick={() => setIsColleagueFormOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#FED400] text-[#004A74] rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all mx-auto md:mx-0"
+                      >
+                        <UserPlusIcon className="w-4 h-4 stroke-[3]" /> Save Colleague
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
@@ -213,14 +287,23 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
           </section>
 
           {/* 3. DOCUMENT METADATA BLOCK */}
-          <section className="bg-gray-50/50 p-8 md:p-12 rounded-[3rem] border border-gray-100 space-y-6">
+          <section className="bg-gray-50/50 p-8 md:p-12 rounded-[3rem] border border-gray-100 space-y-6 relative group">
+            <div className="absolute top-8 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                onClick={handleViewCollection}
+                className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all"
+              >
+                <EyeIcon className="w-4 h-4 stroke-[3]" /> View Source Document
+              </button>
+            </div>
+
             <div className="flex flex-wrap gap-1.5">
               <span className="px-3 py-1 bg-[#004A74] text-white text-[8px] font-black uppercase tracking-widest rounded-full">{currentItem.type}</span>
               {currentItem.category && <span className="px-3 py-1 bg-[#004A74]/10 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">{currentItem.category}</span>}
               <span className="px-3 py-1 bg-[#FED400] text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">{currentItem.topic}</span>
             </div>
 
-            <h1 className="text-xl md:text-3xl font-black text-[#004A74] leading-[1.1] uppercase">{currentItem.title}</h1>
+            <h1 className="text-xl md:text-3xl font-black text-[#004A74] leading-[1.1] uppercase max-w-4xl">{currentItem.title}</h1>
             
             <div className="space-y-1">
               <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{currentItem.fullDate || currentItem.year}</p>
@@ -331,6 +414,17 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
           </footer>
         </div>
       </div>
+
+      {isColleagueFormOpen && colleagueData && (
+        <ColleagueForm 
+          item={colleagueData}
+          onClose={() => setIsColleagueFormOpen(false)}
+          onComplete={() => {
+            setIsColleagueFormOpen(false);
+            showXeenapsToast('success', 'Colleague saved successfully');
+          }}
+        />
+      )}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }

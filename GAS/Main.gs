@@ -329,8 +329,9 @@ function doPost(e) {
     if (action === 'setupTracerDatabase') return createJsonResponse(setupTracerDatabase());
     
     // NEW: Sharbox Actions
-    if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(body.targetUniqueAppId, body.receiverName, body.receiverPhotoUrl, body.message, body.item));
+    if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(body.targetUniqueAppId, body.receiverName, body.receiverPhotoUrl, body.message, body.item, body.receiverContacts));
     if (action === 'claimSharboxItem') return createJsonResponse(handleClaimSharboxItem(body.id));
+    if (action === 'deleteSharboxItem') return createJsonResponse(deleteSharboxItem(body.id, body.type));
 
     // NEW: saveNote
     if (action === 'saveNote') return createJsonResponse(saveNoteToRegistry(body.item, body.content));
@@ -482,7 +483,7 @@ function doPost(e) {
 
     // NEW ACTION: saveBrainstorming
     if (action === 'saveBrainstorming') {
-      return createJsonResponse(saveBrainstormingToRegistry(item));
+      return createJsonResponse(saveBrainstormingToRegistry(body.item));
     }
 
     // NEW ACTION: deleteBrainstorming
@@ -621,7 +622,7 @@ function doPost(e) {
       let fileId;
       if (target.isLocal) {
         const folder = DriveApp.getFolderById(target.folderId);
-        const blob = Utilities.newBlob(Utilities.newBlob(Utilities.base64Decode(body.fileData), body.mimeType, body.fileName));
+        const blob = Utilities.newBlob(Utilities.base64Decode(body.fileData), body.mimeType, body.fileName);
         fileId = folder.createFile(blob).getId();
       } else {
         const res = UrlFetchApp.fetch(target.url, {

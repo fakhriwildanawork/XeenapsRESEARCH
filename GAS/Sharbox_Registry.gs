@@ -221,3 +221,25 @@ function handleClaimSharboxItem(transactionId) {
     return { status: 'error', message: e.toString() };
   }
 }
+
+/**
+ * NEW: Delete Sharbox Record
+ */
+function deleteSharboxItem(id, type) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
+    const sheet = ss.getSheetByName(type);
+    if (!sheet) throw new Error("Sheet not found");
+    const data = sheet.getDataRange().getValues();
+    const idIdx = data[0].indexOf('id');
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idIdx] === id) {
+        sheet.deleteRow(i + 1);
+        return { status: 'success' };
+      }
+    }
+    return { status: 'error', message: 'Item not found' };
+  } catch (e) {
+    return { status: 'error', message: e.toString() };
+  }
+}
