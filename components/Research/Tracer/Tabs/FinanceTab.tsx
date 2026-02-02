@@ -73,13 +73,13 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewingItem, setViewingItem] = useState<TracerFinanceItem | undefined>();
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
+  const loadData = useCallback(async (isSilent = false) => {
+    if (!isSilent) setIsLoading(true);
     try {
       const data = await fetchTracerFinance(projectId, startDate, endDate, appliedSearch);
       setItems(data);
     } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
   }, [projectId, startDate, endDate, appliedSearch]);
 
@@ -118,7 +118,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
 
   const handleOptimisticSave = (newItem: TracerFinanceItem) => {
     setItems(prev => {
-      // If updating, replace. If new, append and calculate balance.
       const exists = prev.find(i => i.id === newItem.id);
       if (exists) return prev.map(i => i.id === newItem.id ? newItem : i);
       
@@ -142,8 +141,9 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
       try {
         const result = await deleteTracerFinance(id);
         if (result.status !== 'success') {
-          // Silent Rollback if failed
           setItems(originalItems);
+        } else {
+          loadData(true); // Silent refresh to ensure balance integrity
         }
       } catch {
         setItems(originalItems);
@@ -159,7 +159,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
       
       {/* 1. TOP HEADER: ADAPTIVE CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         {/* Currency Matrix */}
          <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between">
             <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Currency Matrix</h4>
             <FormDropdown 
@@ -176,7 +175,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
             />
          </div>
 
-         {/* Total Income */}
          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div className="flex items-center justify-between relative z-10">
                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Income</p>
@@ -186,7 +184,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
             <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-green-50 rounded-full opacity-50" />
          </div>
 
-         {/* Total Expense */}
          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div className="flex items-center justify-between relative z-10">
                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Expense</p>
@@ -196,7 +193,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
             <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-red-50 rounded-full opacity-50" />
          </div>
 
-         {/* Total Balance */}
          <div className="bg-[#004A74] p-6 rounded-[2rem] shadow-xl relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 -translate-y-16 translate-x-16 rounded-full" />
             <div className="flex items-center justify-between relative z-10">
@@ -207,7 +203,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
          </div>
       </div>
 
-      {/* 2. FILTER & ACTIONS BAR (Cumulative) */}
+      {/* 2. FILTER & ACTIONS BAR */}
       <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-white p-4 rounded-[2.5rem] border border-gray-100 shadow-sm">
          <div className="flex flex-col md:flex-row gap-3 w-full lg:max-w-5xl flex-1">
             <SmartSearchBox 
@@ -255,7 +251,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                    <StandardTh width="180px">Credit (+)</StandardTh>
                    <StandardTh width="180px">Debit (-)</StandardTh>
                    <StandardTh width="200px">Ledger Balance</StandardTh>
-                   <StandardTh width="400px">Narrative / Description</StandardTh>
+                   <StandardTh width="400px" className="text-left">Narrative / Description</StandardTh>
                    <StandardTh width="100px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                 </tr>
              </thead>
@@ -284,9 +280,9 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                          <StandardTd className="text-center font-black text-[#004A74] bg-gray-50/50">
                             {formatMoney(item.balance)}
                          </StandardTd>
-                         <StandardTd>
+                         <StandardTd width="400px" className="max-w-[400px] overflow-hidden">
                             <div className="flex items-center gap-2 min-w-0">
-                               <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap flex-1">{item.description}</span>
+                               <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap block flex-1">{item.description}</span>
                                {item.attachmentsJsonId && <div className="w-1.5 h-1.5 rounded-full bg-[#FED400] shrink-0" />}
                             </div>
                          </StandardTd>
@@ -314,7 +310,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
           currencySymbol={currency.symbol}
           latestDate={latestDate}
           onClose={() => setIsFormOpen(false)} 
-          onSave={(data) => { setIsFormOpen(false); handleOptimisticSave(data); loadData(); }} 
+          onSave={(data) => { setIsFormOpen(false); handleOptimisticSave(data); loadData(true); }} 
         />
       )}
     </div>

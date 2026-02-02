@@ -126,7 +126,6 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
   const handleClose = async () => {
     if (!item && newlyUploadedFiles.length > 0) {
-      // Cleanup orphan files uploaded but not synchronized
       for (const f of newlyUploadedFiles) {
         await deleteRemoteFile(f.fileId, f.nodeUrl);
       }
@@ -242,7 +241,6 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
                    {content.attachments.map((at, idx) => {
                       const isPending = at.fileId?.startsWith('pending_');
                       const isImage = at.mimeType?.startsWith('image/');
-                      // Use LH3 for images, standard Drive for non-images
                       const viewUrl = at.fileId ? (isImage ? `https://lh3.googleusercontent.com/d/${at.fileId}` : `https://drive.google.com/file/d/${at.fileId}/view`) : at.url;
 
                       return (
@@ -276,7 +274,7 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
              </div>
            )}
 
-           <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+           <input type="file" ref={fileInputRef} className="hidden" />
         </form>
       </div>
     </div>
