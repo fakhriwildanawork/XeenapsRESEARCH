@@ -11,7 +11,8 @@ import {
   CheckCircleIcon,
   SparklesIcon,
   BookOpenIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ChatBubbleBottomCenterTextIcon
 } from '@heroicons/react/24/outline';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { StandardFilterButton } from '../Common/ButtonComponents';
@@ -54,8 +55,9 @@ const SharboxMain: React.FC = () => {
     const senderMatch = (i.senderName || '').toLowerCase().includes(s);
     const receiverMatch = (i.receiverName || '').toLowerCase().includes(s);
     const affiliationMatch = (i.senderAffiliation || '').toLowerCase().includes(s);
+    const messageMatch = (i.message || '').toLowerCase().includes(s);
     
-    return titleMatch || senderMatch || receiverMatch || affiliationMatch;
+    return titleMatch || senderMatch || receiverMatch || affiliationMatch || messageMatch;
   });
 
   const formatTimestamp = (iso: string) => {
@@ -152,6 +154,16 @@ const SharboxMain: React.FC = () => {
                    </div>
                    <h3 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2">{item.title || 'Untitled Document'}</h3>
                 </div>
+
+                {/* Message Snippet UI */}
+                {item.message && (
+                  <div className="mb-4 p-3 bg-blue-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden group/msg">
+                    <ChatBubbleBottomCenterTextIcon className="absolute -bottom-1 -right-1 w-8 h-8 text-[#004A74]/5" />
+                    <p className="text-[10px] font-bold text-[#004A74]/70 italic leading-relaxed line-clamp-2">
+                      "{item.message}"
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-2 mb-6 flex-1">
                    <p className="text-[10px] font-bold text-gray-500 italic line-clamp-1">

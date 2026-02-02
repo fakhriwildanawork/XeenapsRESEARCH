@@ -33,6 +33,7 @@ export const shareToColleague = async (
   targetUniqueAppId: string, 
   receiverName: string, 
   receiverPhotoUrl: string,
+  message: string,
   item: LibraryItem
 ): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
@@ -44,6 +45,7 @@ export const shareToColleague = async (
         targetUniqueAppId, 
         receiverName, 
         receiverPhotoUrl,
+        message,
         item 
       })
     });

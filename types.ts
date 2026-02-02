@@ -154,6 +154,7 @@ export interface SharboxItem extends LibraryItem {
   receiverName?: string;
   receiverPhotoUrl?: string;
   receiverUniqueAppId?: string;
+  message?: string;
   timestamp: string;
   status: SharboxStatus;
   id_item: string; // Original library ID
