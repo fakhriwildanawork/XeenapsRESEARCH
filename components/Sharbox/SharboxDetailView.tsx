@@ -1,0 +1,270 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { SharboxItem, PubInfo, Identifiers, SharboxStatus } from '../../types';
+import { 
+  XMarkIcon, 
+  ArrowLeftIcon,
+  ChatBubbleBottomCenterTextIcon,
+  UserIcon,
+  AcademicCapIcon,
+  ShieldCheckIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  ShareIcon,
+  BuildingLibraryIcon,
+  BookOpenIcon,
+  HashtagIcon,
+  TagIcon,
+  SparklesIcon,
+  ClipboardDocumentListIcon,
+  ClipboardDocumentCheckIcon,
+  ExclamationTriangleIcon,
+  ClockIcon,
+  ArrowPathIcon,
+  GlobeAltIcon
+} from '@heroicons/react/24/outline';
+import { BRAND_ASSETS } from '../../assets';
+import { fetchFileContent } from '../../services/gasService';
+
+interface SharboxDetailViewProps {
+  item: SharboxItem;
+  activeTab: 'Inbox' | 'Sent';
+  onClose: () => void;
+}
+
+/**
+ * Enhanced List Component Replicated from LibraryDetailView
+ */
+const ElegantList: React.FC<{ text?: any; className?: string }> = ({ text, className = "" }) => {
+  if (text === null || text === undefined || text === 'N/A') return null;
+  const isNarrative = typeof text === 'string' && (text.includes('<span') || text.includes('<b') || text.length > 500);
+  if (isNarrative) {
+    return (
+      <div className={`text-sm leading-relaxed text-[#004A74] font-medium ${className}`} dangerouslySetInnerHTML={{ __html: text }} />
+    );
+  }
+  let items: string[] = [];
+  if (Array.isArray(text)) {
+    items = text.map(i => String(i).trim()).filter(Boolean);
+  } else if (typeof text === 'string') {
+    const trimmedText = text.trim();
+    if (trimmedText === '') return null;
+    items = trimmedText.split(/\n|(?=\d+\.)|(?=•)/).map(i => i.replace(/^\d+\.\s*|•\s*/, '').trim()).filter(Boolean);
+  } else {
+    const strVal = String(text).trim();
+    if (strVal === '') return null;
+    items = [strVal];
+  }
+  if (items.length === 0) return null;
+  return (
+    <ol className={`space-y-3 list-none ${className}`}>
+      {items.map((item, idx) => (
+        <li key={idx} className="flex gap-3 items-start group">
+          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center shadow-sm">{idx + 1}</span>
+          <span className="text-sm text-[#004A74]/90 leading-relaxed font-semibold" dangerouslySetInnerHTML={{ __html: item }} />
+        </li>
+      ))}
+    </ol>
+  );
+};
+
+const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, onClose }) => {
+  const [currentItem, setCurrentItem] = useState<SharboxItem>(item);
+  const [isFetchingInsights, setIsFetchingInsights] = useState(false);
+
+  useEffect(() => {
+    const loadJsonInsights = async () => {
+      if (item.insightJsonId) {
+        setIsFetchingInsights(true);
+        const jsonInsights = await fetchFileContent(item.insightJsonId, item.storageNodeUrl);
+        if (jsonInsights && Object.keys(jsonInsights).length > 0) {
+          setCurrentItem(prev => ({ ...prev, ...jsonInsights }));
+        }
+        setIsFetchingInsights(false);
+      }
+    };
+    setCurrentItem(item);
+    loadJsonInsights();
+  }, [item]);
+
+  const parseJsonField = (field: any, defaultValue: any = {}) => {
+    if (!field) return defaultValue;
+    if (typeof field === 'object' && !Array.isArray(field)) return field;
+    try { return typeof field === 'string' ? JSON.parse(field) : field; } catch { return defaultValue; }
+  };
+
+  const pubInfo: PubInfo = useMemo(() => parseJsonField(currentItem.pubInfo), [currentItem.pubInfo]);
+  const identifiers: Identifiers = useMemo(() => parseJsonField(currentItem.identifiers), [currentItem.identifiers]);
+  const tags = useMemo(() => parseJsonField(currentItem.tags, { keywords: [], labels: [] }), [currentItem.tags]);
+
+  const profile = useMemo(() => {
+    if (activeTab === 'Inbox') {
+      return {
+        name: currentItem.senderName || 'Unknown Sender',
+        photo: currentItem.senderPhotoUrl || BRAND_ASSETS.USER_DEFAULT,
+        affiliation: currentItem.senderAffiliation || 'Independent Researcher',
+        uniqueId: currentItem.senderUniqueAppId || 'XN-PRIVATE',
+        email: currentItem.senderEmail || '-',
+        phone: currentItem.senderPhone || '-',
+        social: currentItem.senderSocialMedia || '-',
+        label: 'SENDER'
+      };
+    } else {
+      return {
+        name: currentItem.receiverName || 'Recipient',
+        photo: currentItem.receiverPhotoUrl || BRAND_ASSETS.USER_DEFAULT,
+        affiliation: 'Authorized Network Member',
+        uniqueId: currentItem.receiverUniqueAppId || 'XN-PRIVATE',
+        email: '-',
+        phone: '-',
+        social: '-',
+        label: 'RECIPIENT'
+      };
+    }
+  }, [currentItem, activeTab]);
+
+  return (
+    <div 
+      className="fixed inset-0 z-[1100] bg-white flex flex-col animate-in fade-in slide-in-from-right duration-500"
+      style={{ left: 'var(--sidebar-offset, 0px)' }}
+    >
+      {/* 1. MINIMAL HEADER */}
+      <div className="sticky top-0 z-[90] bg-white/95 backdrop-blur-xl border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between">
+        <button onClick={onClose} className="flex items-center gap-2 text-[#004A74] font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 px-3 py-2 rounded-xl transition-all">
+          <ArrowLeftIcon className="w-4 h-4 stroke-[3]" /> Back to Sharbox
+        </button>
+        <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
+          <XMarkIcon className="w-8 h-8" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="max-w-6xl mx-auto px-5 md:px-10 py-10 space-y-10">
+          
+          {/* 2. REMOTE PROFILE & MESSAGE BLOCK */}
+          <section className="bg-[#004A74] rounded-[3rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 -translate-y-24 translate-x-24 rounded-full" />
+            <div className="relative z-10 flex flex-col md:flex-row gap-10 items-start">
+               {/* Portrait */}
+               <div className="relative shrink-0 mx-auto md:mx-0">
+                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#FED400] overflow-hidden shadow-2xl bg-white">
+                    <img src={profile.photo} className="w-full h-full object-cover" alt="Profile" />
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 bg-[#FED400] text-[#004A74] px-3 py-1 rounded-full text-[8px] font-black tracking-widest uppercase shadow-lg">
+                    {profile.label}
+                  </div>
+               </div>
+
+               {/* Bio Info */}
+               <div className="flex-1 space-y-6 text-center md:text-left">
+                  <div className="space-y-1">
+                    <h2 className="text-2xl md:text-4xl font-black tracking-tighter uppercase leading-none">{profile.name}</h2>
+                    <p className="text-[#FED400] text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center justify-center md:justify-start gap-2">
+                       <AcademicCapIcon className="w-4 h-4" /> {profile.affiliation}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                     <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-2xl border border-white/10">
+                        <ShieldCheckIcon className="w-4 h-4 text-[#FED400]" />
+                        <span className="text-[10px] font-mono font-bold tracking-widest">{profile.uniqueId}</span>
+                     </div>
+                     <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-2xl border border-white/10">
+                        <EnvelopeIcon className="w-4 h-4 text-white/50" />
+                        <span className="text-[10px] font-bold">{profile.email}</span>
+                     </div>
+                     <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-2xl border border-white/10">
+                        <PhoneIcon className="w-4 h-4 text-white/50" />
+                        <span className="text-[10px] font-bold">{profile.phone}</span>
+                     </div>
+                     <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-2xl border border-white/10">
+                        <GlobeAltIcon className="w-4 h-4 text-white/50" />
+                        <span className="text-[10px] font-bold uppercase tracking-tighter">{profile.social}</span>
+                     </div>
+                  </div>
+
+                  {/* Shared Message Bubble */}
+                  <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 relative">
+                     <ChatBubbleBottomCenterTextIcon className="absolute -top-3 -left-3 w-10 h-10 text-[#FED400]/20" />
+                     <p className="text-sm md:text-base font-medium italic leading-relaxed text-white/90">
+                       "{currentItem.message || "Synthesizing knowledge transfer without attached narrative."}"
+                     </p>
+                  </div>
+               </div>
+            </div>
+          </section>
+
+          {/* 3. DOCUMENT METADATA BLOCK (Matching LibraryDetailView) */}
+          <section className="bg-gray-50/50 p-8 md:p-12 rounded-[3rem] border border-gray-100 space-y-6">
+            <div className="flex flex-wrap gap-1.5">
+              <span className="px-3 py-1 bg-[#004A74] text-white text-[8px] font-black uppercase tracking-widest rounded-full">{currentItem.type}</span>
+              {currentItem.category && <span className="px-3 py-1 bg-[#004A74]/10 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">{currentItem.category}</span>}
+              <span className="px-3 py-1 bg-[#FED400] text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">{currentItem.topic}</span>
+            </div>
+
+            <h1 className="text-xl md:text-3xl font-black text-[#004A74] leading-[1.1] uppercase">{currentItem.title}</h1>
+            
+            <div className="space-y-1">
+              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{currentItem.fullDate || currentItem.year}</p>
+              <p className="text-sm font-bold text-[#004A74]">{Array.isArray(currentItem.authors) ? currentItem.authors.join(', ') : 'Unknown Authors'}</p>
+            </div>
+
+            <div className="space-y-3 pt-6 border-t border-gray-100">
+              {currentItem.publisher && (
+                <div className="flex items-start gap-4">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest w-24 shrink-0">Publisher</span>
+                  <p className="text-[11px] font-bold text-gray-600">{currentItem.publisher}</p>
+                </div>
+              )}
+              {Object.values(identifiers).some(v => v) && (
+                <div className="flex items-start gap-4">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest w-24 shrink-0">Identifiers</span>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[9px] font-bold text-gray-400 italic uppercase">
+                    {identifiers.doi && <span>DOI: {identifiers.doi}</span>}
+                    {identifiers.issn && <span>ISSN: {identifiers.issn}</span>}
+                    {identifiers.isbn && <span>ISBN: {identifiers.isbn}</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* 4. ABSTRACT & INSIGHTS (Matching aesthetic) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4 md:col-span-2">
+              <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><BookOpenIcon className="w-4 h-4" /> Verbatim Abstract</h3>
+              <div className="text-sm leading-relaxed text-[#004A74] font-medium whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: currentItem.abstract || 'No abstract retrieved.' }} />
+            </div>
+
+            <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4 md:col-span-2">
+              <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><ClipboardDocumentListIcon className="w-4 h-4" /> AI Summary</h3>
+              <div className="text-sm leading-relaxed text-[#004A74] font-medium" dangerouslySetInnerHTML={{ __html: currentItem.summary || 'Summary pending initialization.' }} />
+            </div>
+
+            <div className="bg-green-50 p-6 rounded-[2.5rem] border border-green-100/50 shadow-sm space-y-4">
+              <h3 className="text-[9px] font-black uppercase tracking-widest text-green-600/50 flex items-center gap-2"><ClipboardDocumentCheckIcon className="w-4 h-4" /> Strengths</h3>
+              <ElegantList text={currentItem.strength} />
+            </div>
+
+            <div className="bg-red-50 p-6 rounded-[2.5rem] border border-red-100/50 shadow-sm space-y-4">
+              <h3 className="text-[9px] font-black uppercase tracking-widest text-red-600/50 flex items-center gap-2"><ExclamationTriangleIcon className="w-4 h-4" /> Weaknesses</h3>
+              <ElegantList text={currentItem.weakness} />
+            </div>
+          </div>
+
+          <footer className="py-20 text-center opacity-20">
+             <BuildingLibraryIcon className="w-12 h-12 mx-auto mb-4 text-[#004A74]" />
+             <p className="text-[8px] font-black uppercase tracking-[0.8em]">XEENAPS TRANSIT ARCHIVE</p>
+          </footer>
+        </div>
+      </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #004A7420; border-radius: 10px; }
+      `}</style>
+    </div>
+  );
+};
+
+export default SharboxDetailView;

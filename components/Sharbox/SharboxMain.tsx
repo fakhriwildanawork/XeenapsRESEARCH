@@ -21,6 +21,7 @@ import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { BRAND_ASSETS } from '../../assets';
 import SharboxWorkflowModal from './SharboxWorkflowModal';
+import SharboxDetailView from './SharboxDetailView';
 
 const SharboxMain: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'Inbox' | 'Sent'>('Inbox');
@@ -30,6 +31,7 @@ const SharboxMain: React.FC = () => {
   
   // Workflow state
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<SharboxItem | null>(null);
 
   const loadItems = useCallback(async () => {
     setIsLoading(true);
@@ -76,6 +78,15 @@ const SharboxMain: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden animate-in fade-in duration-500">
+      {/* SHARBOX DETAIL VIEW OVERLAY */}
+      {selectedItem && (
+        <SharboxDetailView 
+          item={selectedItem} 
+          activeTab={activeTab} 
+          onClose={() => setSelectedItem(null)} 
+        />
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6 items-center justify-between mb-8 shrink-0 px-1">
         <div className="flex items-center gap-4">
            <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
@@ -137,7 +148,8 @@ const SharboxMain: React.FC = () => {
             {filteredItems.map(item => (
               <div 
                 key={item.id}
-                className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col h-full"
+                onClick={() => setSelectedItem(item)}
+                className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col h-full cursor-pointer"
               >
                 <div className="flex items-center gap-3 mb-4">
                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shadow-sm shrink-0 bg-gray-50">
