@@ -66,7 +66,7 @@ const SharboxMain: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-6 items-center justify-between mb-8 shrink-0 px-1">
         <div className="flex items-center gap-4">
            <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-              <InboxIcon size={24} />
+              <InboxIcon className="w-6 h-6" />
            </div>
            <div>
               <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Sharbox</h2>
