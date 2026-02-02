@@ -9,7 +9,8 @@ import {
   fetchTracerReferences, 
   fetchTracerTodos,
   saveTracerLog,
-  deleteTracerLog
+  deleteTracerLog,
+  deleteTracerProject
 } from '../../../services/TracerService';
 import { fetchFileContent } from '../../../services/gasService';
 import { getCleanedProfileName } from '../../../services/ProfileService';
@@ -26,9 +27,12 @@ import {
   Users,
   Plus,
   Clock,
-  Banknote
+  Banknote,
+  Trash2
 } from 'lucide-react';
 import { FormPageContainer, FormField, FormDropdown } from '../../Common/FormComponents';
+import { showXeenapsDeleteConfirm } from '../../../utils/confirmUtils';
+import { showXeenapsToast } from '../../../utils/toastUtils';
 import ReferenceTab from './Tabs/ReferenceTab';
 import TodoTab from './Tabs/TodoTab';
 import FinanceTab from './Tabs/FinanceTab';
@@ -71,6 +75,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   
   const [activeTab, setActiveTab] = useState<'identity' | 'todo' | 'log' | 'refs' | 'finance'>('identity');
   const [isLoading, setIsLoading] = useState(true);
+  const [isBusy, setIsBusy] = useState(false);
   const [cleanedProfileName, setCleanedProfileName] = useState("Xeenaps User");
 
   // RE-OPEN STATE (FROM LIBRARY DETAIL NAVIGATION)
@@ -180,6 +185,21 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     await deleteTracerLog(logId);
   };
 
+  const handlePermanentDeleteProject = async () => {
+    if (!project || isBusy) return;
+    if (await showXeenapsDeleteConfirm(1)) {
+      setIsBusy(true);
+      showXeenapsToast('info', 'Purging project data...');
+      if (await deleteTracerProject(project.id)) {
+        showXeenapsToast('success', 'Project removed from cloud');
+        navigate('/research/tracer');
+      } else {
+        showXeenapsToast('error', 'Critical: Deletion failed');
+        setIsBusy(false);
+      }
+    }
+  };
+
   const formatLogTime = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
@@ -207,17 +227,26 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   return (
     <FormPageContainer>
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-4 md:px-10 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="flex items-center gap-2 md:gap-4 shrink-0">
           <button onClick={() => navigate('/research/tracer')} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] rounded-xl transition-all"><ArrowLeft size={18} /></button>
-          <div className="min-w-0 hidden sm:block">
+          <div className="min-w-0 hidden lg:block">
             <h2 className="text-sm font-black text-[#004A74] truncate">{project.title || project.label}</h2>
             <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Project ID: {project.id.substring(0,8)}</p>
           </div>
+          {/* Permanent Delete Button in Header */}
+          <button 
+            onClick={handlePermanentDeleteProject}
+            disabled={isBusy}
+            className="p-2.5 bg-white text-red-300 hover:text-red-500 hover:bg-red-50 border border-gray-100 rounded-xl transition-all shadow-sm active:scale-90 disabled:opacity-30"
+            title="Delete Project Permanently"
+          >
+            <Trash2 size={18} />
+          </button>
         </div>
         <div className="flex bg-gray-100 p-1 rounded-2xl gap-0.5 md:gap-1">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex items-center gap-2 px-3 md:px-5 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === t.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}>
-              <t.icon size={14} /><span className="text-[9px] font-black uppercase tracking-widest">{t.label}</span>
+              <t.icon size={14} /><span className="hidden md:inline text-[9px] font-black uppercase tracking-widest">{t.label}</span>
             </button>
           ))}
         </div>
