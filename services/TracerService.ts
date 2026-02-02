@@ -1,4 +1,4 @@
-import { TracerProject, TracerLog, TracerReference, TracerReferenceContent, TracerQuote, TracerTodo, GASResponse } from '../types';
+import { TracerProject, TracerLog, TracerReference, TracerReferenceContent, TracerQuote, TracerTodo, TracerFinanceItem, TracerFinanceContent, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
 /**
@@ -205,6 +205,48 @@ export const deleteTracerTodo = async (id: string): Promise<boolean> => {
     return result.status === 'success';
   } catch (e) {
     return false;
+  }
+};
+
+/**
+ * FINANCE SERVICE: Manage Financial Records
+ */
+export const fetchTracerFinance = async (projectId: string, startDate = "", endDate = "", search = ""): Promise<TracerFinanceItem[]> => {
+  if (!GAS_WEB_APP_URL) return [];
+  try {
+    const url = `${GAS_WEB_APP_URL}?action=getTracerFinance&projectId=${projectId}&startDate=${startDate}&endDate=${endDate}&search=${encodeURIComponent(search)}`;
+    const res = await fetch(url);
+    const result = await res.json();
+    return result.data || [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveTracerFinance = async (item: TracerFinanceItem, content: TracerFinanceContent): Promise<boolean> => {
+  if (!GAS_WEB_APP_URL) return false;
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveTracerFinance', item, content })
+    });
+    const result = await res.json();
+    return result.status === 'success';
+  } catch (e) {
+    return false;
+  }
+};
+
+export const deleteTracerFinance = async (id: string): Promise<GASResponse<any>> => {
+  if (!GAS_WEB_APP_URL) return { status: 'error' };
+  try {
+    const res = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteTracerFinance', id })
+    });
+    return await res.json();
+  } catch (e) {
+    return { status: 'error', message: e.toString() };
   }
 };
 

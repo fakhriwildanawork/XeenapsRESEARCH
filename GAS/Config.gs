@@ -100,6 +100,9 @@ const CONFIG = {
     ],
     TRACER_TODOS: [
       'id', 'projectId', 'title', 'description', 'startDate', 'deadline', 'linkLabel', 'linkUrl', 'isDone', 'completedDate', 'completionRemarks', 'createdAt', 'updatedAt'
+    ],
+    TRACER_FINANCE: [
+      'id', 'projectId', 'date', 'credit', 'debit', 'balance', 'description', 'attachmentsJsonId', 'storageNodeUrl', 'createdAt', 'updatedAt'
     ]
   }
 };

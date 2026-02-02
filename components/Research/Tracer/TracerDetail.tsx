@@ -25,11 +25,13 @@ import {
   FlaskConical,
   Users,
   Plus,
-  Clock
+  Clock,
+  Banknote
 } from 'lucide-react';
 import { FormPageContainer, FormField, FormDropdown } from '../../Common/FormComponents';
 import ReferenceTab from './Tabs/ReferenceTab';
 import TodoTab from './Tabs/TodoTab';
+import FinanceTab from './Tabs/FinanceTab';
 import TracerLogModal from './Modals/TracerLogModal';
 
 // --- SAVE MEMORY CACHE ---
@@ -46,7 +48,7 @@ const TracerDetailSkeleton: React.FC = () => (
           </div>
        </div>
        <div className="flex gap-1 bg-gray-50 p-1 rounded-2xl">
-          {[1,2,3,4].map(i => <div key={i} className="w-24 h-9 skeleton rounded-xl" />)}
+          {[1,2,3,4,5].map(i => <div key={i} className="w-24 h-9 skeleton rounded-xl" />)}
        </div>
     </div>
     <div className="p-10 space-y-8 max-w-5xl mx-auto w-full">
@@ -67,7 +69,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [todos, setTodos] = useState<TracerTodo[]>([]);
   const [references, setReferences] = useState<TracerReference[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'identity' | 'todo' | 'log' | 'refs'>('identity');
+  const [activeTab, setActiveTab] = useState<'identity' | 'todo' | 'log' | 'refs' | 'finance'>('identity');
   const [isLoading, setIsLoading] = useState(true);
   const [cleanedProfileName, setCleanedProfileName] = useState("Xeenaps User");
 
@@ -195,7 +197,8 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     { id: 'identity', label: 'Identity', icon: User },
     { id: 'todo', label: 'To Do', icon: CheckSquare },
     { id: 'log', label: 'Journal', icon: Layout },
-    { id: 'refs', label: 'References', icon: BookOpen }
+    { id: 'refs', label: 'References', icon: BookOpen },
+    { id: 'finance', label: 'Finance', icon: Banknote }
   ] as const;
 
   if (isLoading) return <FormPageContainer><TracerDetailSkeleton /></FormPageContainer>;
@@ -203,18 +206,18 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
 
   return (
     <FormPageContainer>
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-6 md:px-10 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-4 md:px-10 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-4 shrink-0">
           <button onClick={() => navigate('/research/tracer')} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] rounded-xl transition-all"><ArrowLeft size={18} /></button>
-          <div className="min-w-0">
+          <div className="min-w-0 hidden sm:block">
             <h2 className="text-sm font-black text-[#004A74] truncate">{project.title || project.label}</h2>
             <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Project ID: {project.id.substring(0,8)}</p>
           </div>
         </div>
-        <div className="flex bg-gray-100 p-1 rounded-2xl gap-1">
+        <div className="flex bg-gray-100 p-1 rounded-2xl gap-0.5 md:gap-1">
           {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex items-center gap-2 px-5 py-2 rounded-xl transition-all ${activeTab === t.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}>
-              <t.icon size={14} /><span className="hidden md:inline text-[9px] font-black uppercase tracking-widest">{t.label}</span>
+            <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex items-center gap-2 px-3 md:px-5 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === t.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}>
+              <t.icon size={14} /><span className="text-[9px] font-black uppercase tracking-widest">{t.label}</span>
             </button>
           ))}
         </div>
@@ -288,6 +291,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                reopenedRef={initialReopenRef}
              />
           )}
+          {activeTab === 'finance' && <FinanceTab projectId={project.id} />}
         </div>
       </div>
       

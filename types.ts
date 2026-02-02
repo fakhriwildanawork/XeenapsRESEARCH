@@ -494,6 +494,35 @@ export interface TracerQuote {
   citation: string;
 }
 
+// --- NEW TRACER FINANCE TYPES ---
+
+export interface TracerFinanceAttachment {
+  type: 'FILE' | 'LINK';
+  label: string;
+  url?: string;
+  fileId?: string;
+  nodeUrl?: string;
+  mimeType?: string;
+}
+
+export interface TracerFinanceContent {
+  attachments: TracerFinanceAttachment[];
+}
+
+export interface TracerFinanceItem {
+  id: string;
+  projectId: string;
+  date: string; // ISO String (DD/MM/YY HH:MM format in UI)
+  credit: number;
+  debit: number;
+  balance: number;
+  description: string;
+  attachmentsJsonId: string;
+  storageNodeUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // --- BRAINSTORMING TYPES ---
 
 export interface BrainstormingItem {

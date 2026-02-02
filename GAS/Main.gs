@@ -76,6 +76,16 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result });
     }
 
+    // NEW: Tracer Finance Retrieval
+    if (action === 'getTracerFinance') {
+      const projectId = e.parameter.projectId;
+      const startDate = e.parameter.startDate || "";
+      const endDate = e.parameter.endDate || "";
+      const search = e.parameter.search || "";
+      const result = getTracerFinanceFromRegistry(projectId, startDate, endDate, search);
+      return createJsonResponse({ status: 'success', data: result });
+    }
+
     // NEW: getReviews (LITERATURE REVIEW MODULE)
     if (action === 'getReviews') {
       const page = parseInt(e.parameter.page || "1");
@@ -318,6 +328,10 @@ function doPost(e) {
     // NEW: Tracer Todo
     if (action === 'saveTracerTodo') return createJsonResponse(saveTracerTodoToRegistry(body.item));
     if (action === 'deleteTracerTodo') return createJsonResponse(deleteTracerTodoFromRegistry(body.id));
+
+    // NEW: Tracer Finance
+    if (action === 'saveTracerFinance') return createJsonResponse(saveTracerFinanceToRegistry(body.item, body.content));
+    if (action === 'deleteTracerFinance') return createJsonResponse(deleteTracerFinanceFromRegistry(body.id));
 
     // NEW: aiTracerProxy
     if (action === 'aiTracerProxy') {
@@ -913,6 +927,6 @@ function doPost(e) {
     
     return createJsonResponse({ status: 'error', message: 'Invalid action: ' + action });
   } catch (err) {
-    return createJsonResponse({ status: 'error', message: err.toString() });
+    return { status: 'error', message: err.toString() };
   }
 }
