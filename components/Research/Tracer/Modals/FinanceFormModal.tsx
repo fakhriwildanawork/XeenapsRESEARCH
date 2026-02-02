@@ -39,10 +39,17 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
   const [isLoadingContent, setIsLoadingContent] = useState(!!item?.attachmentsJsonId);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Helper to get strictly Local ISO String for NOW()
+  const getLocalNowISO = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - offset).toISOString();
+  };
+
   const [formData, setFormData] = useState<TracerFinanceItem>(item || {
     id: crypto.randomUUID(),
     projectId,
-    date: new Date().toISOString(), // Initial value NOW()
+    date: getLocalNowISO(), // Force Local User Time NOW()
     credit: 0,
     debit: 0,
     balance: 0,

@@ -27,6 +27,7 @@ import { TableSkeletonRows } from '../../../Common/LoadingComponents';
 import { showXeenapsToast } from '../../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
 import FinanceFormModal from '../Modals/FinanceFormModal';
+import { FormDropdown } from '../../../Common/FormComponents';
 
 interface FinanceTabProps {
   projectId: string;
@@ -38,7 +39,23 @@ const CURRENCIES = [
   { code: 'EUR', symbol: '€' },
   { code: 'GBP', symbol: '£' },
   { code: 'JPY', symbol: '¥' },
-  { code: 'SGD', symbol: 'S$' }
+  { code: 'SGD', symbol: 'S$' },
+  { code: 'AUD', symbol: 'A$' },
+  { code: 'CAD', symbol: 'C$' },
+  { code: 'CHF', symbol: 'Fr' },
+  { code: 'CNY', symbol: '¥' },
+  { code: 'HKD', symbol: 'HK$' },
+  { code: 'KRW', symbol: '₩' },
+  { code: 'MYR', symbol: 'RM' },
+  { code: 'THB', symbol: '฿' },
+  { code: 'PHP', symbol: '₱' },
+  { code: 'INR', symbol: '₹' },
+  { code: 'SAR', symbol: 'SR' },
+  { code: 'AED', symbol: 'dh' },
+  { code: 'RUB', symbol: '₽' },
+  { code: 'BRL', symbol: 'R$' },
+  { code: 'ZAR', symbol: 'R' },
+  { code: 'TRY', symbol: '₺' }
 ];
 
 const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
@@ -116,21 +133,29 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     }
   };
 
+  const currencyOptions = useMemo(() => CURRENCIES.map(c => `${c.code} (${c.symbol})`), []);
+  const currentCurrencyLabel = `${currency.code} (${currency.symbol})`;
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700 pb-20">
       
       {/* 1. TOP HEADER: ADAPTIVE CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         {/* Currency Matrix - Smaller */}
+         {/* Currency Matrix - Smaller & Standard Dropdown */}
          <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between">
             <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Currency Matrix</h4>
-            <select 
-              className="w-full bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl text-[10px] font-black text-[#004A74] outline-none cursor-pointer"
-              value={currency.code}
-              onChange={(e) => setCurrency(CURRENCIES.find(c => c.code === e.target.value)!)}
-            >
-               {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
-            </select>
+            <FormDropdown 
+              value={currentCurrencyLabel}
+              onChange={(val: string) => {
+                const code = val.split(' ')[0];
+                const found = CURRENCIES.find(c => c.code === code);
+                if (found) setCurrency(found);
+              }}
+              options={currencyOptions}
+              placeholder="Select Currency"
+              allowCustom={false}
+              showSearch={true}
+            />
          </div>
 
          {/* Total Income */}
@@ -242,8 +267,8 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                             {formatMoney(item.balance)}
                          </StandardTd>
                          <StandardTd>
-                            <div className="flex items-center gap-2">
-                               <span className="text-[11px] font-bold text-gray-600 truncate max-w-[380px]">{item.description}</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                               <span className="text-[11px] font-bold text-gray-600 truncate flex-1">{item.description}</span>
                                {item.attachmentsJsonId && <div className="w-1.5 h-1.5 rounded-full bg-[#FED400] shrink-0" />}
                             </div>
                          </StandardTd>
