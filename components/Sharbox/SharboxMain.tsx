@@ -12,19 +12,24 @@ import {
   SparklesIcon,
   BookOpenIcon,
   ChevronRightIcon,
-  ChatBubbleBottomCenterTextIcon
+  ChatBubbleBottomCenterTextIcon,
+  ShareIcon
 } from '@heroicons/react/24/outline';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { StandardFilterButton } from '../Common/ButtonComponents';
 import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { BRAND_ASSETS } from '../../assets';
+import SharboxWorkflowModal from './SharboxWorkflowModal';
 
 const SharboxMain: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'Inbox' | 'Sent'>('Inbox');
   const [items, setItems] = useState<SharboxItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
+  
+  // Workflow state
+  const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
 
   const loadItems = useCallback(async () => {
     setIsLoading(true);
@@ -100,13 +105,23 @@ const SharboxMain: React.FC = () => {
         </div>
       </div>
 
-      <div className="mb-6 px-1">
-        <SmartSearchBox 
-          value={search} 
-          onChange={setSearch} 
-          className="w-full lg:max-w-2xl"
-          phrases={["Search incoming items...", "Find shared history...", "Search by sender..."]}
-        />
+      <div className="flex flex-col md:flex-row gap-4 mb-6 px-1 items-center">
+        <div className="flex-1 w-full">
+          <SmartSearchBox 
+            value={search} 
+            onChange={setSearch} 
+            className="w-full lg:max-w-2xl"
+            phrases={["Search incoming items...", "Find shared history...", "Search by sender..."]}
+          />
+        </div>
+        {activeTab === 'Sent' && (
+          <button 
+            onClick={() => setIsWorkflowOpen(true)}
+            className="flex items-center justify-center gap-3 px-8 py-3.5 bg-[#FED400] text-[#004A74] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:scale-105 transition-all w-full md:w-auto"
+          >
+            <ShareIcon className="w-4 h-4 stroke-[3]" /> Share New Knowledge
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pb-20">
@@ -197,6 +212,15 @@ const SharboxMain: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isWorkflowOpen && (
+        <SharboxWorkflowModal 
+          onClose={() => {
+            setIsWorkflowOpen(false);
+            loadItems();
+          }} 
+        />
+      )}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }

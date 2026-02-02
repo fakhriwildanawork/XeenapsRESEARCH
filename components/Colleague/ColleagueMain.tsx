@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ColleagueItem } from '../../types';
 import { fetchColleaguesPaginated, deleteColleague, saveColleague } from '../../services/ColleagueService';
@@ -8,7 +7,8 @@ import {
   Star, 
   Pencil,
   Users,
-  Check
+  Check,
+  Share2
 } from 'lucide-react';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { StandardPrimaryButton, StandardQuickAccessBar, StandardQuickActionButton } from '../Common/ButtonComponents';
@@ -18,6 +18,7 @@ import { useAsyncWorkflow } from '../../hooks/useAsyncWorkflow';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import ColleagueForm from './ColleagueForm';
+import SharboxWorkflowModal from '../Sharbox/SharboxWorkflowModal';
 import { BRAND_ASSETS } from '../../assets';
 
 const ColleagueMain: React.FC = () => {
@@ -33,6 +34,9 @@ const ColleagueMain: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ColleagueItem | undefined>();
+  
+  // Workflow state
+  const [sharingColleague, setSharingColleague] = useState<ColleagueItem | null>(null);
 
   const itemsPerPage = 12;
 
@@ -132,6 +136,11 @@ const ColleagueMain: React.FC = () => {
     setIsFormOpen(true);
   };
 
+  const handleInitiateShare = (e: React.MouseEvent, item: ColleagueItem) => {
+    e.stopPropagation();
+    setSharingColleague(item);
+  };
+
   const anyUnfavSelected = useMemo(() => {
     const selected = items.filter(i => selectedIds.includes(i.id));
     return selected.some(i => !i.isFavorite);
@@ -173,7 +182,7 @@ const ColleagueMain: React.FC = () => {
           <StandardQuickActionButton variant="warning" onClick={handleMassFavorite} title="Mass Favorite">
             <Star size={18} className={anyUnfavSelected ? "text-gray-300" : "text-[#FED400] fill-[#FED400]"} />
           </StandardQuickActionButton>
-          <button onClick={() => setSelectedIds([])} className="text-[9px] font-black uppercase tracking-widest text-[#004A74]/50 hover:text-[#004A74] px-2 transition-all">Clear</button>
+          <button onClick={() => setSelectedIds([])} className="text-[9px] font-black uppercase tracking-widest text-[#004A74]/50 hover:text-[#004A74] px-2 transition-all">Clear Selection</button>
         </StandardQuickAccessBar>
       </div>
 
@@ -226,22 +235,30 @@ const ColleagueMain: React.FC = () => {
                    </div>
                 </div>
 
-                {/* BOTTOM RIGHT: ACTIONS */}
-                <div className="mt-auto flex justify-end items-center gap-1">
+                {/* BOTTOM ACTIONS */}
+                <div className="mt-auto flex justify-between items-center border-t border-gray-50 pt-3">
                    <button 
-                     onClick={(e) => handleEdit(e, item)}
-                     className="p-2 text-gray-400 hover:text-[#004A74] hover:bg-gray-50 rounded-lg transition-all"
-                     title="Edit"
+                     onClick={(e) => handleInitiateShare(e, item)}
+                     className="flex items-center gap-1.5 px-4 py-1.5 bg-[#004A74]/5 text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all"
                    >
-                      <Pencil size={14} />
+                     <Share2 size={12} /> Share
                    </button>
-                   <button 
-                     onClick={(e) => handleDelete(e, item.id)} 
-                     className="p-2 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                     title="Delete"
-                   >
-                      <Trash2 size={14} />
-                   </button>
+                   <div className="flex gap-1">
+                      <button 
+                        onClick={(e) => handleEdit(e, item)}
+                        className="p-2 text-gray-400 hover:text-[#004A74] hover:bg-gray-50 rounded-lg transition-all"
+                        title="Edit"
+                      >
+                         <Pencil size={14} />
+                      </button>
+                      <button 
+                        onClick={(e) => handleDelete(e, item.id)} 
+                        className="p-2 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete"
+                      >
+                         <Trash2 size={14} />
+                      </button>
+                   </div>
                 </div>
               </div>
             ))}
@@ -268,6 +285,13 @@ const ColleagueMain: React.FC = () => {
             setIsFormOpen(false);
             loadData();
           }} 
+        />
+      )}
+
+      {sharingColleague && (
+        <SharboxWorkflowModal 
+          initialColleague={sharingColleague} 
+          onClose={() => setSharingColleague(null)} 
         />
       )}
 

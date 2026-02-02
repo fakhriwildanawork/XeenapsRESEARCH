@@ -48,7 +48,7 @@ import RelatedPresentations from '../Presenter/RelatedPresentations';
 import RelatedQuestion from '../QuestionBank/RelatedQuestion';
 import ConsultationGallery from '../Consultation/ConsultationGallery';
 import NotebookMain from '../Notebook/NotebookMain';
-import ColleaguePickerModal from '../Sharbox/ColleaguePickerModal';
+import SharboxWorkflowModal from '../Sharbox/SharboxWorkflowModal';
 
 interface LibraryDetailViewProps {
   item: LibraryItem;
@@ -65,7 +65,7 @@ interface LibraryDetailViewProps {
  */
 const MiniTooltip: React.FC<{ text: string }> = ({ text }) => (
   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 translate-y-1 group-hover:translate-y-0 whitespace-nowrap z-[100]">
-    text
+    {text}
     <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#004A74]"></div>
   </div>
 );
@@ -108,7 +108,7 @@ const CitationModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 bg-black/40 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-white/90 backdrop-blur-2xl p-6 md:p-10 rounded-[3rem] w-full max-w-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] relative border border-white/20 flex flex-col max-h-[85vh] min-h-[450px] md:min-h-[580px]">
         
         {/* Modal Header */}
@@ -271,7 +271,7 @@ const parseJsonField = (field: any, defaultValue: any = {}) => {
     const parsed = typeof field === 'string' ? JSON.parse(field) : field;
     return parsed || defaultValue;
   } catch (e) {
-    defaultValue;
+    return defaultValue;
   }
 };
 
@@ -351,10 +351,10 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const [showTips, setShowTips] = useState(false);
   const [showCiteModal, setShowCiteModal] = useState(false);
   const [showPresentations, setShowPresentations] = useState(false); 
-  const [showQuestions, setShowQuestions] = useState(false); // New state for Question Bank
-  const [showConsultations, setShowConsultations] = useState(false); // New state for Consultation
-  const [showNotebook, setShowNotebook] = useState(false); // New state for Notebook
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false); // New state for Sharbox
+  const [showQuestions, setShowQuestions] = useState(false); 
+  const [showConsultations, setShowConsultations] = useState(false); 
+  const [showNotebook, setShowNotebook] = useState(false); 
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false); 
   const [dummySearch, setDummySearch] = useState('');
   
   const [isBookmarked, setIsBookmarked] = useState(!!item.isBookmarked);
@@ -545,31 +545,25 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const handleBack = () => {
     const state = location.state as any;
     if (state?.returnToTracerProject) {
-      // SMART REDIRECTION TO TRACER: Reopen the specific project and ref modal
       navigate(`/research/tracer/${state.returnToTracerProject}`, { 
         state: { reopenReference: state.returnToRef }, 
         replace: true 
       });
     } else if (state?.returnToTeaching) {
-      // SMART REDIRECTION TO TEACHING: Back to the specific session and Substance tab
       navigate(`/teaching/${state.returnToTeaching}`, { 
         state: { activeTab: state.activeTab || 'substance' }, 
         replace: true 
       });
     } else if (state?.returnToAttachedQuestion) {
-      // BACK TO ATTACHED QUESTIONS: Restore proper view and data
       navigate(`/teaching/${state.returnToAttachedQuestion}/questions`, { 
         state: { item: state.teachingItem }, 
         replace: true 
       });
     } else if (state?.returnToPPT) {
-      // SMART REDIRECTION: Kembali ke halaman presentasi dan perintahkan buka modal detail
       navigate('/presentations', { state: { reopenPPT: state.returnToPPT }, replace: true });
     } else if (state?.returnToAudit) {
-      // SMART REDIRECTION: Kembali ke halaman Audit Project yang tepat
       navigate(`/research/work/${state.returnToAudit.id}`, { replace: true });
     } else if (state?.returnToQuestion) {
-      // REDIRECTION: Kembali ke modul Question Bank
       navigate('/questions', { state: { reopenQuestion: state.returnToQuestion }, replace: true });
     } else {
       onClose();
@@ -577,10 +571,6 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   };
 
   const hasViewLink = !!(currentItem.fileId || currentItem.url);
-
-  const categoriesJournal = ["Original Research", "Systematic Review", "Meta-analysis", "Case Report", "Review Article", "Scoping Review", "Rapid Review", "Preprint"];
-  const isJournalType = categoriesJournal.includes(currentItem.category);
-  const showMethodologyBlock = isJournalType && currentItem.researchMethodology && currentItem.researchMethodology.trim() !== "";
 
   const isAnyLoading = isGeneratingInsights || isFetchingStoredInsights;
 
@@ -633,7 +623,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         isMobileSidebarOpen ? 'blur-[15px] opacity-40 pointer-events-none scale-[0.98]' : ''
       } ${
         isExternalTransition 
-          ? 'animate-in fade-in duration-200' // Faster if route-based entry
+          ? 'animate-in fade-in duration-200' 
           : 'animate-in fade-in zoom-in-95 slide-in-from-bottom-10 duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]'
       }`}
       style={{ 
@@ -644,11 +634,15 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
       }}
     >
       {showCiteModal && <CitationModal item={currentItem} onClose={() => setShowCiteModal(false)} />}
-      {isShareModalOpen && <ColleaguePickerModal item={currentItem} onClose={() => setIsShareModalOpen(false)} />}
+      {isShareModalOpen && (
+        <SharboxWorkflowModal 
+          initialItem={currentItem} 
+          onClose={() => setIsShareModalOpen(false)} 
+        />
+      )}
       
       {/* 1. STICKY TOP AREA: MAINTAIN APP HEADER */}
       <div className="sticky top-0 z-[90] bg-white/95 backdrop-blur-xl border-b border-gray-100">
-        {/* App Header (Always Maintained) */}
         <div className="px-4 md:px-8">
            <Header 
             searchQuery={dummySearch} 
@@ -657,7 +651,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
            />
         </div>
 
-        {/* 2. DETAIL NAVIGATION BAR: HIDDEN IF IN PRESENTATION/QUESTION GALLERY */}
+        {/* 2. DETAIL NAVIGATION BAR */}
         {(!showPresentations && !showQuestions && !showConsultations && !showNotebook) && (
           <nav className="px-4 md:px-8 py-3 flex items-center justify-between border-t border-gray-50/50">
             <button onClick={handleBack} className="flex items-center gap-2 text-[#004A74] font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 px-3 py-2 rounded-xl transition-all">
@@ -742,34 +736,29 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         )}
       </div>
 
-      {/* 3. CONTENT AREA: DYNAMIC SWITCH BETWEEN GALLERY AND DETAILS */}
+      {/* 3. CONTENT AREA */}
       <div className="flex-1 overflow-hidden flex flex-col bg-white">
         {showPresentations ? (
-          /* PRESENTATION GALLERY MODE */
           <RelatedPresentations 
             collection={currentItem} 
             onBack={() => setShowPresentations(false)} 
           />
         ) : showQuestions ? (
-          /* QUESTION BANK MODE */
           <RelatedQuestion 
             collection={currentItem}
             onBack={() => setShowQuestions(false)}
           />
         ) : showConsultations ? (
-          /* CONSULTATION GALLERY MODE */
           <ConsultationGallery 
             collection={currentItem}
             onBack={() => setShowConsultations(false)}
           />
         ) : showNotebook ? (
-          /* NOTEBOOK GALLERY MODE */
           <NotebookMain 
             collectionId={currentItem.id}
             onBackToLibrary={() => setShowNotebook(false)}
           />
         ) : (
-          /* DETAIL MODE */
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             <div className="max-w-6xl mx-auto px-5 md:px-10 py-6 space-y-4">
               
