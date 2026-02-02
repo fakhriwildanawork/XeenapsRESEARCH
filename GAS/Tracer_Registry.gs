@@ -52,8 +52,8 @@ function setupTracerDatabase() {
       const missingHeaders = targetHeaders.filter(h => !currentHeaders.includes(h));
       if (missingHeaders.length > 0) {
         const startCol = currentHeaders.length + 1;
-        pSheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
-        pSheet.getRange(1, startCol, 1, missingHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
+        rSheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
+        rSheet.getRange(1, startCol, 1, missingHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
       }
     }
 
@@ -720,7 +720,7 @@ function deleteTracerFinanceFromRegistry(id) {
     for (let i = 1; i < data.length; i++) {
       if (data[i][idIdx] === id) { 
         targetRowIndex = i + 1; 
-        targetProjectId = data[i][pIdIdx];
+        targetProjectId = data[i][pId];
         break; 
       }
     }
@@ -820,8 +820,9 @@ function getFinanceExportDataFromRegistry(projectId) {
 
 /**
  * PREMIUM GENERATOR: Produces native .xlsx or Official PDF
+ * MODIFIED: Enhanced metadata inclusion (Research Title, Authors, and Currency)
  */
-function generateFinanceExportFileFromRegistry(projectId, format) {
+function generateFinanceExportFileFromRegistry(projectId, format, currency) {
   try {
     const data = getFinanceExportDataFromRegistry(projectId);
     if (data.length === 0) return { status: 'error', message: 'No transaction data available.' };
@@ -829,16 +830,24 @@ function generateFinanceExportFileFromRegistry(projectId, format) {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
     const pSheet = ss.getSheetByName("TracerProjects");
     const pData = pSheet.getDataRange().getValues();
-    const pIdIdx = pData[0].indexOf('id');
-    const pLabelIdx = pData[0].indexOf('label');
-    const pTitleIdx = pData[0].indexOf('title');
+    const pHeaders = pData[0];
+    const pIdIdx = pHeaders.indexOf('id');
+    const pLabelIdx = pHeaders.indexOf('label');
+    const pTitleIdx = pHeaders.indexOf('title');
+    const pAuthorIdx = pHeaders.indexOf('authors');
     
     let pLabel = "Project";
     let pTitle = "Financial Ledger";
+    let pAuthors = "N/A";
     for(let i=1; i<pData.length; i++) {
        if(pData[i][pIdIdx] === projectId) {
          pLabel = pData[i][pLabelIdx];
          pTitle = pData[i][pTitleIdx] || pLabel;
+         try {
+           const authorsRaw = pData[i][pAuthorIdx];
+           const authorsArr = typeof authorsRaw === 'string' ? JSON.parse(authorsRaw) : authorsRaw;
+           pAuthors = Array.isArray(authorsArr) ? authorsArr.join(", ") : authorsRaw;
+         } catch(e) { pAuthors = pData[i][pAuthorIdx]; }
          break;
        }
     }
@@ -846,7 +855,7 @@ function generateFinanceExportFileFromRegistry(projectId, format) {
     const filename = `Ledger_${pLabel}_${new Date().toISOString().split('T')[0]}`;
     
     // FORMATTING 2D ARRAY
-    const headers = ["DateTime", "Credit (+)", "Debit (-)", "Balance", "Description", "Evidence Links"];
+    const tableHeaders = ["DateTime", "Credit (+)", "Debit (-)", "Balance", "Description", "Evidence Links"];
     const rows = data.map(d => {
        const date = new Date(d.date);
        const dateFmt = `${date.getDate().toString().padStart(2,'0')}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
@@ -857,20 +866,31 @@ function generateFinanceExportFileFromRegistry(projectId, format) {
        // EXCEL NATIVE GENERATOR
        const tempSS = SpreadsheetApp.create(filename);
        const sheet = tempSS.getSheets()[0];
-       sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold").setBackground("#004A74").setFontColor("#FFFFFF");
+       
+       // 1. PROJECT METADATA HEADER
+       sheet.getRange(1, 1).setValue("Research Title:").setFontWeight("bold").setFontColor("#666");
+       sheet.getRange(1, 2).setValue(pTitle).setFontWeight("bold").setFontSize(12).setFontColor("#004A74");
+       
+       sheet.getRange(2, 1).setValue("Author(s):").setFontWeight("bold").setFontColor("#666");
+       sheet.getRange(2, 2).setValue(pAuthors).setFontWeight("bold").setFontColor("#333");
+       
+       sheet.getRange(3, 1).setValue("Reporting Currency:").setFontWeight("bold").setFontColor("#666");
+       sheet.getRange(3, 2).setValue(currency).setFontWeight("bold").setFontColor("#004A74");
+       
+       // 2. TABLE HEADERS (Shifted to row 5)
+       sheet.getRange(5, 1, 1, tableHeaders.length).setValues([tableHeaders]).setFontWeight("bold").setBackground("#004A74").setFontColor("#FFFFFF");
+       
        if (rows.length > 0) {
-         sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+         sheet.getRange(6, 1, rows.length, tableHeaders.length).setValues(rows);
          // Format Columns B, C, D as Currency
-         sheet.getRange(2, 2, rows.length, 3).setNumberFormat("#,##0");
+         sheet.getRange(6, 2, rows.length, 3).setNumberFormat("#,##0");
        }
-       sheet.setFrozenRows(1);
-       sheet.autoResizeColumns(1, headers.length);
+       sheet.setFrozenRows(5);
+       sheet.autoResizeColumns(1, tableHeaders.length);
        
        const fileId = tempSS.getId();
        const url = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
        
-       // Note: File remains in Root. Cleaner to delete it after some time, but GAS doesn't support easy TTL.
-       // User can delete manually from Drive if needed.
        return { status: 'success', url: url };
 
     } else {
@@ -888,6 +908,12 @@ function generateFinanceExportFileFromRegistry(projectId, format) {
            .header-info p { margin: 2px 0; color: #666; font-weight: bold; font-size: 8pt; text-transform: uppercase; }
            .logo { font-weight: 900; color: ${navy}; font-size: 14pt; }
            .logo span { color: ${yellow}; }
+           
+           .meta-box { background-color: #F9FAFB; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #EEE; display: flex; flex-direction: column; gap: 5px; }
+           .meta-item { display: flex; gap: 10px; align-items: baseline; }
+           .meta-label { font-weight: 900; text-transform: uppercase; font-size: 7pt; color: #AAA; width: 120px; shrink: 0; }
+           .meta-value { font-weight: 700; color: ${navy}; font-size: 8.5pt; }
+
            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
            th { background-color: ${navy}; color: white; text-align: left; padding: 8px 10px; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 1px; border: 1px solid ${navy}; }
            td { padding: 8px 10px; border-bottom: 1px solid #EEE; vertical-align: top; border-right: 1px solid #F5F5F5; border-left: 1px solid #F5F5F5; }
@@ -904,10 +930,26 @@ function generateFinanceExportFileFromRegistry(projectId, format) {
          <div class="header">
             <div class="header-info">
                <h1>Financial Ledger Report</h1>
-               <p>${pTitle}</p>
+               <p>Xeenaps Premium Research Tracer</p>
             </div>
             <div class="logo">XEENAPS<span>.</span></div>
          </div>
+
+         <div class="meta-box">
+            <div class="meta-item">
+               <span class="meta-label">Research Title</span>
+               <span class="meta-value" style="font-size: 10pt;">${pTitle}</span>
+            </div>
+            <div class="meta-item">
+               <span class="meta-label">Author Team</span>
+               <span class="meta-value">${pAuthors}</span>
+            </div>
+            <div class="meta-item">
+               <span class="meta-label">Base Currency</span>
+               <span class="meta-value" style="color: ${yellow}; background: ${navy}; padding: 2px 8px; border-radius: 4px;">${currency}</span>
+            </div>
+         </div>
+
          <table>
            <thead>
              <tr>

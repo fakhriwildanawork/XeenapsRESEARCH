@@ -237,11 +237,12 @@ export const fetchFinanceExportData = async (projectId: string): Promise<any[]> 
 
 /**
  * NEW: Premium Export Service (Excel/PDF)
+ * MODIFIED: Added currency parameter to sync document labels with UI selection.
  */
-export const exportFinanceLedger = async (projectId: string, format: 'xlsx' | 'pdf'): Promise<string | null> => {
+export const exportFinanceLedger = async (projectId: string, format: 'xlsx' | 'pdf', currency: string): Promise<string | null> => {
   if (!GAS_WEB_APP_URL) return null;
   try {
-    const url = `${GAS_WEB_APP_URL}?action=generateFinanceExport&projectId=${projectId}&format=${format}`;
+    const url = `${GAS_WEB_APP_URL}?action=generateFinanceExport&projectId=${projectId}&format=${format}&currency=${encodeURIComponent(currency)}`;
     const res = await fetch(url);
     const result = await res.json();
     return result.status === 'success' ? result.url : null;

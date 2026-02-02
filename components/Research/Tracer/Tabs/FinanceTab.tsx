@@ -178,7 +178,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     showXeenapsToast('info', `Architecting ${format.toUpperCase()} Document...`);
     
     try {
-      const downloadUrl = await exportFinanceLedger(projectId, format);
+      const downloadUrl = await exportFinanceLedger(projectId, format, currency.code);
       if (downloadUrl) {
         window.open(downloadUrl, '_blank');
         showXeenapsToast('success', 'Document Synchronized');
