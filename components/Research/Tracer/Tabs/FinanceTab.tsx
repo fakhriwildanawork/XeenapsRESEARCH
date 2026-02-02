@@ -4,21 +4,15 @@ import { fetchTracerFinance, deleteTracerFinance } from '../../../../services/Tr
 import { 
   Plus, 
   Trash2, 
-  Search, 
   TrendingUp, 
   TrendingDown, 
   Wallet, 
-  Filter, 
   X,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpCircle,
-  ArrowDownCircle,
   Clock,
-  ExternalLink,
   Banknote,
-  // Added missing Eye icon import
-  Eye
+  Eye,
+  Calendar,
+  Filter
 } from 'lucide-react';
 import { SmartSearchBox } from '../../../Common/SearchComponents';
 import { 
@@ -29,8 +23,7 @@ import {
   StandardTd,
   StandardTableFooter
 } from '../../../Common/TableComponents';
-// Added missing TableSkeletonRows import
-import { CardGridSkeleton, TableSkeletonRows } from '../../../Common/LoadingComponents';
+import { TableSkeletonRows } from '../../../Common/LoadingComponents';
 import { showXeenapsToast } from '../../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
 import FinanceFormModal from '../Modals/FinanceFormModal';
@@ -53,9 +46,11 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   
-  // Filters
+  // Filters (Cumulative Logic)
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   
@@ -65,6 +60,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Fetch uses appliedSearch AND date range (Cumulative)
       const data = await fetchTracerFinance(projectId, startDate, endDate, appliedSearch);
       setItems(data);
     } finally {
@@ -74,8 +70,10 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const handleSearch = () => {
+  const handleApplyFilters = () => {
     setAppliedSearch(localSearch);
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate);
   };
 
   const formatMoney = (val: number) => {
@@ -97,6 +95,13 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     }), { credit: 0, debit: 0, balance: 0 });
   }, [items]);
 
+  // Find latest transaction date for validation
+  const latestDate = useMemo(() => {
+    if (items.length === 0) return null;
+    const sorted = [...items].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return sorted[0].date;
+  }, [items]);
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
@@ -106,7 +111,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
         showXeenapsToast('success', 'Transaction removed from ledger');
         loadData();
       } else {
-        showXeenapsToast('error', result.message || 'Balance Integrity Guard Blocked removal');
+        showXeenapsToast('error', result.message || 'Integrity Guard Blocked Removal');
       }
     }
   };
@@ -114,13 +119,13 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700 pb-20">
       
-      {/* 1. TOP HEADER: CURRENCY & BALANCE CARDS */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-         {/* Currency Selector */}
-         <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between">
-            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Currency Matrix</h4>
+      {/* 1. TOP HEADER: ADAPTIVE CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+         {/* Currency Matrix - Smaller */}
+         <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between">
+            <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Currency Matrix</h4>
             <select 
-              className="w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-xs font-black text-[#004A74] outline-none cursor-pointer focus:ring-4 focus:ring-[#004A74]/5"
+              className="w-full bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl text-[10px] font-black text-[#004A74] outline-none cursor-pointer"
               value={currency.code}
               onChange={(e) => setCurrency(CURRENCIES.find(c => c.code === e.target.value)!)}
             >
@@ -128,71 +133,72 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
             </select>
          </div>
 
-         {/* Total Credit */}
-         <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-50 text-green-500 rounded-2xl flex items-center justify-center shrink-0">
-               <TrendingUp size={24} />
-            </div>
-            <div>
+         {/* Total Income */}
+         <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
+            <div className="flex items-center justify-between relative z-10">
                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Income</p>
-               <h3 className="text-lg font-black text-green-600">{formatMoney(totals.credit)}</h3>
+               <TrendingUp size={16} className="text-green-500 opacity-30" />
             </div>
+            <h3 className="text-xl font-black text-green-600 truncate whitespace-nowrap mt-2 relative z-10">{formatMoney(totals.credit)}</h3>
+            <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-green-50 rounded-full opacity-50" />
          </div>
 
-         {/* Total Debit */}
-         <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center shrink-0">
-               <TrendingDown size={24} />
-            </div>
-            <div>
+         {/* Total Expense */}
+         <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
+            <div className="flex items-center justify-between relative z-10">
                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Expense</p>
-               <h3 className="text-lg font-black text-red-600">{formatMoney(totals.debit)}</h3>
+               <TrendingDown size={16} className="text-red-500 opacity-30" />
             </div>
+            <h3 className="text-xl font-black text-red-600 truncate whitespace-nowrap mt-2 relative z-10">{formatMoney(totals.debit)}</h3>
+            <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-red-50 rounded-full opacity-50" />
          </div>
 
-         {/* Balance */}
-         <div className="bg-[#004A74] p-6 rounded-[2.5rem] shadow-xl relative overflow-hidden flex items-center gap-4">
+         {/* Total Balance */}
+         <div className="bg-[#004A74] p-6 rounded-[2rem] shadow-xl relative overflow-hidden flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 -translate-y-16 translate-x-16 rounded-full" />
-            <div className="w-12 h-12 bg-[#FED400] text-[#004A74] rounded-2xl flex items-center justify-center shrink-0 shadow-lg relative z-10">
-               <Wallet size={24} />
-            </div>
-            <div className="relative z-10">
+            <div className="flex items-center justify-between relative z-10">
                <p className="text-[9px] font-black text-[#FED400] uppercase tracking-widest">Total Balance</p>
-               <h3 className="text-xl font-black text-white">{formatMoney(totals.balance)}</h3>
+               <Wallet size={16} className="text-[#FED400] opacity-40" />
             </div>
+            <h3 className="text-2xl font-black text-white truncate whitespace-nowrap mt-2 relative z-10">{formatMoney(totals.balance)}</h3>
          </div>
       </div>
 
-      {/* 2. FILTER & ACTIONS BAR */}
-      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-         <div className="flex flex-col md:flex-row gap-3 w-full lg:max-w-4xl flex-1">
+      {/* 2. FILTER & ACTIONS BAR (Cumulative) */}
+      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-white p-4 rounded-[2.5rem] border border-gray-100 shadow-sm">
+         <div className="flex flex-col md:flex-row gap-3 w-full lg:max-w-5xl flex-1">
             <SmartSearchBox 
               value={localSearch} 
               onChange={setLocalSearch} 
-              onSearch={handleSearch} 
-              phrases={["Search description...", "Search expenses...", "Find income..."]}
+              onSearch={handleApplyFilters} 
+              phrases={["Search ledger narrative...", "Find specific transaction..."]}
+              className="w-full lg:max-w-md"
             />
-            <div className="flex flex-col md:flex-row items-center gap-2 bg-gray-100 p-1 rounded-2xl border border-gray-200">
-               <div className="flex items-center gap-2 px-3 py-1.5 md:py-0">
+            
+            <div className="flex flex-col items-stretch md:flex-row md:items-center gap-2 bg-gray-100/50 p-1 rounded-2xl border border-gray-200">
+               <div className="flex items-center gap-2 px-3 py-2 md:py-0">
                   <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">From</span>
-                  <input type="date" className="bg-transparent text-[10px] font-bold text-[#004A74] outline-none" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                  <input type="date" className="bg-transparent text-[10px] font-bold text-[#004A74] outline-none" value={tempStartDate} onChange={e => setTempStartDate(e.target.value)} />
                </div>
                <div className="hidden md:block w-px h-4 bg-gray-300" />
-               <div className="flex items-center gap-2 px-3 py-1.5 md:py-0">
+               <div className="flex items-center gap-2 px-3 py-2 md:py-0">
                   <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">To</span>
-                  <input type="date" className="bg-transparent text-[10px] font-bold text-[#004A74] outline-none" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                  <input type="date" className="bg-transparent text-[10px] font-bold text-[#004A74] outline-none" value={tempEndDate} onChange={e => setTempEndDate(e.target.value)} />
                </div>
+               {(tempStartDate || tempEndDate) && (
+                 <button onClick={handleApplyFilters} className="px-4 py-2 bg-[#004A74] text-[#FED400] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md hover:scale-105 transition-all">Apply Range</button>
+               )}
                {(startDate || endDate) && (
-                 <button onClick={() => { setStartDate(''); setEndDate(''); }} className="p-2 text-red-400 hover:bg-white rounded-lg transition-all"><X size={14} /></button>
+                 <button onClick={() => { setTempStartDate(''); setTempEndDate(''); setStartDate(''); setEndDate(''); }} className="p-2 text-red-500 hover:bg-white rounded-lg transition-all"><X size={14} /></button>
                )}
             </div>
          </div>
          
          <button 
            onClick={() => { setViewingItem(undefined); setIsFormOpen(true); }}
-           className="w-full lg:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:scale-105 active:scale-95 transition-all"
+           className="w-full lg:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:scale-105 active:scale-95 transition-all"
          >
-           <Plus size={18} /> Add Transaction
+           <Plus size={18} /> Add Entry
          </button>
       </div>
 
@@ -202,23 +208,22 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
           <StandardTableWrapper>
              <thead>
                 <tr>
-                   <StandardTh width="180px">Timestamp</StandardTh>
+                   <StandardTh width="160px">Timestamp</StandardTh>
                    <StandardTh width="180px">Credit (+)</StandardTh>
                    <StandardTh width="180px">Debit (-)</StandardTh>
-                   <StandardTh width="200px">Current Balance</StandardTh>
-                   <StandardTh width="300px">Description / Ledger Narrative</StandardTh>
+                   <StandardTh width="200px">Ledger Balance</StandardTh>
+                   <StandardTh width="400px">Narrative / Description</StandardTh>
                    <StandardTh width="100px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                 </tr>
              </thead>
              <tbody className="divide-y divide-gray-50">
                 {isLoading ? (
-                  /* Fixed: Line 212 - TableSkeletonRows is now imported and usable */
                   <TableSkeletonRows count={5} />
                 ) : items.length === 0 ? (
-                  <tr><td colSpan={6} className="py-32 text-center opacity-30"><Banknote size={64} className="mx-auto mb-4 text-[#004A74]" /><p className="text-[10px] font-black uppercase tracking-widest">Financial Ledger Empty</p></td></tr>
+                  <tr><td colSpan={6} className="py-32 text-center opacity-30"><Banknote size={64} className="mx-auto mb-4 text-[#004A74]" /><p className="text-[10px] font-black uppercase tracking-widest">Financial Ledger Null</p></td></tr>
                 ) : (
                   [...items].reverse().map((item, idx) => {
-                     const isLast = idx === 0; // Sejak kita reverse, index 0 adalah row terakhir/terbaru
+                     const isLastEntry = idx === 0; 
                      return (
                       <StandardTr key={item.id} onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="cursor-pointer">
                          <StandardTd className="text-[10px] font-mono font-bold text-gray-400">
@@ -238,15 +243,14 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                          </StandardTd>
                          <StandardTd>
                             <div className="flex items-center gap-2">
-                               <span className="text-[11px] font-bold text-gray-600 line-clamp-1">{item.description}</span>
-                               {item.attachmentsJsonId && <div className="w-2 h-2 rounded-full bg-[#FED400] shrink-0" title="Has Attachments" />}
+                               <span className="text-[11px] font-bold text-gray-600 truncate max-w-[380px]">{item.description}</span>
+                               {item.attachmentsJsonId && <div className="w-1.5 h-1.5 rounded-full bg-[#FED400] shrink-0" />}
                             </div>
                          </StandardTd>
                          <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
                             <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
-                               {/* Fixed: Line 243 - Eye is now imported from lucide-react */ }
                                <button onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="p-2 text-blue-500 hover:bg-white rounded-lg transition-all"><Eye size={16} /></button>
-                               {isLast && (
+                               {isLastEntry && (
                                  <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 hover:bg-white rounded-lg transition-all"><Trash2 size={16} /></button>
                                )}
                             </div>
@@ -265,6 +269,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
           projectId={projectId} 
           item={viewingItem} 
           currencySymbol={currency.symbol}
+          latestDate={latestDate}
           onClose={() => setIsFormOpen(false)} 
           onSave={() => { setIsFormOpen(false); loadData(); }} 
         />

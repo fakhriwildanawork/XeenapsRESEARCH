@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TracerFinanceItem, TracerFinanceContent, TracerFinanceAttachment } from '../../../../types';
 import { saveTracerFinance } from '../../../../services/TracerService';
-// Fixed: fetchFileContent is exported from gasService, not TracerService
 import { fetchFileContent } from '../../../../services/gasService';
 import { uploadVaultFile, deleteRemoteFile } from '../../../../services/ActivityService';
 import { 
@@ -11,33 +10,29 @@ import {
   Plus, 
   Trash2, 
   Loader2, 
-  Calendar, 
   Clock, 
   FileText, 
   Globe, 
   FileIcon, 
   Eye, 
-  ArrowRightLeft,
-  DollarSign,
-  PlusCircle,
-  ExternalLink,
-  Image as ImageIcon,
-  // Added missing icons
   ArrowUpCircle,
-  ArrowDownCircle
+  ArrowDownCircle,
+  PlusCircle
 } from 'lucide-react';
 import { FormField } from '../../../Common/FormComponents';
 import { showXeenapsToast } from '../../../../utils/toastUtils';
+import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
 
 interface FinanceFormModalProps {
   projectId: string;
   item?: TracerFinanceItem;
   currencySymbol: string;
+  latestDate: string | null;
   onClose: () => void;
   onSave: () => void;
 }
 
-const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, currencySymbol, onClose, onSave }) => {
+const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, currencySymbol, latestDate, onClose, onSave }) => {
   const [isCredit, setIsCredit] = useState(item ? (item.credit > 0) : true);
   const [amountStr, setAmountStr] = useState(item ? (item.credit || item.debit).toString() : '0');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +42,7 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
   const [formData, setFormData] = useState<TracerFinanceItem>(item || {
     id: crypto.randomUUID(),
     projectId,
-    date: new Date().toISOString(),
+    date: new Date().toISOString(), // Initial value NOW()
     credit: 0,
     debit: 0,
     balance: 0,
@@ -59,6 +54,8 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
   });
 
   const [content, setContent] = useState<TracerFinanceContent>({ attachments: [] });
+  // Track newly uploaded files for cleanup if not saved
+  const [newlyUploadedFiles, setNewlyUploadedFiles] = useState<{fileId: string, nodeUrl: string}[]>([]);
 
   useEffect(() => {
     if (item?.attachmentsJsonId) {
@@ -94,10 +91,11 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
       const res = await uploadVaultFile(file);
       if (res) {
+        setNewlyUploadedFiles(prev => [...prev, { fileId: res.fileId, nodeUrl: res.nodeUrl }]);
         setContent(prev => ({
           attachments: prev.attachments.map(at => 
             at.fileId === `pending_${tempId}` 
-              ? { ...at, fileId: res.fileId, nodeUrl: res.nodeUrl, url: `https://lh3.googleusercontent.com/d/${res.fileId}` } 
+              ? { ...at, fileId: res.fileId, nodeUrl: res.nodeUrl, url: res.fileId } 
               : at
           )
         }));
@@ -111,15 +109,35 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
   const handleRemoveAttachment = async (idx: number) => {
     const target = content.attachments[idx];
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (!confirmed) return;
+
     setContent(prev => ({ attachments: prev.attachments.filter((_, i) => i !== idx) }));
     if (target.type === 'FILE' && target.fileId && target.nodeUrl && !target.fileId.startsWith('pending_')) {
       await deleteRemoteFile(target.fileId, target.nodeUrl);
+      setNewlyUploadedFiles(prev => prev.filter(f => f.fileId !== target.fileId));
     }
+  };
+
+  const handleClose = async () => {
+    if (!item && newlyUploadedFiles.length > 0) {
+      // Cleanup orphan files uploaded but not synchronized
+      for (const f of newlyUploadedFiles) {
+        await deleteRemoteFile(f.fileId, f.nodeUrl);
+      }
+    }
+    onClose();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.description.trim()) return;
+
+    // VALIDATION: Date must be newer than latest entry
+    if (!item && latestDate && new Date(formData.date) < new Date(latestDate)) {
+       showXeenapsToast('error', 'Protocol Violation: Date must be newer than latest session');
+       return;
+    }
 
     setIsSubmitting(true);
     const amount = parseInt(amountStr) || 0;
@@ -150,39 +168,28 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
            <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><Banknote size={24} /></div>
               <div>
-                 <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight">{isViewOnly ? 'Transaction View' : 'Add Entry'}</h3>
-                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Financial Ledger Protocol</p>
+                 <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight">{isViewOnly ? 'Transaction Detail' : 'Add Ledger Entry'}</h3>
+                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Financial Audit Protocol</p>
               </div>
            </div>
-           <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={28} /></button>
+           <button onClick={handleClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={28} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar p-8 md:p-10 space-y-10">
            
-           {/* CREDIT/DEBIT TOGGLE */}
            {!isViewOnly && (
              <div className="flex bg-gray-100 p-1.5 rounded-[1.8rem] border border-gray-200">
-                {/* Fixed: Line 165 - ArrowUpCircle is now imported */}
-                <button 
-                  type="button" 
-                  onClick={() => setIsCredit(true)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${isCredit ? 'bg-green-500 text-white shadow-lg' : 'text-gray-400 hover:text-green-600'}`}
-                >
+                <button type="button" onClick={() => setIsCredit(true)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${isCredit ? 'bg-green-500 text-white shadow-lg' : 'text-gray-400 hover:text-green-600'}`}>
                    <ArrowUpCircle size={14} /> Credit (Income)
                 </button>
-                {/* Fixed: Line 172 - ArrowDownCircle is now imported */}
-                <button 
-                  type="button" 
-                  onClick={() => setIsCredit(false)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${!isCredit ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-red-600'}`}
-                >
+                <button type="button" onClick={() => setIsCredit(false)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${!isCredit ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-red-600'}`}>
                    <ArrowDownCircle size={14} /> Debit (Expense)
                 </button>
              </div>
            )}
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-              <FormField label="Transaction Amount" required>
+              <FormField label="Nominal Value" required>
                  <div className="relative group">
                     <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300 group-focus-within:text-[#004A74]">{currencySymbol}</span>
                     <input 
@@ -194,28 +201,27 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
                  </div>
               </FormField>
 
-              <FormField label="Transaction Time" required>
+              <FormField label="Timestamp Protocol" required>
                  <div className="flex gap-2">
-                    <input type="date" className="flex-1 bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-xs font-bold" value={formData.date.substring(0,10)} onChange={e => setFormData({...formData, date: e.target.value + 'T' + formData.date.substring(11)})} disabled={isViewOnly} />
-                    <input type="time" className="w-24 bg-gray-50 border border-gray-200 px-2 py-3 rounded-xl text-xs font-bold text-center" value={formData.date.substring(11,16)} onChange={e => setFormData({...formData, date: formData.date.substring(0,10) + 'T' + e.target.value})} disabled={isViewOnly} />
+                    <input type="date" className="flex-1 bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[10px] font-black text-[#004A74]" value={formData.date.substring(0,10)} onChange={e => setFormData({...formData, date: e.target.value + 'T' + formData.date.substring(11)})} disabled={isViewOnly} />
+                    <input type="time" className="w-24 bg-gray-50 border border-gray-200 px-2 py-3 rounded-xl text-[10px] font-black text-[#004A74] text-center" value={formData.date.substring(11,16)} onChange={e => setFormData({...formData, date: formData.date.substring(0,10) + 'T' + e.target.value})} disabled={isViewOnly} />
                  </div>
               </FormField>
            </div>
 
-           <FormField label="Entry Description (English)" required>
+           <FormField label="Narrative Description" required>
               <textarea 
                 className={`w-full px-6 py-5 bg-gray-50 border border-gray-200 rounded-[2rem] text-sm font-bold text-[#004A74] outline-none focus:bg-white transition-all min-h-[100px] resize-none ${isViewOnly ? 'pointer-events-none opacity-80' : ''}`}
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
-                placeholder="WHAT IS THIS TRANSACTION FOR?"
+                placeholder="DESCRIBE TRANSACTION PURPOSE..."
                 disabled={isViewOnly}
               />
            </FormField>
 
-           {/* ATTACHMENTS */}
            <div className="space-y-6 pt-6 border-t border-gray-100">
               <div className="flex items-center justify-between px-2">
-                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Documentation Evidence</h4>
+                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Supporting Evidence</h4>
                  {!isViewOnly && (
                    <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-[#004A74] rounded-xl text-[9px] font-black uppercase border border-gray-200 hover:bg-white shadow-sm transition-all"><Plus size={14} /> Attach File</button>
                  )}
@@ -226,23 +232,26 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
               ) : content.attachments.length === 0 ? (
                 <div className="py-10 text-center border-2 border-dashed border-gray-100 rounded-[2rem] opacity-20">
                    <PlusCircle size={40} className="mx-auto mb-2 text-gray-300" />
-                   <p className="text-[9px] font-black uppercase">No evidence attached</p>
+                   <p className="text-[9px] font-black uppercase">No Documentation Attached</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    {content.attachments.map((at, idx) => {
                       const isPending = at.fileId?.startsWith('pending_');
-                      const isImage = at.mimeType?.startsWith('image/') || at.url?.includes('lh3.googleusercontent');
+                      const isImage = at.mimeType?.startsWith('image/');
+                      // Use LH3 for images, standard Drive for non-images
+                      const viewUrl = at.fileId ? (isImage ? `https://lh3.googleusercontent.com/d/${at.fileId}` : `https://drive.google.com/file/d/${at.fileId}/view`) : at.url;
+
                       return (
                         <div key={idx} className="p-3 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3 relative group">
                            <div className="w-10 h-10 bg-white rounded-xl overflow-hidden flex items-center justify-center shrink-0 border border-gray-100">
-                              {isImage ? <img src={at.url} className="w-full h-full object-cover" /> : at.type === 'LINK' ? <Globe size={16} className="text-gray-300" /> : <FileIcon size={16} className="text-gray-300" />}
+                              {isImage ? <img src={viewUrl} className="w-full h-full object-cover" /> : at.type === 'LINK' ? <Globe size={16} className="text-gray-300" /> : <FileIcon size={16} className="text-gray-300" />}
                               {isPending && <div className="absolute inset-0 bg-white/60 flex items-center justify-center"><Loader2 size={12} className="animate-spin text-[#004A74]" /></div>}
                            </div>
                            <p className="text-[9px] font-bold text-[#004A74] uppercase truncate flex-1">{at.label}</p>
                            <div className="flex items-center gap-1">
-                              {!isPending && (
-                                <button type="button" onClick={() => window.open(at.url, '_blank')} className="p-1.5 text-blue-500 hover:bg-white rounded-lg transition-all"><Eye size={14} /></button>
+                              {!isPending && viewUrl && (
+                                <button type="button" onClick={() => window.open(viewUrl, '_blank')} className="p-1.5 text-blue-500 hover:bg-white rounded-lg transition-all"><Eye size={14} /></button>
                               )}
                               {!isViewOnly && (
                                 <button type="button" onClick={() => handleRemoveAttachment(idx)} className="p-1.5 text-red-300 hover:text-red-500 rounded-lg transition-all"><Trash2 size={14} /></button>
@@ -257,18 +266,14 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
            {!isViewOnly && (
              <div className="pt-8">
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting || !formData.description.trim()}
-                  className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-[#004A74]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 ${isSubmitting ? 'opacity-50 grayscale' : ''}`}
-                >
+                <button type="submit" disabled={isSubmitting || !formData.description.trim()} className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-[#004A74]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 ${isSubmitting ? 'opacity-50 grayscale' : ''}`}>
                    {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                   Synchronize Ledger Entry
+                   Commit Ledger Entry
                 </button>
              </div>
            )}
 
-           <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" multiple />
+           <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
         </form>
       </div>
     </div>
