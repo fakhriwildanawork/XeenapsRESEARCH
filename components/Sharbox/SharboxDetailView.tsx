@@ -247,6 +247,13 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
             </button>
           )}
           <button 
+            onClick={handleViewCollection}
+            className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-full transition-all"
+            title="View Source Document"
+          >
+            <EyeIcon className="w-8 h-8" />
+          </button>
+          <button 
             onClick={handleDelete}
             className="p-2 text-red-300 hover:bg-red-50 hover:text-red-500 rounded-full transition-all"
             title="Delete Record"
@@ -327,15 +334,6 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
 
           {/* 3. DOCUMENT METADATA BLOCK */}
           <section className="bg-gray-50/50 p-8 md:p-12 rounded-[3rem] border border-gray-100 space-y-6 relative group">
-            <div className="absolute top-8 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button 
-                onClick={handleViewCollection}
-                className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all"
-              >
-                <EyeIcon className="w-4 h-4 stroke-[3]" /> View Source Document
-              </button>
-            </div>
-
             <div className="flex flex-wrap gap-1.5">
               <span className="px-3 py-1 bg-[#004A74] text-white text-[8px] font-black uppercase tracking-widest rounded-full">{currentItem.type}</span>
               {currentItem.category && <span className="px-3 py-1 bg-[#004A74]/10 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">{currentItem.category}</span>}
