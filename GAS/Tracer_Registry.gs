@@ -751,3 +751,67 @@ function deleteTracerFinanceFromRegistry(id) {
     return { status: 'success' };
   } catch (e) { return { status: 'error', message: e.toString() }; }
 }
+
+/**
+ * EXPORT HANDLER: Stitches finance data with attachment URLs
+ */
+function getFinanceExportDataFromRegistry(projectId) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
+    const sheet = ss.getSheetByName("TracerFinance");
+    if (!sheet) return [];
+    
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const pIdIdx = headers.indexOf('projectId');
+    const dateIdx = headers.indexOf('date');
+    const credIdx = headers.indexOf('credit');
+    const debIdx = headers.indexOf('debit');
+    const descIdx = headers.indexOf('description');
+    const attIdIdx = headers.indexOf('attachmentsJsonId');
+    const nodeIdx = headers.indexOf('storageNodeUrl');
+
+    const filtered = data.slice(1).filter(r => r[pIdIdx] === projectId);
+    
+    const myUrl = ScriptApp.getService().getUrl();
+
+    return filtered.map(row => {
+      const date = row[dateIdx];
+      const dateStr = (date instanceof Date) ? date.toISOString() : date;
+      
+      let links = [];
+      const attId = row[attIdIdx];
+      const nodeUrl = row[nodeIdx];
+
+      if (attId) {
+        try {
+          let contentRaw = "";
+          const isLocal = !nodeUrl || nodeUrl === "" || nodeUrl === myUrl;
+          if (isLocal) {
+            contentRaw = DriveApp.getFileById(attId).getBlob().getDataAsString();
+          } else {
+            const res = UrlFetchApp.fetch(nodeUrl + (nodeUrl.includes('?') ? '&' : '?') + "action=getFileContent&fileId=" + attId);
+            const resJson = JSON.parse(res.getContentText());
+            contentRaw = JSON.parse(resJson.content);
+          }
+          const contentObj = typeof contentRaw === 'string' ? JSON.parse(contentRaw) : contentRaw;
+          const atts = contentObj.attachments || [];
+          links = atts.map(a => a.url || (a.fileId ? `https://drive.google.com/file/d/${a.fileId}/view` : ''));
+        } catch (e) {
+          console.warn("Export attachment fetch failed for row: " + e.toString());
+        }
+      }
+
+      return {
+        date: dateStr,
+        credit: row[credIdx] || 0,
+        debit: row[debIdx] || 0,
+        description: row[descIdx] || '',
+        links: links.filter(Boolean).join(" | ")
+      };
+    }).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  } catch (e) {
+    console.error("getFinanceExportData Error: " + e.toString());
+    return [];
+  }
+}

@@ -223,6 +223,18 @@ export const fetchTracerFinance = async (projectId: string, startDate = "", endD
   }
 };
 
+export const fetchFinanceExportData = async (projectId: string): Promise<any[]> => {
+  if (!GAS_WEB_APP_URL) return [];
+  try {
+    const url = `${GAS_WEB_APP_URL}?action=getFinanceExportData&projectId=${projectId}`;
+    const res = await fetch(url);
+    const result = await res.json();
+    return result.status === 'success' ? result.data : [];
+  } catch (e) {
+    return [];
+  }
+};
+
 export const saveTracerFinance = async (item: TracerFinanceItem, content: TracerFinanceContent): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
   try {

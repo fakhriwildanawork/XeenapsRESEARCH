@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { TracerFinanceItem } from '../../../../types';
-import { fetchTracerFinance, deleteTracerFinance } from '../../../../services/TracerService';
+import { fetchTracerFinance, deleteTracerFinance, fetchFinanceExportData } from '../../../../services/TracerService';
 import { 
   Plus, 
   Trash2, 
@@ -12,7 +12,9 @@ import {
   Banknote,
   Eye,
   Calendar,
-  Filter
+  Filter,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { SmartSearchBox } from '../../../Common/SearchComponents';
 import { 
@@ -25,6 +27,7 @@ import {
 } from '../../../Common/TableComponents';
 import { TableSkeletonRows } from '../../../Common/LoadingComponents';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
+import { showXeenapsToast } from '../../../../utils/toastUtils';
 import FinanceFormModal from '../Modals/FinanceFormModal';
 import { FormDropdown } from '../../../Common/FormComponents';
 
@@ -60,6 +63,7 @@ const CURRENCIES = [
 const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   const [items, setItems] = useState<TracerFinanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   
   // Filters (Cumulative Logic)
@@ -151,6 +155,45 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     }
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const data = await fetchFinanceExportData(projectId);
+      if (!data || data.length === 0) {
+        showXeenapsToast('info', 'No transaction data available for export.');
+        return;
+      }
+
+      const csvHeaders = ["Waktu", "Credit (+)", "Debit (-)", "Narasi / Deskripsi", "Link Bukti (Evidence)"];
+      const csvRows = data.map(row => {
+        const dateFormatted = new Date(row.date).toLocaleString('id-ID');
+        return [
+          `"${dateFormatted}"`,
+          row.credit,
+          row.debit,
+          `"${row.description.replace(/"/g, '""')}"`,
+          `"${row.links.replace(/"/g, '""')}"`
+        ].join(",");
+      });
+
+      const csvContent = [csvHeaders.join(","), ...csvRows].join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Ledger_${projectId}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showXeenapsToast('success', 'Financial Ledger Exported');
+    } catch (err) {
+      showXeenapsToast('error', 'Export Engine Failure');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const currencyOptions = useMemo(() => CURRENCIES.map(c => `${c.code} (${c.symbol})`), []);
   const currentCurrencyLabel = `${currency.code} (${currency.symbol})`;
 
@@ -233,72 +276,83 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
             </div>
          </div>
          
-         <button 
-           onClick={() => { setViewingItem(undefined); setIsFormOpen(true); }}
-           className="w-full lg:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:scale-105 active:scale-95 transition-all"
-         >
-           <Plus size={18} /> Add Entry
-         </button>
+         <div className="flex items-center gap-3 w-full lg:w-auto">
+            <button 
+              onClick={handleExport}
+              disabled={isExporting || items.length === 0}
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-white border border-gray-200 text-[#004A74] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-sm hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} Export CSV
+            </button>
+            <button 
+              onClick={() => { setViewingItem(undefined); setIsFormOpen(true); }}
+              className="flex-[2] lg:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:scale-105 active:scale-95 transition-all"
+            >
+              <Plus size={18} /> Add Entry
+            </button>
+         </div>
       </div>
 
       {/* 3. TABLE LEDGER */}
       <div className="flex-1">
         <StandardTableContainer>
           <StandardTableWrapper>
-             <thead className="sticky top-0 z-20">
-                <tr>
-                   <StandardTh width="160px">Timestamp</StandardTh>
-                   <StandardTh width="180px">Credit (+)</StandardTh>
-                   <StandardTh width="180px">Debit (-)</StandardTh>
-                   <StandardTh width="200px">Ledger Balance</StandardTh>
-                   <StandardTh width="400px" className="min-w-[400px] max-w-[400px] text-left">Narrative / Description</StandardTh>
-                   <StandardTh width="100px" className="sticky right-0 bg-gray-50">Action</StandardTh>
-                </tr>
-             </thead>
-             <tbody className="divide-y divide-gray-50">
-                {isLoading ? (
-                  <TableSkeletonRows count={5} />
-                ) : items.length === 0 ? (
-                  <tr><td colSpan={6} className="py-32 text-center opacity-30"><Banknote size={64} className="mx-auto mb-4 text-[#004A74]" /><p className="text-[10px] font-black uppercase tracking-widest">Financial Ledger Null</p></td></tr>
-                ) : (
-                  [...items].reverse().map((item, idx) => {
-                     const isLastEntry = idx === 0; 
-                     return (
-                      <StandardTr key={item.id} onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="cursor-pointer">
-                         <StandardTd className="text-[10px] font-mono font-bold text-gray-400">
-                            <div className="flex items-center gap-2">
-                               <Clock size={12} className="text-gray-200" />
-                               {formatDisplayTime(item.date)}
-                            </div>
-                         </StandardTd>
-                         <StandardTd className="text-center font-black text-green-600">
-                            {item.credit > 0 ? `+ ${formatMoney(item.credit)}` : '-'}
-                         </StandardTd>
-                         <StandardTd className="text-center font-black text-red-500">
-                            {item.debit > 0 ? `- ${formatMoney(item.debit)}` : '-'}
-                         </StandardTd>
-                         <StandardTd className="text-center font-black text-[#004A74] bg-gray-50/50">
-                            {formatMoney(item.balance)}
-                         </StandardTd>
-                         <StandardTd className="min-w-[400px] max-w-[400px] w-[400px] overflow-hidden">
-                            <div className="flex items-center gap-2 min-w-0 w-full">
-                               <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap block flex-1 min-w-0">{item.description}</span>
-                               {item.attachmentsJsonId && <div className="w-1.5 h-1.5 rounded-full bg-[#FED400] shrink-0" />}
-                            </div>
-                         </StandardTd>
-                         <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
-                            <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
-                               <button onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="p-2 text-blue-500 hover:bg-white rounded-lg transition-all"><Eye size={16} /></button>
-                               {isLastEntry && (
-                                 <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 hover:bg-white rounded-lg transition-all"><Trash2 size={16} /></button>
-                               )}
-                            </div>
-                         </StandardTd>
-                      </StandardTr>
-                     );
-                  })
-                )}
-             </tbody>
+            <table className="w-full text-left border-separate border-spacing-0 min-w-[1200px] table-fixed">
+               <thead className="sticky top-0 z-20">
+                  <tr>
+                     <StandardTh width="160px">Timestamp</StandardTh>
+                     <StandardTh width="180px">Credit (+)</StandardTh>
+                     <StandardTh width="180px">Debit (-)</StandardTh>
+                     <StandardTh width="200px">Ledger Balance</StandardTh>
+                     <StandardTh width="400px" className="text-left">Narrative / Description</StandardTh>
+                     <StandardTh width="100px" className="sticky right-0 bg-gray-50">Action</StandardTh>
+                  </tr>
+               </thead>
+               <tbody className="divide-y divide-gray-50">
+                  {isLoading ? (
+                    <TableSkeletonRows count={5} />
+                  ) : items.length === 0 ? (
+                    <tr><td colSpan={6} className="py-32 text-center opacity-30"><Banknote size={64} className="mx-auto mb-4 text-[#004A74]" /><p className="text-[10px] font-black uppercase tracking-widest">Financial Ledger Null</p></td></tr>
+                  ) : (
+                    [...items].reverse().map((item, idx) => {
+                       const isLastEntry = idx === 0; 
+                       return (
+                        <StandardTr key={item.id} onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="cursor-pointer">
+                           <StandardTd className="text-[10px] font-mono font-bold text-gray-400">
+                              <div className="flex items-center gap-2">
+                                 <Clock size={12} className="text-gray-200" />
+                                 {formatDisplayTime(item.date)}
+                              </div>
+                           </StandardTd>
+                           <StandardTd className="text-center font-black text-green-600">
+                              {item.credit > 0 ? `+ ${formatMoney(item.credit)}` : '-'}
+                           </StandardTd>
+                           <StandardTd className="text-center font-black text-red-500">
+                              {item.debit > 0 ? `- ${formatMoney(item.debit)}` : '-'}
+                           </StandardTd>
+                           <StandardTd className="text-center font-black text-[#004A74] bg-gray-50/50">
+                              {formatMoney(item.balance)}
+                           </StandardTd>
+                           <StandardTd className="w-[400px] overflow-hidden">
+                              <div className="flex items-center gap-2 min-w-0 w-full">
+                                 <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap block flex-1 min-w-0">{item.description}</span>
+                                 {item.attachmentsJsonId && <div className="w-1.5 h-1.5 rounded-full bg-[#FED400] shrink-0" />}
+                              </div>
+                           </StandardTd>
+                           <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
+                              <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                                 <button onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="p-2 text-blue-500 hover:bg-white rounded-lg transition-all"><Eye size={16} /></button>
+                                 {isLastEntry && (
+                                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 hover:bg-white rounded-lg transition-all"><Trash2 size={16} /></button>
+                                 )}
+                              </div>
+                           </StandardTd>
+                        </StandardTr>
+                       );
+                    })
+                  )}
+               </tbody>
+            </table>
           </StandardTableWrapper>
         </StandardTableContainer>
       </div>

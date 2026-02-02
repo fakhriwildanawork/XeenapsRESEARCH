@@ -86,6 +86,13 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result });
     }
 
+    // NEW: Tracer Finance Export (STITCHING ENGINE)
+    if (action === 'getFinanceExportData') {
+      const projectId = e.parameter.projectId;
+      const result = getFinanceExportDataFromRegistry(projectId);
+      return createJsonResponse({ status: 'success', data: result });
+    }
+
     // NEW: getReviews (LITERATURE REVIEW MODULE)
     if (action === 'getReviews') {
       const page = parseInt(e.parameter.page || "1");
