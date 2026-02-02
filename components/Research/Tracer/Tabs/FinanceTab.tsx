@@ -245,7 +245,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
       <div className="flex-1">
         <StandardTableContainer>
           <StandardTableWrapper>
-             <thead>
+             <thead className="sticky top-0 z-20">
                 <tr>
                    <StandardTh width="160px">Timestamp</StandardTh>
                    <StandardTh width="180px">Credit (+)</StandardTh>
@@ -280,7 +280,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                          <StandardTd className="text-center font-black text-[#004A74] bg-gray-50/50">
                             {formatMoney(item.balance)}
                          </StandardTd>
-                         <StandardTd className="min-w-[400px] max-w-[400px] overflow-hidden">
+                         <StandardTd className="min-w-[400px] max-w-[400px] w-[400px] overflow-hidden">
                             <div className="flex items-center gap-2 min-w-0 w-full">
                                <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap block flex-1 min-w-0">{item.description}</span>
                                {item.attachmentsJsonId && <div className="w-1.5 h-1.5 rounded-full bg-[#FED400] shrink-0" />}
@@ -310,7 +310,11 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
           currencySymbol={currency.symbol}
           latestDate={latestDate}
           onClose={() => setIsFormOpen(false)} 
-          onSave={(data) => { setIsFormOpen(false); handleOptimisticSave(data); }} 
+          onSave={async (data) => { 
+            handleOptimisticSave(data);
+            setIsFormOpen(false); 
+            await loadData(true);
+          }} 
         />
       )}
     </div>

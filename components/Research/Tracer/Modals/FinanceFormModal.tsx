@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { FormField } from '../../../Common/FormComponents';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
+import { showXeenapsToast } from '../../../../utils/toastUtils';
 
 interface FinanceFormModalProps {
   projectId: string;
@@ -135,10 +136,11 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.description.trim()) return;
+    if (!formData.description.trim() || isSubmitting) return;
 
     // VALIDATION: Date must be newer than latest entry
     if (!item && latestDate && new Date(formData.date) < new Date(latestDate)) {
+       showXeenapsToast('warning', 'Backdating is not allowed for balance integrity.');
        return;
     }
 
@@ -151,13 +153,18 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
       updatedAt: new Date().toISOString()
     };
 
-    // 1. OPTIMISTIC CALLBACK
-    onSave(finalItem);
-    
-    // 2. SILENT BACKGROUND SYNC
-    saveTracerFinance(finalItem, content).catch(() => {});
-    
-    setIsSubmitting(false);
+    try {
+      const success = await saveTracerFinance(finalItem, content);
+      if (success) {
+        onSave(finalItem);
+      } else {
+        showXeenapsToast('error', 'Failed to synchronize with cloud ledger.');
+      }
+    } catch (err) {
+      showXeenapsToast('error', 'Network failure during synchronization.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isViewOnly = !!item;
@@ -184,7 +191,7 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
                 <button type="button" onClick={() => setIsCredit(true)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${isCredit ? 'bg-green-500 text-white shadow-lg' : 'text-gray-400 hover:text-green-600'}`}>
                    <ArrowUpCircle size={14} /> Credit (Income)
                 </button>
-                <button type="button" onClick={() => setIsCredit(false)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${!isCredit ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-red-600'}`}>
+                <button type="button" onClick={() => setIsCredit(false)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${!isCredit ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-green-600'}`}>
                    <ArrowDownCircle size={14} /> Debit (Expense)
                 </button>
              </div>
