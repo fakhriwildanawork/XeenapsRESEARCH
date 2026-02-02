@@ -71,7 +71,8 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className={`flex h-[100dvh] bg-white text-[#004A74] overflow-hidden ${isLoading ? 'pointer-events-none select-none' : ''}`}>
+      {/* Outer container uses min-h-screen instead of fixed h-[100dvh] to allow natural body scroll */}
+      <div className={`flex min-h-screen bg-white text-[#004A74] ${isLoading ? 'pointer-events-none select-none' : ''}`}>
         {isMobileSidebarOpen && (
           <div 
             className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[70] lg:hidden transition-opacity duration-500"
@@ -84,6 +85,7 @@ const App: React.FC = () => {
           onMobileClose={() => setIsMobileSidebarOpen(false)} 
         />
 
+        {/* main container no longer restricts overflow to allow whole page scroll behavior */}
         <main className="flex-1 flex flex-col px-4 md:px-8 lg:px-12 relative min-w-0 bg-white z-0">
           <Header 
             searchQuery={searchQuery} 
@@ -91,7 +93,8 @@ const App: React.FC = () => {
             onRefresh={loadData}
           />
 
-          <div className="mt-4 lg:mt-6 flex-1 pb-10 overflow-hidden relative bg-white">
+          {/* Wrapper Routes grows naturally within the main scroll context */}
+          <div className="mt-4 lg:mt-6 pb-20 relative bg-white">
             <React.Suspense fallback={<GlobalAppLoader />}>
               <Routes>
                 <Route path="/" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />

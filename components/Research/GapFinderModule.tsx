@@ -16,7 +16,7 @@ interface GapFinderModuleProps {
 
 const GapFinderModule: React.FC<GapFinderModuleProps> = ({ items }) => {
   return (
-    <div className="absolute inset-0 bg-white overflow-hidden flex flex-col animate-in fade-in duration-700">
+    <div className="w-full bg-white flex flex-col animate-in fade-in duration-700">
       <Routes>
         <Route path="/" element={<ResearchMainView items={items} />} />
         <Route path="/new" element={<ResearchForm items={items} />} />

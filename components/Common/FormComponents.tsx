@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ChevronDownIcon, PlusSmallIcon, ArrowLeftIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -6,7 +5,7 @@ import { ChevronDownIcon, PlusSmallIcon, ArrowLeftIcon, XMarkIcon } from '@heroi
  * Standard Form Page Layout Wrapper
  */
 export const FormPageContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="w-full bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden h-full flex flex-col relative">
+  <div className="w-full bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 relative">
     {children}
   </div>
 );
@@ -43,7 +42,7 @@ export const FormStickyHeader: React.FC<{
  * Standard Scrollable Form Area
  */
 export const FormContentArea: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-10 py-10 pb-32">
+  <div className="px-6 md:px-10 py-10 pb-32">
     <div className="max-w-6xl mx-auto space-y-8">
       {children}
     </div>

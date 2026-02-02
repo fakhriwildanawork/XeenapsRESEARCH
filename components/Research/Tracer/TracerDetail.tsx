@@ -42,7 +42,7 @@ import TracerLogModal from './Modals/TracerLogModal';
 const logContentCache: Record<string, TracerLogContent> = {};
 
 const TracerDetailSkeleton: React.FC = () => (
-  <div className="animate-in fade-in duration-500 w-full h-full flex flex-col">
+  <div className="animate-in fade-in duration-500 w-full flex flex-col">
     <div className="px-6 md:px-10 py-6 border-b border-gray-50 flex items-center justify-between">
        <div className="flex items-center gap-4">
           <div className="w-10 h-10 skeleton rounded-xl" />
@@ -252,7 +252,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 pb-32">
+      <div className="p-6 md:p-10 pb-32">
         <div className="max-w-5xl mx-auto">
           {activeTab === 'identity' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
@@ -334,8 +334,6 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
           onDelete={handleDeleteLogItem}
         />
       )}
-
-      <style>{`.custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }`}</style>
     </FormPageContainer>
   );
 };

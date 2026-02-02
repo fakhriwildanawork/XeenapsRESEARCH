@@ -130,14 +130,14 @@ const TracerMain: React.FC = () => {
         </div>
       </div>
 
-      <div className="custom-scrollbar">
+      <div className="pb-20">
         {isLoading ? <CardGridSkeleton count={8} /> : projects.length === 0 ? (
           <div className="py-40 text-center flex flex-col items-center justify-center space-y-4 opacity-20">
              <Target size={80} strokeWidth={1} />
              <p className="text-sm font-black uppercase tracking-[0.4em]">Audit Registry Empty</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 px-1 pb-32">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 px-1">
             {projects.map(p => (
               <div key={p.id} onClick={() => navigate(`/research/tracer/${p.id}`)} className="group bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer flex flex-col h-full">
                 <div className="flex items-start justify-between mb-6">
@@ -149,7 +149,6 @@ const TracerMain: React.FC = () => {
                    <div className="flex items-center gap-2 text-gray-400">
                      <User size={12} />
                      <span className="text-[10px] font-bold uppercase tracking-tight">
-                       {/* SAFE NAVIGATION FIX FOR AUTHORS ARRAY */}
                        {Array.isArray(p.authors) && p.authors.length > 0 ? (p.authors[0] || 'Unknown Author') : 'Unknown Author'}
                      </span>
                    </div>
