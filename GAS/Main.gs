@@ -93,6 +93,13 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result });
     }
 
+    // NEW: Tracer Finance Premium Export (Excel/PDF)
+    if (action === 'generateFinanceExport') {
+      const { projectId, format } = e.parameter;
+      const result = generateFinanceExportFileFromRegistry(projectId, format);
+      return createJsonResponse(result);
+    }
+
     // NEW: getReviews (LITERATURE REVIEW MODULE)
     if (action === 'getReviews') {
       const page = parseInt(e.parameter.page || "1");

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { TracerFinanceItem } from '../../../../types';
-import { fetchTracerFinance, deleteTracerFinance, fetchFinanceExportData } from '../../../../services/TracerService';
+import { fetchTracerFinance, deleteTracerFinance, exportFinanceLedger } from '../../../../services/TracerService';
 import { 
   Plus, 
   Trash2, 
@@ -14,7 +14,10 @@ import {
   Calendar,
   Filter,
   Download,
-  Loader2
+  Loader2,
+  FileText,
+  Table as TableIcon,
+  ChevronDown
 } from 'lucide-react';
 import { SmartSearchBox } from '../../../Common/SearchComponents';
 import { 
@@ -64,8 +67,11 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   const [items, setItems] = useState<TracerFinanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
   // Filters (Cumulative Logic)
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
@@ -88,6 +94,17 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   }, [projectId, startDate, endDate, appliedSearch]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Handle click outside for export menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleApplyFilters = () => {
     setAppliedSearch(localSearch);
@@ -155,38 +172,19 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format: 'xlsx' | 'pdf') => {
+    setShowExportMenu(false);
     setIsExporting(true);
+    showXeenapsToast('info', `Architecting ${format.toUpperCase()} Document...`);
+    
     try {
-      const data = await fetchFinanceExportData(projectId);
-      if (!data || data.length === 0) {
-        showXeenapsToast('info', 'No transaction data available for export.');
-        return;
+      const downloadUrl = await exportFinanceLedger(projectId, format);
+      if (downloadUrl) {
+        window.open(downloadUrl, '_blank');
+        showXeenapsToast('success', 'Document Synchronized');
+      } else {
+        showXeenapsToast('error', 'Cloud Synthesis Interrupt');
       }
-
-      const csvHeaders = ["Waktu", "Credit (+)", "Debit (-)", "Narasi / Deskripsi", "Link Bukti (Evidence)"];
-      const csvRows = data.map(row => {
-        const dateFormatted = new Date(row.date).toLocaleString('id-ID');
-        return [
-          `"${dateFormatted}"`,
-          row.credit,
-          row.debit,
-          `"${row.description.replace(/"/g, '""')}"`,
-          `"${row.links.replace(/"/g, '""')}"`
-        ].join(",");
-      });
-
-      const csvContent = [csvHeaders.join(","), ...csvRows].join("\n");
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `Ledger_${projectId}_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showXeenapsToast('success', 'Financial Ledger Exported');
     } catch (err) {
       showXeenapsToast('error', 'Export Engine Failure');
     } finally {
@@ -257,7 +255,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
               className="w-full lg:max-w-md"
             />
             
-            <div className="flex flex-col items-stretch md:flex-row md:items-center gap-2 bg-gray-100/50 p-1 rounded-2xl border border-gray-200">
+            <div className="flex flex-col items-stretch md:flex-row md:items-center gap-2 bg-gray-100/50 p-1 rounded-2xl border border-gray-100">
                <div className="flex items-center gap-2 px-3 py-2 md:py-0">
                   <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">From</span>
                   <input type="date" className="bg-transparent text-[10px] font-bold text-[#004A74] outline-none" value={tempStartDate} onChange={e => setTempStartDate(e.target.value)} />
@@ -265,6 +263,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                <div className="hidden md:block w-px h-4 bg-gray-300" />
                <div className="flex items-center gap-2 px-3 py-2 md:py-0">
                   <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">To</span>
+                  {/* Fix: Corrected tempEndDate usage from function call to value/onChange pattern to resolve expression not callable and missing 'e' errors */}
                   <input type="date" className="bg-transparent text-[10px] font-bold text-[#004A74] outline-none" value={tempEndDate} onChange={e => setTempEndDate(e.target.value)} />
                </div>
                {(tempStartDate || tempEndDate) && (
@@ -276,14 +275,41 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
             </div>
          </div>
          
-         <div className="flex items-center gap-3 w-full lg:w-auto">
-            <button 
-              onClick={handleExport}
-              disabled={isExporting || items.length === 0}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-white border border-gray-200 text-[#004A74] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-sm hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} Export CSV
-            </button>
+         <div className="flex items-center gap-3 w-full lg:w-auto relative">
+            <div ref={exportMenuRef} className="relative flex-1 lg:flex-none">
+              <button 
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                disabled={isExporting || items.length === 0}
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white border border-gray-200 text-[#004A74] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-sm hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} Export Ledger <ChevronDown size={14} className={`ml-1 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showExportMenu && (
+                <div className="absolute bottom-full mb-3 right-0 w-64 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 p-2 z-[60] animate-in slide-in-from-bottom-2 fade-in duration-300">
+                  <button 
+                    onClick={() => handleExport('xlsx')}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl hover:bg-[#FED400]/10 transition-all text-left group"
+                  >
+                    <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><TableIcon size={18} /></div>
+                    <div>
+                      <p className="text-[10px] font-black text-[#004A74] uppercase tracking-tight">Excel Document</p>
+                      <p className="text-[8px] font-bold text-gray-400 uppercase">Native Spreadsheet (.xlsx)</p>
+                    </div>
+                  </button>
+                  <button 
+                    onClick={() => handleExport('pdf')}
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl hover:bg-[#FED400]/10 transition-all text-left group"
+                  >
+                    <div className="p-2 bg-red-50 text-red-600 rounded-xl"><FileText size={18} /></div>
+                    <div>
+                      <p className="text-[10px] font-black text-[#004A74] uppercase tracking-tight">Official Report</p>
+                      <p className="text-[8px] font-bold text-gray-400 uppercase">Premium Audit PDF (.pdf)</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
             <button 
               onClick={() => { setViewingItem(undefined); setIsFormOpen(true); }}
               className="flex-[2] lg:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:scale-105 active:scale-95 transition-all"

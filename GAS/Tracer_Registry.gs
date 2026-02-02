@@ -52,8 +52,8 @@ function setupTracerDatabase() {
       const missingHeaders = targetHeaders.filter(h => !currentHeaders.includes(h));
       if (missingHeaders.length > 0) {
         const startCol = currentHeaders.length + 1;
-        rSheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
-        rSheet.getRange(1, startCol, 1, missingHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
+        pSheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
+        pSheet.getRange(1, startCol, 1, missingHeaders.length).setFontWeight("bold").setBackground("#f3f3f3");
       }
     }
 
@@ -767,6 +767,7 @@ function getFinanceExportDataFromRegistry(projectId) {
     const dateIdx = headers.indexOf('date');
     const credIdx = headers.indexOf('credit');
     const debIdx = headers.indexOf('debit');
+    const balIdx = headers.indexOf('balance');
     const descIdx = headers.indexOf('description');
     const attIdIdx = headers.indexOf('attachmentsJsonId');
     const nodeIdx = headers.indexOf('storageNodeUrl');
@@ -806,6 +807,7 @@ function getFinanceExportDataFromRegistry(projectId) {
         date: dateStr,
         credit: row[credIdx] || 0,
         debit: row[debIdx] || 0,
+        balance: row[balIdx] || 0,
         description: row[descIdx] || '',
         links: links.filter(Boolean).join(" | ")
       };
@@ -813,5 +815,138 @@ function getFinanceExportDataFromRegistry(projectId) {
   } catch (e) {
     console.error("getFinanceExportData Error: " + e.toString());
     return [];
+  }
+}
+
+/**
+ * PREMIUM GENERATOR: Produces native .xlsx or Official PDF
+ */
+function generateFinanceExportFileFromRegistry(projectId, format) {
+  try {
+    const data = getFinanceExportDataFromRegistry(projectId);
+    if (data.length === 0) return { status: 'error', message: 'No transaction data available.' };
+
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
+    const pSheet = ss.getSheetByName("TracerProjects");
+    const pData = pSheet.getDataRange().getValues();
+    const pIdIdx = pData[0].indexOf('id');
+    const pLabelIdx = pData[0].indexOf('label');
+    const pTitleIdx = pData[0].indexOf('title');
+    
+    let pLabel = "Project";
+    let pTitle = "Financial Ledger";
+    for(let i=1; i<pData.length; i++) {
+       if(pData[i][pIdIdx] === projectId) {
+         pLabel = pData[i][pLabelIdx];
+         pTitle = pData[i][pTitleIdx] || pLabel;
+         break;
+       }
+    }
+
+    const filename = `Ledger_${pLabel}_${new Date().toISOString().split('T')[0]}`;
+    
+    // FORMATTING 2D ARRAY
+    const headers = ["DateTime", "Credit (+)", "Debit (-)", "Balance", "Description", "Evidence Links"];
+    const rows = data.map(d => {
+       const date = new Date(d.date);
+       const dateFmt = `${date.getDate().toString().padStart(2,'0')}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
+       return [dateFmt, d.credit, d.debit, d.balance, d.description, d.links];
+    });
+
+    if (format === 'xlsx') {
+       // EXCEL NATIVE GENERATOR
+       const tempSS = SpreadsheetApp.create(filename);
+       const sheet = tempSS.getSheets()[0];
+       sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold").setBackground("#004A74").setFontColor("#FFFFFF");
+       if (rows.length > 0) {
+         sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+         // Format Columns B, C, D as Currency
+         sheet.getRange(2, 2, rows.length, 3).setNumberFormat("#,##0");
+       }
+       sheet.setFrozenRows(1);
+       sheet.autoResizeColumns(1, headers.length);
+       
+       const fileId = tempSS.getId();
+       const url = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
+       
+       // Note: File remains in Root. Cleaner to delete it after some time, but GAS doesn't support easy TTL.
+       // User can delete manually from Drive if needed.
+       return { status: 'success', url: url };
+
+    } else {
+       // OFFICIAL PDF GENERATOR
+       const navy = "#004A74";
+       const yellow = "#FED400";
+       const html = `
+       <html>
+       <head>
+         <style>
+           @page { size: A4 landscape; margin: 1cm; }
+           body { font-family: sans-serif; color: #333; margin: 0; padding: 0; font-size: 9pt; }
+           .header { border-bottom: 3px solid ${navy}; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+           .header-info h1 { margin: 0; color: ${navy}; text-transform: uppercase; font-size: 18pt; letter-spacing: -0.5px; }
+           .header-info p { margin: 2px 0; color: #666; font-weight: bold; font-size: 8pt; text-transform: uppercase; }
+           .logo { font-weight: 900; color: ${navy}; font-size: 14pt; }
+           .logo span { color: ${yellow}; }
+           table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+           th { background-color: ${navy}; color: white; text-align: left; padding: 8px 10px; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 1px; border: 1px solid ${navy}; }
+           td { padding: 8px 10px; border-bottom: 1px solid #EEE; vertical-align: top; border-right: 1px solid #F5F5F5; border-left: 1px solid #F5F5F5; }
+           .num { font-family: monospace; font-weight: bold; text-align: right; }
+           .income { color: green; }
+           .expense { color: red; }
+           .balance { background-color: #F9FAFB; font-weight: bold; color: ${navy}; }
+           .desc { font-weight: bold; color: #444; }
+           .link { color: #0066CC; font-size: 7pt; word-break: break-all; text-decoration: none; }
+           .footer { margin-top: 30px; border-top: 1px solid #EEE; padding-top: 10px; text-align: center; color: #AAA; font-size: 7pt; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+         </style>
+       </head>
+       <body>
+         <div class="header">
+            <div class="header-info">
+               <h1>Financial Ledger Report</h1>
+               <p>${pTitle}</p>
+            </div>
+            <div class="logo">XEENAPS<span>.</span></div>
+         </div>
+         <table>
+           <thead>
+             <tr>
+               <th style="width: 12%;">DateTime</th>
+               <th style="width: 12%; text-align: right;">Credit (+)</th>
+               <th style="width: 12%; text-align: right;">Debit (-)</th>
+               <th style="width: 12%; text-align: right;">Balance</th>
+               <th style="width: 27%;">Description</th>
+               <th style="width: 25%;">Evidence Links</th>
+             </tr>
+           </thead>
+           <tbody>
+             ${rows.map(r => `
+               <tr>
+                 <td style="color: #888; font-family: monospace;">${r[0]}</td>
+                 <td class="num income">${r[1] > 0 ? '+' + Number(r[1]).toLocaleString() : '-'}</td>
+                 <td class="num expense">${r[2] > 0 ? '-' + Number(r[2]).toLocaleString() : '-'}</td>
+                 <td class="num balance">${Number(r[3]).toLocaleString()}</td>
+                 <td class="desc">${r[4]}</td>
+                 <td>${r[5].split(' | ').map(l => `<a class="link" href="${l}">${l}</a>`).join('<br/>')}</td>
+               </tr>
+             `).join('')}
+           </tbody>
+         </table>
+         <div class="footer">Xeenaps PKM • Project Audit Protocol • Generated on ${new Date().toLocaleString()}</div>
+       </body>
+       </html>`;
+
+       const blob = Utilities.newBlob(html, "text/html", filename + ".html");
+       const pdf = blob.getAs("application/pdf").setName(filename + ".pdf");
+       
+       // Save PDF to Drive and return download URL
+       const folder = DriveApp.getFolderById(CONFIG.FOLDERS.MAIN_LIBRARY);
+       const file = folder.createFile(pdf);
+       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+       
+       return { status: 'success', url: file.getDownloadUrl().replace("?e=download&gd=true", "") };
+    }
+  } catch (e) {
+    return { status: 'error', message: e.toString() };
   }
 }

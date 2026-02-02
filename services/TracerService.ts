@@ -235,6 +235,21 @@ export const fetchFinanceExportData = async (projectId: string): Promise<any[]> 
   }
 };
 
+/**
+ * NEW: Premium Export Service (Excel/PDF)
+ */
+export const exportFinanceLedger = async (projectId: string, format: 'xlsx' | 'pdf'): Promise<string | null> => {
+  if (!GAS_WEB_APP_URL) return null;
+  try {
+    const url = `${GAS_WEB_APP_URL}?action=generateFinanceExport&projectId=${projectId}&format=${format}`;
+    const res = await fetch(url);
+    const result = await res.json();
+    return result.status === 'success' ? result.url : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 export const saveTracerFinance = async (item: TracerFinanceItem, content: TracerFinanceContent): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
   try {
