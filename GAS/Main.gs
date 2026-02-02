@@ -94,9 +94,10 @@ function doGet(e) {
     }
 
     // NEW: Tracer Finance Premium Export (Excel/PDF)
+    // MODIFIED: Pass currency to the generator
     if (action === 'generateFinanceExport') {
-      const { projectId, format } = e.parameter;
-      const result = generateFinanceExportFileFromRegistry(projectId, format);
+      const { projectId, format, currency } = e.parameter;
+      const result = generateFinanceExportFileFromRegistry(projectId, format, currency);
       return createJsonResponse(result);
     }
 

@@ -172,16 +172,34 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     }
   };
 
-  const handleExport = async (format: 'xlsx' | 'pdf') => {
+  const handleExport = async () => {
     setShowExportMenu(false);
     setIsExporting(true);
-    showXeenapsToast('info', `Architecting ${format.toUpperCase()} Document...`);
+    showXeenapsToast('info', `Synthesizing Premium Report...`);
     
     try {
-      const downloadUrl = await exportFinanceLedger(projectId, format, currency.code);
-      if (downloadUrl) {
-        window.open(downloadUrl, '_blank');
-        showXeenapsToast('success', 'Document Synchronized');
+      const result = await exportFinanceLedger(projectId, currency.code);
+      if (result && result.base64) {
+        // Direct Blob Download Implementation (No Gmail login required)
+        const byteCharacters = atob(result.base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = result.filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showXeenapsToast('success', 'Document Downloaded');
       } else {
         showXeenapsToast('error', 'Cloud Synthesis Interrupt');
       }
@@ -263,7 +281,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                <div className="hidden md:block w-px h-4 bg-gray-300" />
                <div className="flex items-center gap-2 px-3 py-2 md:py-0">
                   <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">To</span>
-                  {/* Fix: Corrected tempEndDate usage from function call to value/onChange pattern to resolve expression not callable and missing 'e' errors */}
                   <input type="date" className="bg-transparent text-[10px] font-bold text-[#004A74] outline-none" value={tempEndDate} onChange={e => setTempEndDate(e.target.value)} />
                </div>
                {(tempStartDate || tempEndDate) && (
@@ -288,17 +305,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
               {showExportMenu && (
                 <div className="absolute bottom-full mb-3 right-0 w-64 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 p-2 z-[60] animate-in slide-in-from-bottom-2 fade-in duration-300">
                   <button 
-                    onClick={() => handleExport('xlsx')}
-                    className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl hover:bg-[#FED400]/10 transition-all text-left group"
-                  >
-                    <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><TableIcon size={18} /></div>
-                    <div>
-                      <p className="text-[10px] font-black text-[#004A74] uppercase tracking-tight">Excel Document</p>
-                      <p className="text-[8px] font-bold text-gray-400 uppercase">Native Spreadsheet (.xlsx)</p>
-                    </div>
-                  </button>
-                  <button 
-                    onClick={() => handleExport('pdf')}
+                    onClick={handleExport}
                     className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl hover:bg-[#FED400]/10 transition-all text-left group"
                   >
                     <div className="p-2 bg-red-50 text-red-600 rounded-xl"><FileText size={18} /></div>

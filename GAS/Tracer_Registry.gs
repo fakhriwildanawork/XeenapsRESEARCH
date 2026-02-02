@@ -819,8 +819,8 @@ function getFinanceExportDataFromRegistry(projectId) {
 }
 
 /**
- * PREMIUM GENERATOR: Produces native .xlsx or Official PDF
- * MODIFIED: Enhanced metadata inclusion (Research Title, Authors, and Currency)
+ * PREMIUM GENERATOR: Produces Official PDF as Base64 for Direct Public Download
+ * EXCEL logic removed as per request.
  */
 function generateFinanceExportFileFromRegistry(projectId, format, currency) {
   try {
@@ -854,140 +854,122 @@ function generateFinanceExportFileFromRegistry(projectId, format, currency) {
 
     const filename = `Ledger_${pLabel}_${new Date().toISOString().split('T')[0]}`;
     
-    // FORMATTING 2D ARRAY
-    const tableHeaders = ["DateTime", "Credit (+)", "Debit (-)", "Balance", "Description", "Evidence Links"];
+    // FORMATTING 2D ARRAY FOR PDF TEMPLATE
     const rows = data.map(d => {
        const date = new Date(d.date);
        const dateFmt = `${date.getDate().toString().padStart(2,'0')}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
        return [dateFmt, d.credit, d.debit, d.balance, d.description, d.links];
     });
 
-    if (format === 'xlsx') {
-       // EXCEL NATIVE GENERATOR
-       const tempSS = SpreadsheetApp.create(filename);
-       const sheet = tempSS.getSheets()[0];
-       
-       // 1. PROJECT METADATA HEADER
-       sheet.getRange(1, 1).setValue("Research Title:").setFontWeight("bold").setFontColor("#666");
-       sheet.getRange(1, 2).setValue(pTitle).setFontWeight("bold").setFontSize(12).setFontColor("#004A74");
-       
-       sheet.getRange(2, 1).setValue("Author(s):").setFontWeight("bold").setFontColor("#666");
-       sheet.getRange(2, 2).setValue(pAuthors).setFontWeight("bold").setFontColor("#333");
-       
-       sheet.getRange(3, 1).setValue("Reporting Currency:").setFontWeight("bold").setFontColor("#666");
-       sheet.getRange(3, 2).setValue(currency).setFontWeight("bold").setFontColor("#004A74");
-       
-       // 2. TABLE HEADERS (Shifted to row 5)
-       sheet.getRange(5, 1, 1, tableHeaders.length).setValues([tableHeaders]).setFontWeight("bold").setBackground("#004A74").setFontColor("#FFFFFF");
-       
-       if (rows.length > 0) {
-         sheet.getRange(6, 1, rows.length, tableHeaders.length).setValues(rows);
-         // Format Columns B, C, D as Currency
-         sheet.getRange(6, 2, rows.length, 3).setNumberFormat("#,##0");
-       }
-       sheet.setFrozenRows(5);
-       sheet.autoResizeColumns(1, tableHeaders.length);
-       
-       const fileId = tempSS.getId();
-       const url = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
-       
-       return { status: 'success', url: url };
+    // OFFICIAL PDF GENERATOR
+    const navy = "#004A74";
+    const yellow = "#FED400";
+    const generationTimestamp = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    
+    const html = `
+    <html>
+    <head>
+      <style>
+        @page { size: A4 landscape; margin: 1cm; }
+        body { font-family: sans-serif; color: #333; margin: 0; padding: 0; font-size: 9pt; }
+        .header { border-bottom: 3px solid ${navy}; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header-info h1 { margin: 0; color: ${navy}; text-transform: uppercase; font-size: 18pt; letter-spacing: -0.5px; }
+        .header-info p { margin: 2px 0; color: #666; font-weight: bold; font-size: 8pt; text-transform: uppercase; }
+        .logo { font-weight: 900; color: ${navy}; font-size: 14pt; }
+        .logo span { color: ${yellow}; }
+        
+        .meta-box { background-color: #F9FAFB; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #EEE; }
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .meta-item { display: flex; gap: 10px; align-items: baseline; margin-bottom: 5px; }
+        .meta-label { font-weight: 900; text-transform: uppercase; font-size: 7pt; color: #AAA; width: 120px; shrink: 0; }
+        .meta-value { font-weight: 700; color: ${navy}; font-size: 8.5pt; }
 
-    } else {
-       // OFFICIAL PDF GENERATOR
-       const navy = "#004A74";
-       const yellow = "#FED400";
-       const html = `
-       <html>
-       <head>
-         <style>
-           @page { size: A4 landscape; margin: 1cm; }
-           body { font-family: sans-serif; color: #333; margin: 0; padding: 0; font-size: 9pt; }
-           .header { border-bottom: 3px solid ${navy}; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-           .header-info h1 { margin: 0; color: ${navy}; text-transform: uppercase; font-size: 18pt; letter-spacing: -0.5px; }
-           .header-info p { margin: 2px 0; color: #666; font-weight: bold; font-size: 8pt; text-transform: uppercase; }
-           .logo { font-weight: 900; color: ${navy}; font-size: 14pt; }
-           .logo span { color: ${yellow}; }
-           
-           .meta-box { background-color: #F9FAFB; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #EEE; display: flex; flex-direction: column; gap: 5px; }
-           .meta-item { display: flex; gap: 10px; align-items: baseline; }
-           .meta-label { font-weight: 900; text-transform: uppercase; font-size: 7pt; color: #AAA; width: 120px; shrink: 0; }
-           .meta-value { font-weight: 700; color: ${navy}; font-size: 8.5pt; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background-color: ${navy}; color: white; text-align: left; padding: 8px 10px; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 1px; border: 1px solid ${navy}; }
+        td { padding: 8px 10px; border-bottom: 1px solid #EEE; vertical-align: top; border-right: 1px solid #F5F5F5; border-left: 1px solid #F5F5F5; }
+        .num { font-family: monospace; font-weight: bold; text-align: right; }
+        .income { color: green; }
+        .expense { color: red; }
+        .balance { background-color: #F9FAFB; font-weight: bold; color: ${navy}; }
+        .desc { font-weight: bold; color: #444; }
+        .link { color: #0066CC; font-size: 7pt; word-break: break-all; text-decoration: none; }
+        .footer { margin-top: 30px; border-top: 1px solid #EEE; padding-top: 10px; text-align: center; color: #AAA; font-size: 7pt; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="header-info">
+            <h1>Financial Ledger Report</h1>
+            <p>Xeenaps Premium Research Tracer</p>
+        </div>
+        <div class="logo">XEENAPS<span>.</span></div>
+      </div>
 
-           table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-           th { background-color: ${navy}; color: white; text-align: left; padding: 8px 10px; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 1px; border: 1px solid ${navy}; }
-           td { padding: 8px 10px; border-bottom: 1px solid #EEE; vertical-align: top; border-right: 1px solid #F5F5F5; border-left: 1px solid #F5F5F5; }
-           .num { font-family: monospace; font-weight: bold; text-align: right; }
-           .income { color: green; }
-           .expense { color: red; }
-           .balance { background-color: #F9FAFB; font-weight: bold; color: ${navy}; }
-           .desc { font-weight: bold; color: #444; }
-           .link { color: #0066CC; font-size: 7pt; word-break: break-all; text-decoration: none; }
-           .footer { margin-top: 30px; border-top: 1px solid #EEE; padding-top: 10px; text-align: center; color: #AAA; font-size: 7pt; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-         </style>
-       </head>
-       <body>
-         <div class="header">
-            <div class="header-info">
-               <h1>Financial Ledger Report</h1>
-               <p>Xeenaps Premium Research Tracer</p>
-            </div>
-            <div class="logo">XEENAPS<span>.</span></div>
-         </div>
+      <div class="meta-box">
+        <div class="meta-grid">
+           <div>
+              <div class="meta-item">
+                <span class="meta-label">Research Title</span>
+                <span class="meta-value" style="font-size: 10pt;">${pTitle}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Author Team</span>
+                <span class="meta-value">${pAuthors}</span>
+              </div>
+           </div>
+           <div>
+              <div class="meta-item">
+                <span class="meta-label">Base Currency</span>
+                <span class="meta-value" style="color: ${navy}; background: ${yellow}; padding: 2px 8px; border-radius: 4px; font-weight: 900;">${currency || 'N/A'}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Downloaded At</span>
+                <span class="meta-value" style="color: #666;">${generationTimestamp}</span>
+              </div>
+           </div>
+        </div>
+      </div>
 
-         <div class="meta-box">
-            <div class="meta-item">
-               <span class="meta-label">Research Title</span>
-               <span class="meta-value" style="font-size: 10pt;">${pTitle}</span>
-            </div>
-            <div class="meta-item">
-               <span class="meta-label">Author Team</span>
-               <span class="meta-value">${pAuthors}</span>
-            </div>
-            <div class="meta-item">
-               <span class="meta-label">Base Currency</span>
-               <span class="meta-value" style="color: ${yellow}; background: ${navy}; padding: 2px 8px; border-radius: 4px;">${currency}</span>
-            </div>
-         </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 12%;">DateTime</th>
+            <th style="width: 12%; text-align: right;">Credit (+)</th>
+            <th style="width: 12%; text-align: right;">Debit (-)</th>
+            <th style="width: 12%; text-align: right;">Balance</th>
+            <th style="width: 27%;">Description</th>
+            <th style="width: 25%;">Evidence Links</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td style="color: #888; font-family: monospace;">${r[0]}</td>
+              <td class="num income">${r[1] > 0 ? '+' + Number(r[1]).toLocaleString() : '-'}</td>
+              <td class="num expense">${r[2] > 0 ? '-' + Number(r[2]).toLocaleString() : '-'}</td>
+              <td class="num balance">${Number(r[3]).toLocaleString()}</td>
+              <td class="desc">${r[4]}</td>
+              <td>${r[5].split(' | ').map(l => `<a class="link" href="${l}">${l}</a>`).join('<br/>')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="footer">Xeenaps PKM • Project Audit Protocol • System Identity Verified</div>
+    </body>
+    </html>`;
 
-         <table>
-           <thead>
-             <tr>
-               <th style="width: 12%;">DateTime</th>
-               <th style="width: 12%; text-align: right;">Credit (+)</th>
-               <th style="width: 12%; text-align: right;">Debit (-)</th>
-               <th style="width: 12%; text-align: right;">Balance</th>
-               <th style="width: 27%;">Description</th>
-               <th style="width: 25%;">Evidence Links</th>
-             </tr>
-           </thead>
-           <tbody>
-             ${rows.map(r => `
-               <tr>
-                 <td style="color: #888; font-family: monospace;">${r[0]}</td>
-                 <td class="num income">${r[1] > 0 ? '+' + Number(r[1]).toLocaleString() : '-'}</td>
-                 <td class="num expense">${r[2] > 0 ? '-' + Number(r[2]).toLocaleString() : '-'}</td>
-                 <td class="num balance">${Number(r[3]).toLocaleString()}</td>
-                 <td class="desc">${r[4]}</td>
-                 <td>${r[5].split(' | ').map(l => `<a class="link" href="${l}">${l}</a>`).join('<br/>')}</td>
-               </tr>
-             `).join('')}
-           </tbody>
-         </table>
-         <div class="footer">Xeenaps PKM • Project Audit Protocol • Generated on ${new Date().toLocaleString()}</div>
-       </body>
-       </html>`;
+    const blob = Utilities.newBlob(html, "text/html", filename + ".html");
+    const pdfBlob = blob.getAs("application/pdf");
+    
+    // Return Base64 for Direct Public Download
+    const base64 = Utilities.base64Encode(pdfBlob.getBytes());
+    
+    return { 
+      status: 'success', 
+      base64: base64, 
+      filename: filename + ".pdf" 
+    };
 
-       const blob = Utilities.newBlob(html, "text/html", filename + ".html");
-       const pdf = blob.getAs("application/pdf").setName(filename + ".pdf");
-       
-       // Save PDF to Drive and return download URL
-       const folder = DriveApp.getFolderById(CONFIG.FOLDERS.MAIN_LIBRARY);
-       const file = folder.createFile(pdf);
-       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-       
-       return { status: 'success', url: file.getDownloadUrl().replace("?e=download&gd=true", "") };
-    }
   } catch (e) {
     return { status: 'error', message: e.toString() };
   }
