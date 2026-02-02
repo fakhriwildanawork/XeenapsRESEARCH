@@ -329,7 +329,7 @@ function doPost(e) {
     if (action === 'setupTracerDatabase') return createJsonResponse(setupTracerDatabase());
     
     // NEW: Sharbox Actions
-    if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(body.targetUniqueAppId, body.receiverName, body.item));
+    if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(body.targetUniqueAppId, body.receiverName, body.receiverPhotoUrl, body.message, body.item));
     if (action === 'claimSharboxItem') return createJsonResponse(handleClaimSharboxItem(body.id));
 
     // NEW: saveNote

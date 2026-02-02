@@ -148,7 +148,7 @@ const IDCardSection: React.FC<IDCardSectionProps> = ({ profile, onUpdate, onPhot
          <div className="w-full pt-10 flex flex-col items-center gap-4 border-t border-dashed border-gray-100">
             <div className="flex items-center gap-3 px-6 py-2.5 bg-white rounded-2xl border border-gray-100 shadow-sm relative group/id">
                <ShieldCheck size={14} className="text-[#004A74]" />
-               <span className="text-[11px] font-mono font-bold text-[#004A74] tracking-widest uppercase">{profile.uniqueAppId}</span>
+               <span className="text-[11px] font-mono font-bold text-[#004A74] tracking-widest">{profile.uniqueAppId}</span>
                <button 
                  onClick={handleUniqueIdRequest}
                  className="ml-2 p-1 text-gray-300 hover:text-red-400 transition-all opacity-0 group-hover/id:opacity-100"

@@ -110,7 +110,7 @@ export const CareerModal: React.FC<ModalProps & { entry?: CareerEntry }> = ({ en
   };
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xl animate-in fade-in">
       <div className="bg-white rounded-[3rem] w-full max-w-xl shadow-2xl flex flex-col max-h-[90vh]">
         <div className="px-8 py-8 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
@@ -176,14 +176,14 @@ export const UniqueIdModal: React.FC<{
         </div>
         <div className="space-y-4">
            <input 
-             className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-center text-lg font-mono font-bold text-[#004A74] focus:ring-4 focus:ring-red-100 outline-none uppercase"
+             className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-center text-lg font-mono font-bold text-[#004A74] focus:ring-4 focus:ring-red-100 outline-none"
              value={newId}
-             onChange={e => setNewId(e.target.value.toUpperCase())}
+             onChange={e => setNewId(e.target.value)}
            />
            <div className="flex gap-3">
               <button 
                 onClick={onClose}
-                className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all"
+                className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all disabled:opacity-50"
               >
                 Cancel
               </button>

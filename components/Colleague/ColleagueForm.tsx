@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { ColleagueItem } from '../../types';
 import { saveColleague, uploadColleaguePhoto } from '../../services/ColleagueService';
@@ -142,9 +141,9 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                    <input 
                      required
-                     className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono font-bold text-[#004A74] uppercase tracking-widest outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all"
+                     className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono font-bold text-[#004A74] tracking-widest outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all"
                      value={formData.uniqueAppId}
-                     onChange={e => setFormData({...formData, uniqueAppId: e.target.value.toUpperCase()})}
+                     onChange={e => setFormData({...formData, uniqueAppId: e.target.value})}
                      placeholder="XN-XXXXXX"
                    />
                 </div>
