@@ -45,13 +45,13 @@ const SharboxMain: React.FC = () => {
     loadItems();
   }, [loadItems]);
 
-  const handleClaim = async (e: React.MouseEvent, item: SharboxItem) => {
-    e.stopPropagation();
+  const handleClaim = async (item: SharboxItem) => {
     showXeenapsToast('info', 'Importing knowledge to your library...');
     const success = await claimSharboxItem(item.id);
     if (success) {
       showXeenapsToast('success', 'Claimed successfully');
       loadItems();
+      setSelectedItem(null);
     } else {
       showXeenapsToast('error', 'Import failed');
     }
@@ -87,7 +87,8 @@ const SharboxMain: React.FC = () => {
     try {
       const d = new Date(iso);
       if (isNaN(d.getTime())) return "-";
-      return `${d.getDate()} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()]} ${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
     } catch { return "-"; }
   };
 
@@ -100,6 +101,7 @@ const SharboxMain: React.FC = () => {
           activeTab={activeTab} 
           onClose={() => setSelectedItem(null)} 
           onRefresh={loadItems}
+          onClaim={() => handleClaim(selectedItem)}
         />
       )}
 
@@ -167,7 +169,8 @@ const SharboxMain: React.FC = () => {
                 onClick={() => setSelectedItem(item)}
                 className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col h-full cursor-pointer"
               >
-                <div className="flex items-center gap-3 mb-4">
+                {/* a. Foto Nama Affiliation (No Uppercase) */}
+                <div className="flex items-center gap-3 mb-6">
                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shadow-sm shrink-0 bg-gray-50">
                       <img 
                         src={activeTab === 'Inbox' ? (item.senderPhotoUrl || BRAND_ASSETS.USER_DEFAULT) : (item.receiverPhotoUrl || BRAND_ASSETS.USER_DEFAULT)} 
@@ -179,9 +182,12 @@ const SharboxMain: React.FC = () => {
                       <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
                         {activeTab === 'Inbox' ? 'FROM' : 'TO'}
                       </p>
-                      <h4 className="text-[10px] font-bold text-[#004A74] truncate uppercase">
+                      <h4 className="text-[11px] font-bold text-[#004A74] truncate">
                         {activeTab === 'Inbox' ? (item.senderName || 'Anonymous') : (item.receiverName || 'Recipient')}
                       </h4>
+                      <p className="text-[9px] text-gray-400 truncate">
+                        {activeTab === 'Inbox' ? (item.senderAffiliation || 'Independent') : 'Authorized Partner'}
+                      </p>
                    </div>
                    <div className="ml-auto flex items-center gap-1.5">
                      <button 
@@ -191,23 +197,24 @@ const SharboxMain: React.FC = () => {
                      >
                        <TrashIcon className="w-4 h-4" />
                      </button>
-                     {item.status === SharboxStatus.CLAIMED && (
-                        <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                     )}
                    </div>
                 </div>
 
-                <div className="mb-4">
+                {/* b. Title koleksi + Author(s) */}
+                <div className="mb-4 flex-1">
                    <div className="flex items-center gap-1.5 mb-2">
                       <SparklesIcon className="w-3 h-3 text-[#FED400]" />
                       <span className="text-[8px] font-black uppercase tracking-widest text-[#004A74]/40">{item.category || 'General'}</span>
                    </div>
-                   <h3 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2">{item.title || 'Untitled Document'}</h3>
+                   <h3 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2 mb-2">{item.title || 'Untitled Document'}</h3>
+                   <p className="text-[10px] font-bold text-gray-500 italic line-clamp-2 leading-relaxed">
+                      {Array.isArray(item.authors) ? item.authors.join(', ') : 'Unknown Authors'}
+                   </p>
                 </div>
 
-                {/* Message Snippet UI */}
+                {/* c. Message */}
                 {item.message && (
-                  <div className="mb-4 p-3 bg-blue-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden group/msg">
+                  <div className="mb-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden">
                     <ChatBubbleBottomCenterTextIcon className="absolute -bottom-1 -right-1 w-8 h-8 text-[#004A74]/5" />
                     <p className="text-[10px] font-bold text-[#004A74]/70 italic leading-relaxed line-clamp-2">
                       "{item.message}"
@@ -215,29 +222,17 @@ const SharboxMain: React.FC = () => {
                   </div>
                 )}
 
-                <div className="space-y-2 mb-6 flex-1">
-                   <p className="text-[10px] font-bold text-gray-500 italic line-clamp-1">
-                      {Array.isArray(item.authors) ? item.authors.join(', ') : 'Unknown Authors'}
-                   </p>
-                   <div className="flex items-center gap-2 text-gray-400">
-                      <ClockIcon className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-bold uppercase tracking-tight">{formatTimestamp(item.timestamp)}</span>
-                   </div>
+                {/* d. Timestamp */}
+                <div className="flex items-center gap-2 text-gray-400 mb-6">
+                   <ClockIcon className="w-3.5 h-3.5" />
+                   <span className="text-[9px] font-bold uppercase tracking-tight">{formatTimestamp(item.timestamp)}</span>
                 </div>
 
+                {/* e. Status label (No Button) */}
                 <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                   {activeTab === 'Inbox' && item.status === SharboxStatus.UNCLAIMED ? (
-                     <button 
-                       onClick={(e) => handleClaim(e, item)}
-                       className="flex items-center gap-2 px-4 py-2 bg-[#FED400] text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md hover:scale-105 transition-all"
-                     >
-                        <PlusIcon className="w-3 h-3 stroke-[3]" /> Claim/Import
-                     </button>
-                   ) : (
-                     <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${item.status === SharboxStatus.CLAIMED ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                        {item.status}
-                     </span>
-                   )}
+                   <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${item.status === SharboxStatus.CLAIMED ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {item.status}
+                   </span>
                    <div className="p-2 bg-gray-50 rounded-xl text-gray-300 group-hover:text-[#004A74] transition-colors">
                       <ChevronRightIcon className="w-4 h-4" />
                    </div>

@@ -23,7 +23,11 @@ import {
   ArrowTopRightOnSquareIcon,
   TrashIcon,
   EyeIcon,
-  UserPlusIcon
+  UserPlusIcon,
+  CheckBadgeIcon,
+  HashtagIcon,
+  TagIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { BRAND_ASSETS } from '../../assets';
 import { fetchFileContent } from '../../services/gasService';
@@ -37,7 +41,31 @@ interface SharboxDetailViewProps {
   activeTab: 'Inbox' | 'Sent';
   onClose: () => void;
   onRefresh?: () => void;
+  onClaim?: () => void;
 }
+
+/**
+ * Helper to safely format dates from ISO or raw strings.
+ */
+const formatDate = (dateStr: any) => {
+  if (!dateStr || dateStr === 'N/A' || dateStr === 'Unknown') return null;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      if (/^\d{4}$/.test(String(dateStr).trim())) return dateStr;
+      return null;
+    }
+    const day = d.getDate().toString().padStart(2, '0');
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    // Return full date or just year based on precision
+    if (String(dateStr).includes('T00:00:00') || String(dateStr).length < 10) return year.toString();
+    return `${day} ${month} ${year}`;
+  } catch (e) {
+    return null;
+  }
+};
 
 /**
  * Enhanced List Component with Inline Skeleton Support
@@ -88,7 +116,7 @@ const ElegantList: React.FC<{ text?: any; className?: string; isLoading?: boolea
   );
 };
 
-const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, onClose, onRefresh }) => {
+const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, onClose, onRefresh, onClaim }) => {
   const [currentItem, setCurrentItem] = useState<SharboxItem>(item);
   const [isFetchingInsights, setIsFetchingInsights] = useState(false);
   const [isColleagueFormOpen, setIsColleagueFormOpen] = useState(false);
@@ -116,6 +144,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
 
   const pubInfo: PubInfo = useMemo(() => parseJsonField(currentItem.pubInfo), [currentItem.pubInfo]);
   const identifiers: Identifiers = useMemo(() => parseJsonField(currentItem.identifiers), [currentItem.identifiers]);
+  const tags = useMemo(() => parseJsonField(currentItem.tags, { keywords: [], labels: [] }), [currentItem.tags]);
   const supportingData: SupportingData = useMemo(() => parseJsonField(currentItem.supportingReferences, { references: [], videoUrl: null }), [currentItem.supportingReferences]);
 
   const profile = useMemo(() => {
@@ -134,7 +163,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
       return {
         name: currentItem.receiverName || 'Recipient',
         photo: currentItem.receiverPhotoUrl || BRAND_ASSETS.USER_DEFAULT,
-        affiliation: 'Authorized Network Member',
+        affiliation: 'Authorized Partner',
         uniqueId: currentItem.receiverUniqueAppId || 'XN-PRIVATE',
         email: currentItem.receiverEmail || '-',
         phone: currentItem.receiverPhone || '-',
@@ -160,6 +189,8 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
       updatedAt: new Date().toISOString()
     };
   }, [currentItem, activeTab]);
+
+  const displayDate = formatDate(currentItem.fullDate || currentItem.year);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -207,6 +238,14 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
         </button>
 
         <div className="flex items-center gap-2">
+          {activeTab === 'Inbox' && currentItem.status === SharboxStatus.UNCLAIMED && (
+            <button 
+              onClick={onClaim}
+              className="flex items-center gap-2 px-5 py-2 bg-[#FED400] text-[#004A74] text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all mr-2"
+            >
+              <PlusIcon className="w-4 h-4 stroke-[3]" /> Claim & Import
+            </button>
+          )}
           <button 
             onClick={handleDelete}
             className="p-2 text-red-300 hover:bg-red-50 hover:text-red-500 rounded-full transition-all"
@@ -241,7 +280,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
                <div className="flex-1 space-y-6 text-center md:text-left">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <h2 className="text-2xl md:text-4xl font-black tracking-tighter uppercase leading-none">{profile.name}</h2>
+                      <h2 className="text-2xl md:text-4xl font-black tracking-tighter leading-none">{profile.name}</h2>
                       <p className="text-[#FED400] text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center justify-center md:justify-start gap-2">
                         <AcademicCapIcon className="w-4 h-4" /> {profile.affiliation}
                       </p>
@@ -271,7 +310,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
                      </div>
                      <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-2xl border border-white/10">
                         <GlobeAltIcon className="w-4 h-4 text-white/50" />
-                        <span className="text-[10px] font-bold uppercase tracking-tighter">{profile.social}</span>
+                        <span className="text-[10px] font-bold tracking-tighter">{profile.social}</span>
                      </div>
                   </div>
 
@@ -306,7 +345,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
             <h1 className="text-xl md:text-3xl font-black text-[#004A74] leading-[1.1] uppercase max-w-4xl">{currentItem.title}</h1>
             
             <div className="space-y-1">
-              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{currentItem.fullDate || currentItem.year}</p>
+              {displayDate && <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{displayDate}</p>}
               <p className="text-sm font-bold text-[#004A74]">{Array.isArray(currentItem.authors) ? currentItem.authors.join(', ') : 'Unknown Authors'}</p>
             </div>
 
@@ -324,13 +363,31 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
                     {identifiers.doi && <span>DOI: {identifiers.doi}</span>}
                     {identifiers.issn && <span>ISSN: {identifiers.issn}</span>}
                     {identifiers.isbn && <span>ISBN: {identifiers.isbn}</span>}
+                    {identifiers.pmid && <span>PMID: {identifiers.pmid}</span>}
+                    {identifiers.arxiv && <span>arXiv: {identifiers.arxiv}</span>}
                   </div>
                 </div>
               )}
             </div>
           </section>
 
-          {/* 4. ABSTRACT & INSIGHTS */}
+          {/* 4. KEYWORDS & LABELS PARITY */}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-3">
+              <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><HashtagIcon className="w-3 h-3" /> Keywords</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {tags.keywords?.length > 0 ? tags.keywords.map((k: string) => <span key={k} className="px-2.5 py-1 bg-[#004A74]/5 border border-[#004A74]/10 rounded-lg text-[9px] font-bold text-[#004A74]">{k}</span>) : <p className="text-[9px] text-gray-300 italic">No keywords.</p>}
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-3">
+              <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><TagIcon className="w-3 h-3" /> Labels</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {tags.labels?.length > 0 ? tags.labels.map((l: string) => <span key={l} className="px-2.5 py-1 bg-[#FED400]/10 border border-[#FED400]/20 rounded-lg text-[9px] font-bold text-[#004A74]">{l}</span>) : <p className="text-[9px] text-gray-300 italic">No labels.</p>}
+              </div>
+            </div>
+          </section>
+
+          {/* 5. ABSTRACT & INSIGHTS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4 md:col-span-2">
               <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><BookOpenIcon className="w-4 h-4" /> Verbatim Abstract</h3>
@@ -366,7 +423,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
             </div>
           </div>
 
-          {/* 5. SUPPORTING RESOURCES */}
+          {/* 6. SUPPORTING RESOURCES */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10 border-t border-gray-100">
              <div className="space-y-6">
                 <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><LinkIcon className="w-4 h-4" /> Supporting References</h3>
