@@ -20,7 +20,6 @@ import {
   PlusCircle
 } from 'lucide-react';
 import { FormField } from '../../../Common/FormComponents';
-import { showXeenapsToast } from '../../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
 
 interface FinanceFormModalProps {
@@ -29,7 +28,7 @@ interface FinanceFormModalProps {
   currencySymbol: string;
   latestDate: string | null;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (data: TracerFinanceItem) => void;
 }
 
 const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, currencySymbol, latestDate, onClose, onSave }) => {
@@ -108,7 +107,6 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
         }));
       } else {
         setContent(prev => ({ attachments: prev.attachments.filter(at => at.fileId !== `pending_${tempId}`) }));
-        showXeenapsToast('error', `Failed to upload ${file.name}`);
       }
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -142,7 +140,6 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
     // VALIDATION: Date must be newer than latest entry
     if (!item && latestDate && new Date(formData.date) < new Date(latestDate)) {
-       showXeenapsToast('error', 'Protocol Violation: Date must be newer than latest session');
        return;
     }
 
@@ -155,13 +152,12 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
       updatedAt: new Date().toISOString()
     };
 
-    const success = await saveTracerFinance(finalItem, content);
-    if (success) {
-      showXeenapsToast('success', 'Ledger synchronized');
-      onSave();
-    } else {
-      showXeenapsToast('error', 'Cloud sync failed');
-    }
+    // 1. OPTIMISTIC CALLBACK
+    onSave(finalItem);
+    
+    // 2. SILENT BACKGROUND SYNC
+    saveTracerFinance(finalItem, content).catch(() => {});
+    
     setIsSubmitting(false);
   };
 

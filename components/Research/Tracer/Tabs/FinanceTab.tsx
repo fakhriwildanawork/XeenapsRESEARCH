@@ -24,7 +24,6 @@ import {
   StandardTableFooter
 } from '../../../Common/TableComponents';
 import { TableSkeletonRows } from '../../../Common/LoadingComponents';
-import { showXeenapsToast } from '../../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
 import FinanceFormModal from '../Modals/FinanceFormModal';
 import { FormDropdown } from '../../../Common/FormComponents';
@@ -77,7 +76,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch uses appliedSearch AND date range (Cumulative)
       const data = await fetchTracerFinance(projectId, startDate, endDate, appliedSearch);
       setItems(data);
     } finally {
@@ -112,23 +110,43 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     }), { credit: 0, debit: 0, balance: 0 });
   }, [items]);
 
-  // Find latest transaction date for validation
   const latestDate = useMemo(() => {
     if (items.length === 0) return null;
     const sorted = [...items].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return sorted[0].date;
   }, [items]);
 
+  const handleOptimisticSave = (newItem: TracerFinanceItem) => {
+    setItems(prev => {
+      // If updating, replace. If new, append and calculate balance.
+      const exists = prev.find(i => i.id === newItem.id);
+      if (exists) return prev.map(i => i.id === newItem.id ? newItem : i);
+      
+      const lastItem = prev[prev.length - 1];
+      const prevBalance = lastItem ? lastItem.balance : 0;
+      const optimisticBalance = prevBalance + (newItem.credit || 0) - (newItem.debit || 0);
+      
+      return [...prev, { ...newItem, balance: optimisticBalance }];
+    });
+  };
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      const result = await deleteTracerFinance(id);
-      if (result.status === 'success') {
-        showXeenapsToast('success', 'Transaction removed from ledger');
-        loadData();
-      } else {
-        showXeenapsToast('error', result.message || 'Integrity Guard Blocked Removal');
+      const originalItems = [...items];
+      // 1. OPTIMISTIC REMOVE
+      setItems(prev => prev.filter(i => i.id !== id));
+      
+      // 2. SILENT BACKGROUND SYNC
+      try {
+        const result = await deleteTracerFinance(id);
+        if (result.status !== 'success') {
+          // Silent Rollback if failed
+          setItems(originalItems);
+        }
+      } catch {
+        setItems(originalItems);
       }
     }
   };
@@ -141,7 +159,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
       
       {/* 1. TOP HEADER: ADAPTIVE CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         {/* Currency Matrix - Smaller & Standard Dropdown */}
+         {/* Currency Matrix */}
          <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between">
             <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Currency Matrix</h4>
             <FormDropdown 
@@ -268,7 +286,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                          </StandardTd>
                          <StandardTd>
                             <div className="flex items-center gap-2 min-w-0">
-                               <span className="text-[11px] font-bold text-gray-600 truncate flex-1">{item.description}</span>
+                               <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap flex-1">{item.description}</span>
                                {item.attachmentsJsonId && <div className="w-1.5 h-1.5 rounded-full bg-[#FED400] shrink-0" />}
                             </div>
                          </StandardTd>
@@ -296,7 +314,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
           currencySymbol={currency.symbol}
           latestDate={latestDate}
           onClose={() => setIsFormOpen(false)} 
-          onSave={() => { setIsFormOpen(false); loadData(); }} 
+          onSave={(data) => { setIsFormOpen(false); handleOptimisticSave(data); loadData(); }} 
         />
       )}
     </div>
