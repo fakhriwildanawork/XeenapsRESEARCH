@@ -251,7 +251,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                    <StandardTh width="180px">Credit (+)</StandardTh>
                    <StandardTh width="180px">Debit (-)</StandardTh>
                    <StandardTh width="200px">Ledger Balance</StandardTh>
-                   <StandardTh width="400px" className="text-left">Narrative / Description</StandardTh>
+                   <StandardTh width="400px" className="min-w-[400px] max-w-[400px] text-left">Narrative / Description</StandardTh>
                    <StandardTh width="100px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                 </tr>
              </thead>
@@ -280,9 +280,9 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                          <StandardTd className="text-center font-black text-[#004A74] bg-gray-50/50">
                             {formatMoney(item.balance)}
                          </StandardTd>
-                         <StandardTd width="400px" className="max-w-[400px] overflow-hidden">
-                            <div className="flex items-center gap-2 min-w-0">
-                               <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap block flex-1">{item.description}</span>
+                         <StandardTd className="min-w-[400px] max-w-[400px] overflow-hidden">
+                            <div className="flex items-center gap-2 min-w-0 w-full">
+                               <span className="text-[11px] font-bold text-gray-600 truncate whitespace-nowrap block flex-1 min-w-0">{item.description}</span>
                                {item.attachmentsJsonId && <div className="w-1.5 h-1.5 rounded-full bg-[#FED400] shrink-0" />}
                             </div>
                          </StandardTd>
@@ -310,7 +310,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
           currencySymbol={currency.symbol}
           latestDate={latestDate}
           onClose={() => setIsFormOpen(false)} 
-          onSave={(data) => { setIsFormOpen(false); handleOptimisticSave(data); loadData(true); }} 
+          onSave={(data) => { setIsFormOpen(false); handleOptimisticSave(data); }} 
         />
       )}
     </div>
