@@ -53,7 +53,7 @@ const ColleaguePickerModal: React.FC<ColleaguePickerModalProps> = ({ item, onClo
     setIsSharing(true);
     showXeenapsToast('info', `Authorizing P2P Sync to ${colleague.name}...`);
     
-    const success = await shareToColleague(colleague.uniqueAppId, colleague.name, item);
+    const success = await shareToColleague(colleague.uniqueAppId, colleague.name, colleague.photoUrl || '', item);
     
     if (success) {
       showXeenapsToast('success', 'Shared successfully');

@@ -36,7 +36,7 @@ function setupSharboxDatabase() {
 /**
  * Handle Knowledge Sharing (Double Write Logic)
  */
-function handleSendToSharbox(targetUniqueAppId, receiverName, item) {
+function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, item) {
   try {
     const profile = getProfileFromRegistry();
     if (!profile) throw new Error("Sender profile not found.");
@@ -70,6 +70,9 @@ function handleSendToSharbox(targetUniqueAppId, receiverName, item) {
       if (h === 'senderPhotoUrl') return profile.photoUrl;
       if (h === 'senderAffiliation') return profile.affiliation;
       if (h === 'senderUniqueAppId') return profile.uniqueAppId;
+      if (h === 'senderEmail') return profile.email;
+      if (h === 'senderPhone') return profile.phone;
+      if (h === 'senderSocialMedia') return profile.socialMedia;
       if (h === 'timestamp') return timestamp;
       if (h === 'status') return 'UNCLAIMED';
       
@@ -88,6 +91,7 @@ function handleSendToSharbox(targetUniqueAppId, receiverName, item) {
     const sentRow = CONFIG.SCHEMAS.SHARBOX_SENT.map(h => {
       if (h === 'id') return transactionId;
       if (h === 'receiverName') return receiverName;
+      if (h === 'receiverPhotoUrl') return receiverPhotoUrl;
       if (h === 'receiverUniqueAppId') return targetUniqueAppId;
       if (h === 'timestamp') return timestamp;
       if (h === 'status') return 'SENT';

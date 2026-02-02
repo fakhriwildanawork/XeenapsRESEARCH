@@ -32,6 +32,7 @@ export const fetchSharboxItems = async (type: 'Inbox' | 'Sent'): Promise<Sharbox
 export const shareToColleague = async (
   targetUniqueAppId: string, 
   receiverName: string, 
+  receiverPhotoUrl: string,
   item: LibraryItem
 ): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
@@ -42,6 +43,7 @@ export const shareToColleague = async (
         action: 'sendToSharbox', 
         targetUniqueAppId, 
         receiverName, 
+        receiverPhotoUrl,
         item 
       })
     });

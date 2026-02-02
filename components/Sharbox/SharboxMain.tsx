@@ -123,9 +123,9 @@ const SharboxMain: React.FC = () => {
                 className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col h-full"
               >
                 <div className="flex items-center gap-3 mb-4">
-                   <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shadow-sm shrink-0">
+                   <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shadow-sm shrink-0 bg-gray-50">
                       <img 
-                        src={activeTab === 'Inbox' ? (item.senderPhotoUrl || BRAND_ASSETS.USER_DEFAULT) : BRAND_ASSETS.USER_DEFAULT} 
+                        src={activeTab === 'Inbox' ? (item.senderPhotoUrl || BRAND_ASSETS.USER_DEFAULT) : (item.receiverPhotoUrl || BRAND_ASSETS.USER_DEFAULT)} 
                         className="w-full h-full object-cover" 
                         alt="User" 
                       />
