@@ -57,12 +57,12 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
 
   const handleSelect = async (session: TeachingItem) => {
     setIsLinking(true);
-    showXeenapsToast('info', `Linking to ${session.courseTitle || session.label}...`);
+    showXeenapsToast('info', `Attaching to ${session.courseTitle || session.label}...`);
     
     try {
       const currentRefs = Array.isArray(session.referenceLinks) ? session.referenceLinks : [];
       if (currentRefs.some(r => r.id === item.id)) {
-        showXeenapsToast('warning', 'Already linked to this session');
+        showXeenapsToast('warning', 'Already attached to this session');
         setIsLinking(false);
         return;
       }
@@ -76,10 +76,10 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
       const success = await saveTeachingItem(updatedSession);
       
       if (success) {
-        showXeenapsToast('success', 'Session reference synchronized');
+        showXeenapsToast('success', 'Attachment success');
         onClose();
       } else {
-        showXeenapsToast('error', 'Synchronization failed');
+        showXeenapsToast('error', 'Attachment failed');
       }
     } catch (e) {
       showXeenapsToast('error', 'Connection error');
@@ -95,7 +95,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
          <div className="fixed inset-0 z-[9999] bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
            <div className="flex flex-col items-center gap-4">
              <Loader2 size={48} className="text-[#004A74] animate-spin" />
-             <p className="text-sm font-black text-[#004A74] uppercase tracking-[0.2em] animate-pulse">Synchronizing Intelligence...</p>
+             <p className="text-sm font-black text-[#004A74] uppercase tracking-[0.2em] animate-pulse">Please wait...</p>
            </div>
          </div>
        )}
@@ -124,7 +124,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
                  setAppliedSearch(search);
                  setCurrentPage(1);
                }}
-               phrases={["Search course title...", "Search session label..."]}
+               phrases={["Search course title...", "Search institution...", "Search session label..."]}
              />
           </div>
 
@@ -134,7 +134,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
                    <thead>
                       <tr>
                          <StandardTh width="100px">Session Date</StandardTh>
-                         <StandardTh width="250px">Course / Topic</StandardTh>
+                         <StandardTh width="250px">Course</StandardTh>
                          <StandardTh width="180px">Institution</StandardTh>
                          <StandardTh width="90px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                       </tr>
@@ -161,7 +161,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
                                     onClick={() => handleSelect(s)}
                                     className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
                                   >
-                                     {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} strokeWidth={4} />} Link
+                                     {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} strokeWidth={4} />} Select
                                   </button>
                                </StandardTd>
                              </StandardTr>

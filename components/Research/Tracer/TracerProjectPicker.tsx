@@ -57,7 +57,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
 
   const handleSelect = async (project: TracerProject) => {
     setIsLinking(true);
-    showXeenapsToast('info', `Anchoring knowledge to ${project.label}...`);
+    showXeenapsToast('info', `Anchoring collection to ${project.label}...`);
     
     try {
       const result = await linkTracerReference({
@@ -66,7 +66,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
       });
       
       if (result) {
-        showXeenapsToast('success', 'Document anchored in project trail');
+        showXeenapsToast('success', 'Collection anchored');
         onClose();
       } else {
         showXeenapsToast('error', 'Anchoring failed');
@@ -85,7 +85,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
          <div className="fixed inset-0 z-[9999] bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
            <div className="flex flex-col items-center gap-4">
              <Loader2 size={48} className="text-[#004A74] animate-spin" />
-             <p className="text-sm font-black text-[#004A74] uppercase tracking-[0.2em] animate-pulse">Anchoring Intelligence...</p>
+             <p className="text-sm font-black text-[#004A74] uppercase tracking-[0.2em] animate-pulse">Please wait...</p>
            </div>
          </div>
        )}
@@ -98,8 +98,8 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                    <Target size={24} />
                 </div>
                 <div>
-                   <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Tracer Deployment</h2>
-                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select target project for audit trail</p>
+                   <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Add to Tracer</h2>
+                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select available researchs below</p>
                 </div>
              </div>
              <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
@@ -114,7 +114,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                  setAppliedSearch(search);
                  setCurrentPage(1);
                }}
-               phrases={["Search project name...", "Search by label..."]}
+               phrases={["Search by Title...", "Search by Author(s)...", "Search by label..."]}
              />
           </div>
 
@@ -123,9 +123,9 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                 <StandardTableWrapper>
                    <thead>
                       <tr>
-                         <StandardTh width="100px">Project Label</StandardTh>
-                         <StandardTh width="280px">Title / Research Domain</StandardTh>
-                         <StandardTh width="160px">Author Team</StandardTh>
+                         <StandardTh width="100px">Label</StandardTh>
+                         <StandardTh width="280px">Research</StandardTh>
+                         <StandardTh width="160px">Author(s)</StandardTh>
                          <StandardTh width="90px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                       </tr>
                    </thead>
@@ -152,7 +152,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                                     onClick={() => handleSelect(p)}
                                     className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
                                   >
-                                     {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} strokeWidth={4} />} Anchor
+                                     {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} strokeWidth={4} />} Select
                                   </button>
                                </StandardTd>
                              </StandardTr>
