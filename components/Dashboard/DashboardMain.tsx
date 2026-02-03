@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { 
   Chart as ChartJS, 
@@ -12,6 +11,7 @@ import {
   ArcElement,
   Filler 
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Line, Doughnut, Pie } from 'react-chartjs-2';
 import { 
   LibraryItem, 
@@ -47,7 +47,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  ChartDataLabels
 );
 
 interface DashboardMainProps {
@@ -78,7 +79,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       last12Months.push({
-        label: `${months[d.getMonth()]}`,
+        label: `${months[d.getMonth()]} ${String(d.getFullYear()).substring(2)}`,
         year: d.getFullYear(),
         month: d.getMonth()
       });
@@ -216,7 +217,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
                </h3>
                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">12-Month Cumulative Library Expansion</p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap justify-end gap-x-4 gap-y-2 max-w-[200px] md:max-w-none">
                <div className="flex items-center gap-2">
                  <div className="w-2 h-2 rounded-full bg-[#004A74]" />
                  <span className="text-[8px] font-black uppercase tracking-tighter">Literature</span>
@@ -224,6 +225,14 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
                <div className="flex items-center gap-2">
                  <div className="w-2 h-2 rounded-full bg-[#FED400]" />
                  <span className="text-[8px] font-black uppercase tracking-tighter">Personal</span>
+               </div>
+               <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-[#10B981]" />
+                 <span className="text-[8px] font-black uppercase tracking-tighter">Task</span>
+               </div>
+               <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-[#94A3B8]" />
+                 <span className="text-[8px] font-black uppercase tracking-tighter">Other</span>
                </div>
             </div>
          </div>
@@ -234,17 +243,43 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
              options={{
                responsive: true,
                maintainAspectRatio: false,
-               plugins: { legend: { display: false }, tooltip: { 
-                 backgroundColor: '#004A74',
-                 titleFont: { size: 10, weight: 'bold' },
-                 bodyFont: { size: 12, weight: 'bold' },
-                 padding: 12,
-                 cornerRadius: 16,
-                 displayColors: true
-               }},
+               layout: {
+                 padding: {
+                   top: 20
+                 }
+               },
+               plugins: { 
+                 legend: { display: false }, 
+                 tooltip: { 
+                   backgroundColor: '#004A74',
+                   titleFont: { size: 10, weight: 'bold' },
+                   bodyFont: { size: 12, weight: 'bold' },
+                   padding: 12,
+                   cornerRadius: 16,
+                   displayColors: true
+                 },
+                 datalabels: {
+                   display: true,
+                   align: 'top',
+                   anchor: 'end',
+                   offset: 4,
+                   font: {
+                     size: 9,
+                     weight: 'bold'
+                   },
+                   color: (context) => (context.dataset.borderColor as string),
+                   formatter: (value) => value > 0 ? value : ''
+                 }
+               },
                scales: { 
-                 y: { display: false }, 
-                 x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' }, color: '#94A3B8' }} 
+                 y: { 
+                   display: false,
+                   suggestedMax: Math.max(...growthChartData.datasets.flatMap(d => d.data)) + 5
+                 }, 
+                 x: { 
+                   grid: { display: false }, 
+                   ticks: { font: { size: 10, weight: 'bold' }, color: '#94A3B8' }
+                 } 
                }
              }}
            />
@@ -273,7 +308,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm flex flex-col items-center">
             <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.4em] mb-6">Source Categories</h4>
             <div className="w-full h-40">
-               <Doughnut data={categoryDistribution} options={{ maintainAspectRatio: false, plugins: { legend: { display: false }}}} />
+               <Doughnut data={categoryDistribution} options={{ maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false }}}} />
             </div>
             <div className="mt-4 flex flex-wrap justify-center gap-x-3 gap-y-1">
                {categoryDistribution.labels.slice(0, 3).map((l, i) => (
@@ -289,7 +324,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm flex flex-col items-center">
             <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.4em] mb-6">Top Research Topics</h4>
             <div className="w-full h-40">
-               <Doughnut data={topicDistribution} options={{ maintainAspectRatio: false, plugins: { legend: { display: false }}}} />
+               <Doughnut data={topicDistribution} options={{ maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false }}}} />
             </div>
             <div className="mt-4 flex flex-wrap justify-center gap-x-3 gap-y-1">
                {topicDistribution.labels.slice(0, 3).map((l, i) => (
@@ -336,7 +371,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-8 items-center">
                <div className="h-48">
-                  <Pie data={pubStatusData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 9, weight: 'bold' }, color: '#004A74', boxWidth: 8, boxHeight: 8, padding: 10 } }}}} />
+                  <Pie data={pubStatusData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 9, weight: 'bold' }, color: '#004A74', boxWidth: 8, boxHeight: 8, padding: 10 } }, datalabels: { display: false }}}} />
                </div>
                <div className="space-y-4">
                   <div className="p-4 bg-gray-50 rounded-2xl">

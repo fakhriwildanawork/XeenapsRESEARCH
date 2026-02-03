@@ -1,4 +1,3 @@
-
 {
   "name": "xeenaps-pkm",
   "private": true,
@@ -19,7 +18,8 @@
     "lucide-react": "^0.475.0",
     "pptxgenjs": "^3.12.0",
     "chart.js": "^4.4.1",
-    "react-chartjs-2": "^5.2.0"
+    "react-chartjs-2": "^5.2.0",
+    "chartjs-plugin-datalabels": "^2.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
