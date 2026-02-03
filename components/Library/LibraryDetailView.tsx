@@ -727,24 +727,24 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                 <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-[#004A74] hover:bg-gray-50 rounded-xl transition-all"><EllipsisVerticalIcon className="w-5 h-5 stroke-[2.5]" /></button>
                 {isMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-[2rem] shadow-2xl border border-gray-100 p-2 z-[90] animate-in fade-in zoom-in-95">
-                    <button onClick={handleUpdate} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
+                    <button onClick={handleUpdate} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all">
                       <PencilIcon className="w-4 h-4" /> Update
                     </button>
-                    <button onClick={() => { setShowPresentations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><Presentation className="w-4 h-4" /> Presentation</button>
-                    <button onClick={() => { setShowQuestions(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
+                    <button onClick={() => { setShowPresentations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all"><Presentation className="w-4 h-4" /> Presentation</button>
+                    <button onClick={() => { setShowQuestions(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all">
                       <ListTodo className="w-4 h-4" /> Question Bank
                     </button>
-                    <button onClick={() => { setShowConsultations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
+                    <button onClick={() => { setShowConsultations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all">
                       <ChatBubbleLeftRightIcon className="w-4 h-4" /> Consultation
                     </button>
-                    <button onClick={() => { setShowNotebook(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
+                    <button onClick={() => { setShowNotebook(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all">
                       <NotebookPen className="w-4 h-4" /> Note
                     </button>
-                    <button onClick={() => { setIsTracerPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><Target className="w-4 h-4" /> Tracer Attachment</button>
-                    <button onClick={() => { setIsTeachingPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><Grip className="w-4 h-4" /> Teaching Attachment</button>
-                    <button onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share</button>
+                    <button onClick={() => { setIsTracerPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all"><Target className="w-4 h-4" /> Tracer Attachment</button>
+                    <button onClick={() => { setIsTeachingPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all"><Grip className="w-4 h-4" /> Teaching Attachment</button>
+                    <button onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share</button>
                     <div className="h-px bg-gray-50 my-1 mx-2" />
-                    <button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                    <button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-[#004A74] hover:text-white rounded-xl transition-all">
                       <TrashIcon className="w-4 h-4" /> Delete
                     </button>
                   </div>
@@ -983,7 +983,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                               <p className="text-xs font-semibold text-[#004A74]/80 leading-relaxed flex-1" dangerouslySetInnerHTML={{ __html: ref }} />
                             </div>
                             <div className="flex items-center justify-end gap-2">
-                              {/* Fix: Added missing event argument to handleCopy call */}
+                              {/* Fix: Added missing event argument to handleCopy call to fix the "Expected 2 arguments, but got 1" error. */}
                               <button 
                                 onClick={(e) => handleCopy(e, ref.replace(/<[^>]*>/g, ''))}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#004A74] rounded-lg border border-gray-100 text-[9px] font-black uppercase tracking-tight shadow-sm hover:bg-[#FED400] transition-all"
