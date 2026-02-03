@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - WEB EXTRACTION MODULE
  */
@@ -46,7 +45,7 @@ function extractWebMetadata(html) {
   
   // Basic Title/Author/Publisher
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  if (titleMatch) metaInfo += `WEBSITE_TITLE: ${titleMatch[1].trim()}\n`;
+  if (titleMatch) metaInfo += `WEBSITE_TITLE: ${decodeHtmlEntities(titleMatch[1].trim())}\n`;
 
   // Robust Metadata Mapping for Academic & General Web
   const metaMappings = [
@@ -70,7 +69,7 @@ function extractWebMetadata(html) {
     
     const match = html.match(regex1) || html.match(regex2);
     if (match && !metaInfo.includes(map.label)) {
-      metaInfo += `${map.label}: ${match[1].trim()}\n`;
+      metaInfo += `${map.label}: ${decodeHtmlEntities(match[1].trim())}\n`;
     }
   });
 

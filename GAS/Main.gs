@@ -692,6 +692,14 @@ function doPost(e) {
       // SYSTEM ASSET GUARD: Avoid sharding/AI for internal assets
       const isSystemAsset = (String(item.id).toUpperCase() === 'PHOTO_PROFILE');
       
+      // FINAL SANITIZATION: Decoding HTML Entities before saving to Sheet
+      if (item.title) item.title = decodeHtmlEntities(item.title);
+      if (item.publisher) item.publisher = decodeHtmlEntities(item.publisher);
+      if (item.journalName) item.journalName = decodeHtmlEntities(item.journalName);
+      if (Array.isArray(item.authors)) {
+        item.authors = item.authors.map(a => decodeHtmlEntities(a));
+      }
+
       const extractedText = body.extractedText || "";
       const isFileUpload = (body.file && body.file.fileData);
       

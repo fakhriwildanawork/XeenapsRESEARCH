@@ -8,6 +8,42 @@ function createJsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.TEXT);
 }
 
+/**
+ * Decode HTML entities like &amp;, &quot;, &#39;, etc. into normal characters.
+ */
+function decodeHtmlEntities(text) {
+  if (!text || typeof text !== 'string' || !text.includes('&')) return text;
+  try {
+    // Robust mapping for common academic metadata entities
+    const entities = {
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&apos;': "'",
+      '&ndash;': '-',
+      '&mdash;': '-',
+      '&reg;': '®',
+      '&copy;': '©'
+    };
+    return text.replace(/&[a-z0-9#]+;/gi, (match) => {
+      const lower = match.toLowerCase();
+      if (entities[lower]) return entities[lower];
+      // Handle numeric entities
+      if (match.startsWith('&#')) {
+        const num = match.includes('x') 
+          ? parseInt(match.slice(3, -1), 16) 
+          : parseInt(match.slice(2, -1), 10);
+        return !isNaN(num) ? String.fromCharCode(num) : match;
+      }
+      return match;
+    });
+  } catch (e) {
+    return text;
+  }
+}
+
 function getKeysFromSheet(sheetName, colIndex) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.KEYS);

@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - ACADEMIC IDENTIFIER MODULE (SMART ROUTER V6)
  * Exclusive OpenLibrary for Books, Crossref/OpenAlex for Journals
@@ -230,10 +229,10 @@ function searchOpenAlexByTitle(title) {
     return {
       status: 'success',
       data: {
-        title: item.title || "",
-        authors: (item.authorships || []).map(a => a.author.display_name),
-        publisher: source?.host_organization_name || source?.publisher || source?.display_name || "",
-        journalName: source?.display_name || "",
+        title: decodeHtmlEntities(item.title || ""),
+        authors: (item.authorships || []).map(a => decodeHtmlEntities(a.author.display_name)),
+        publisher: decodeHtmlEntities(source?.host_organization_name || source?.publisher || source?.display_name || ""),
+        journalName: decodeHtmlEntities(source?.display_name || ""),
         year: item.publication_year ? item.publication_year.toString() : "",
         fullDate: standardizeFullDate(item.publication_date),
         doi: item.doi ? item.doi.replace('https://doi.org/', '') : "",
@@ -259,10 +258,10 @@ function fetchOpenAlexMetadata(doi) {
     return {
       status: 'success',
       data: {
-        title: item.title || "",
-        authors: (item.authorships || []).map(a => a.author.display_name),
-        publisher: source?.host_organization_name || source?.publisher || source?.display_name || "",
-        journalName: source?.display_name || "",
+        title: decodeHtmlEntities(item.title || ""),
+        authors: (item.authorships || []).map(a => decodeHtmlEntities(a.author.display_name)),
+        publisher: decodeHtmlEntities(source?.host_organization_name || source?.publisher || source?.display_name || ""),
+        journalName: decodeHtmlEntities(source?.display_name || ""),
         year: item.publication_year ? item.publication_year.toString() : "",
         fullDate: standardizeFullDate(item.publication_date),
         volume: sanitizeNumericValue(item.biblio?.volume || ""),
@@ -329,10 +328,10 @@ function parseCrossrefItem(item, doi) {
   return {
     status: 'success',
     data: {
-      title: (item.title && item.title[0]) || "",
-      authors: (item.author || []).map(a => (a.given ? a.given + " " : "") + (a.family || "")),
-      publisher: item.publisher || "",
-      journalName: (item["container-title"] && item["container-title"][0]) || "",
+      title: decodeHtmlEntities((item.title && item.title[0]) || ""),
+      authors: (item.author || []).map(a => decodeHtmlEntities((a.given ? a.given + " " : "") + (a.family || ""))),
+      publisher: decodeHtmlEntities(item.publisher || ""),
+      journalName: decodeHtmlEntities((item["container-title"] && item["container-title"][0]) || ""),
       year: (item.issued?.["date-parts"]?.[0]?.[0] || "").toString(),
       fullDate: standardizeFullDate(rawDate),
       volume: sanitizeNumericValue(item.volume || ""),
@@ -367,9 +366,9 @@ function searchOpenLibraryByTitle(title) {
     return {
       status: 'success',
       data: {
-        title: doc.title || "",
-        authors: doc.author_name || [],
-        publisher: (doc.publisher || [])[0] || "",
+        title: decodeHtmlEntities(doc.title || ""),
+        authors: (doc.author_name || []).map(a => decodeHtmlEntities(a)),
+        publisher: decodeHtmlEntities((doc.publisher || [])[0] || ""),
         year: (doc.first_publish_year || "").toString(),
         fullDate: doc.first_publish_year ? `01 Jan ${doc.first_publish_year}` : "",
         isbn: (doc.isbn || [])[0] || "",
@@ -395,9 +394,9 @@ function fetchOpenLibraryMetadata(isbn) {
     return {
       status: 'success',
       data: {
-        title: book.title || "",
-        authors: (book.authors || []).map(a => a.name),
-        publisher: (book.publishers || []).map(p => p.name).join(", "),
+        title: decodeHtmlEntities(book.title || ""),
+        authors: (book.authors || []).map(a => decodeHtmlEntities(a.name)),
+        publisher: decodeHtmlEntities((book.publishers || []).map(p => p.name).join(", ")),
         year: book.publish_date ? book.publish_date.match(/\d{4}/)?.[0] || "" : "",
         fullDate: standardizeFullDate(book.publish_date),
         isbn: isbn,
@@ -425,10 +424,10 @@ function fetchPubMedMetadata(pmid) {
     return {
       status: 'success',
       data: {
-        title: result.title || "",
-        authors: (result.authors || []).map(a => a.name),
-        publisher: result.source || "",
-        journalName: result.fulljournalname || result.source || "",
+        title: decodeHtmlEntities(result.title || ""),
+        authors: (result.authors || []).map(a => decodeHtmlEntities(a.name)),
+        publisher: decodeHtmlEntities(result.source || ""),
+        journalName: decodeHtmlEntities(result.fulljournalname || result.source || ""),
         year: result.pubdate ? result.pubdate.split(' ')[0] : "",
         fullDate: standardizeFullDate(result.pubdate),
         pmid: pmid,
@@ -460,8 +459,8 @@ function fetchArxivMetadata(id) {
     return {
       status: 'success',
       data: {
-        title: title,
-        authors: authors,
+        title: decodeHtmlEntities(title),
+        authors: authors.map(a => decodeHtmlEntities(a)),
         publisher: "arXiv",
         year: pubTag ? pubTag.substring(0, 4) : "",
         fullDate: standardizeFullDate(pubTag),

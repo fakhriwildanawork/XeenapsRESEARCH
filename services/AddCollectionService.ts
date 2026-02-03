@@ -1,4 +1,3 @@
-
 import { LibraryItem } from "../types";
 import { callAiProxy } from "./gasService";
 // Fix: GAS_WEB_APP_URL must be imported from the constants file where it is exported
@@ -53,7 +52,8 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
        - Create a list of Technical Nouns, Scientific Terms, and Key Concepts.
        - STRICT FILTRATION: Remove all Verbs, Conjunctions, Irrelevant characters, Person Names, and general/common words.
        - LENGTH: Max 1000 characters of clean, space-separated terms. This is used for Smart Searching.
-    7. STRICT RESTRICTION: DO NOT fill "summary", "strength", "weakness", "researchMethodology", "unfamiliarTerminology", "supportingReferences", "videoRecommendation", or "quickTipsForYou".
+    7. STRICT RULE: DO NOT fill "summary", "strength", "weakness", "researchMethodology", "unfamiliarTerminology", "supportingReferences", "videoRecommendation", or "quickTipsForYou".
+    8. NO HTML ENTITIES (CRITICAL): ALWAYS output human-readable literal characters. DO NOT use HTML entities like &amp;, &quot;, &lt;, or &gt; in your JSON values. Convert them to their literal character equivalents (e.g., use "&" instead of "&amp;").
     --------------------------
 
     APPROVED CATEGORY LIST:
