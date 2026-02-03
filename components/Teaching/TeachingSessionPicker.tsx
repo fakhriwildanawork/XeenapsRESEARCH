@@ -108,7 +108,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
                    <BookOpenCheck className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <div>
-                   <h2 className="text-lg md:text-xl font-black text-[#004A74] uppercase tracking-tight">Teaching Resource</h2>
+                   <h2 className="text-lg md:text-xl font-black text-[#004A74] uppercase tracking-tight">Teaching Session</h2>
                    <p className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select session to attach literature</p>
                 </div>
              </div>

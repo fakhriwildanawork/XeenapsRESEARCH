@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { NavLink, useLocation } from 'react-router-dom';
@@ -179,8 +178,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
               onClick={handleNavClick}
               className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
                 isActive 
-                  ? 'bg-[#FED400] text-[#004A74] shadow-md' 
-                  : 'text-gray-500 hover:bg-[#FED400]/5 hover:text-[#004A74]'
+                  ? 'bg-[#FED400] text-black shadow-md' 
+                  : 'text-black hover:bg-[#FED400]/5 hover:text-black'
               }`}
             >
               <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
@@ -201,7 +200,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           <button 
             onClick={() => isExpanded && setResearchMenuOpen(!researchMenuOpen)}
             className={`w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 ${
-              researchMenuOpen || location.pathname.startsWith('/research') ? 'bg-[#FED400]/10 text-[#004A74]' : 'text-gray-500 hover:bg-[#FED400]/5 hover:text-[#004A74]'
+              researchMenuOpen || location.pathname.startsWith('/research') ? 'bg-[#FED400]/10 text-black' : 'text-black hover:bg-[#FED400]/5 hover:text-black'
             }`}
           >
             <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
@@ -217,7 +216,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             <NavLink 
               to="/research"
               onClick={handleNavClick}
-              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research' ? 'text-[#004A74] bg-[#FED400]/10 font-bold' : 'text-gray-500 hover:text-[#004A74] hover:bg-[#FED400]/5'}`}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <Zap size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Gap Finder</span>
@@ -225,7 +224,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             <NavLink 
               to="/research/literature-review"
               onClick={handleNavClick}
-              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname.startsWith('/research/literature-review') ? 'text-[#004A74] bg-[#FED400]/10 font-bold' : 'text-gray-500 hover:text-[#004A74] hover:bg-[#FED400]/5'}`}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname.startsWith('/research/literature-review') ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <BookOpen size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Literature Review</span>
@@ -233,7 +232,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             <NavLink 
               to="/research/brainstorming"
               onClick={handleNavClick}
-              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/brainstorming' ? 'text-[#004A74] bg-[#FED400]/10 font-bold' : 'text-gray-500 hover:text-[#004A74] hover:bg-[#FED400]/5'}`}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/brainstorming' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <Sparkles size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Brainstorming</span>
@@ -241,7 +240,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             <NavLink 
               to="/research/publication"
               onClick={handleNavClick}
-              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/publication' ? 'text-[#004A74] bg-[#FED400]/10 font-bold' : 'text-gray-500 hover:text-[#004A74] hover:bg-[#FED400]/5'}`}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/publication' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <Share2 size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Publication</span>
@@ -249,7 +248,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             <NavLink 
               to="/research/tracer"
               onClick={handleNavClick}
-              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname.startsWith('/research/tracer') ? 'text-[#004A74] bg-[#FED400]/10 font-bold' : 'text-gray-500 hover:text-[#004A74] hover:bg-[#FED400]/5'}`}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname.startsWith('/research/tracer') ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <Target size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Tracer</span>
@@ -267,8 +266,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
               onClick={handleNavClick}
               className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
                 isActive 
-                  ? 'bg-[#FED400] text-[#004A74] shadow-md' 
-                  : 'text-gray-500 hover:bg-[#FED400]/5 hover:text-[#004A74]'
+                  ? 'bg-[#FED400] text-black shadow-md' 
+                  : 'text-black hover:bg-[#FED400]/5 hover:text-black'
               }`}
             >
               <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
@@ -289,7 +288,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           <button 
             onClick={() => isExpanded && setSettingsMenuOpen(!settingsMenuOpen)}
             className={`w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 ${
-              settingsMenuOpen ? 'bg-[#FED400] text-[#004A74] shadow-md' : 'text-gray-500 hover:bg-[#FED400]/5 hover:text-[#004A74]'
+              settingsMenuOpen ? 'bg-[#FED400] text-black shadow-md' : 'text-black hover:bg-[#FED400]/5 hover:text-black'
             }`}
           >
             <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:rotate-45 transition-transform duration-500">
@@ -305,7 +304,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             <NavLink 
               to="/settings"
               onClick={handleNavClick}
-              className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-gray-500 hover:text-[#004A74] hover:bg-[#FED400]/5 transition-all text-xs md:text-sm font-medium"
+              className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-black hover:text-black hover:bg-[#FED400]/5 transition-all text-xs md:text-sm font-medium"
             >
               <Settings size={16} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Configuration</span>
@@ -317,7 +316,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
                   await window.aistudio.openSelectKey();
                 }
               }}
-              className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-gray-500 hover:text-[#004A74] hover:bg-[#FED400]/5 transition-all text-xs md:text-sm font-medium text-left"
+              className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-black hover:text-black hover:bg-[#FED400]/5 transition-all text-xs md:text-sm font-medium text-left"
             >
               <Key size={16} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">AI Key</span>
@@ -332,8 +331,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           onClick={handleNavClick}
           className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
             location.pathname === '/profile' 
-              ? 'bg-[#FED400] text-[#004A74] shadow-md' 
-              : 'text-gray-500 hover:bg-[#FED400]/5 hover:text-[#004A74]'
+              ? 'bg-[#FED400] text-black shadow-md' 
+              : 'text-black hover:bg-[#FED400]/5 hover:text-black'
           }`}
         >
           <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">

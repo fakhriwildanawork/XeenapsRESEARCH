@@ -98,7 +98,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                    <Target className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <div>
-                   <h2 className="text-lg md:text-xl font-black text-[#004A74] uppercase tracking-tight">Add to Tracer</h2>
+                   <h2 className="text-lg md:text-xl font-black text-[#004A74] uppercase tracking-tight">Research Tracer</h2>
                    <p className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select available research below</p>
                 </div>
              </div>
