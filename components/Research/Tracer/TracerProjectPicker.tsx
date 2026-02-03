@@ -114,7 +114,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                  setAppliedSearch(search);
                  setCurrentPage(1);
                }}
-               phrases={["Search by Title...", "Search by Author(s)...", "Search by label..."]}
+               phrases={["Search Title...", "Search Author(s)...", "Search Label..."]}
              />
           </div>
 

@@ -133,7 +133,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
                 <StandardTableWrapper>
                    <thead>
                       <tr>
-                         <StandardTh width="100px">Session Date</StandardTh>
+                         <StandardTh width="100px">Date</StandardTh>
                          <StandardTh width="250px">Course</StandardTh>
                          <StandardTh width="180px">Institution</StandardTh>
                          <StandardTh width="90px" className="sticky right-0 bg-gray-50">Action</StandardTh>
