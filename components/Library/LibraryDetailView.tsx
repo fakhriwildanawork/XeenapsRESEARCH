@@ -38,7 +38,7 @@ import {
   BookmarkIcon as BookmarkSolid, 
   StarIcon as StarSolid
 } from '@heroicons/react/24/solid';
-import { StickyNote, Share2 } from 'lucide-react';
+import { StickyNote, Share2, Target, BookOpenCheck } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { saveLibraryItem, deleteLibraryItem, generateCitations, generateInsight, fetchFileContent, translateInsightSection } from '../../services/gasService';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -49,6 +49,8 @@ import RelatedQuestion from '../QuestionBank/RelatedQuestion';
 import ConsultationGallery from '../Consultation/ConsultationGallery';
 import NotebookMain from '../Notebook/NotebookMain';
 import SharboxWorkflowModal from '../Sharbox/SharboxWorkflowModal';
+import TracerProjectPicker from '../Research/Tracer/TracerProjectPicker';
+import TeachingSessionPicker from '../Teaching/TeachingSessionPicker';
 
 interface LibraryDetailViewProps {
   item: LibraryItem;
@@ -160,7 +162,7 @@ const CitationModal: React.FC<{
           </div>
 
           <button 
-            onClick={handleGenerate}
+            onClick={handleGenerate} 
             disabled={isGenerating}
             className="w-full py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-[#004A74]/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
           >
@@ -355,6 +357,8 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const [showConsultations, setShowConsultations] = useState(false); 
   const [showNotebook, setShowNotebook] = useState(false); 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false); 
+  const [isTracerPickerOpen, setIsTracerPickerOpen] = useState(false);
+  const [isTeachingPickerOpen, setIsTeachingPickerOpen] = useState(false);
   const [dummySearch, setDummySearch] = useState('');
   
   const [isBookmarked, setIsBookmarked] = useState(!!item.isBookmarked);
@@ -640,6 +644,18 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
           onClose={() => setIsShareModalOpen(false)} 
         />
       )}
+      {isTracerPickerOpen && (
+        <TracerProjectPicker 
+          item={currentItem} 
+          onClose={() => setIsTracerPickerOpen(false)} 
+        />
+      )}
+      {isTeachingPickerOpen && (
+        <TeachingSessionPicker 
+          item={currentItem} 
+          onClose={() => setIsTeachingPickerOpen(false)} 
+        />
+      )}
       
       {/* 1. STICKY TOP AREA: MAINTAIN APP HEADER */}
       <div className="sticky top-0 z-[90] bg-white/95 backdrop-blur-xl border-b border-gray-100">
@@ -722,7 +738,8 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     <button onClick={() => { setShowNotebook(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
                       <StickyNote className="w-4 h-4" /> Notes
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><AcademicCapIcon className="w-4 h-4" /> Export Metadata</button>
+                    <button onClick={() => { setIsTracerPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><Target className="w-4 h-4" /> Add to Tracer</button>
+                    <button onClick={() => { setIsTeachingPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><BookOpenCheck className="w-4 h-4" /> Add to Teaching</button>
                     <button onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share Entry</button>
                     <div className="h-px bg-gray-50 my-1 mx-2" />
                     <button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all">
@@ -965,6 +982,8 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                             </div>
                             <div className="flex items-center justify-end gap-2">
                               <button 
+                                // Added comment above the fix for line 985 (User reported line 985, which corresponds to the start of this map block)
+                                // Fix: Added missing event argument 'e' to handleCopy call to resolve argument count mismatch
                                 onClick={(e) => handleCopy(e, ref.replace(/<[^>]*>/g, ''))}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#004A74] rounded-lg border border-gray-100 text-[9px] font-black uppercase tracking-tight shadow-sm hover:bg-[#FED400] transition-all"
                               >
@@ -973,7 +992,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                               {url && (
                                 <button 
                                   onClick={() => handleOpenLink(url)}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#004A74] text-white rounded-lg text-[9px] font-black uppercase tracking-tight shadow-sm hover:bg-[#003859] hover:scale-105 transition-all"
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#004A74] text-white rounded-lg text-[9px] font-black uppercase tracking-tight shadow-sm hover:scale-105 transition-all"
                                 >
                                   <ArrowTopRightOnSquareIcon className="w-3 h-3" /> Visit
                                 </button>
