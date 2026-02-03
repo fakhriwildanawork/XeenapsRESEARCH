@@ -12,8 +12,6 @@ import {
   ArcElement,
   Filler 
 } from 'chart.js';
-// @ts-ignore
-import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Line, Doughnut, Pie } from 'react-chartjs-2';
 import { 
   LibraryItem, 
@@ -40,6 +38,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 // Register Chart.js components and plugins
+// Use window reference for DataLabels to avoid Rollup resolution errors in Vercel/Vite
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -50,7 +49,7 @@ ChartJS.register(
   Tooltip,
   Legend,
   Filler,
-  ChartDataLabels
+  (window as any).ChartDataLabels
 );
 
 interface DashboardMainProps {
