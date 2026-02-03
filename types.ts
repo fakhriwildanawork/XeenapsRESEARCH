@@ -161,6 +161,7 @@ export interface SharboxItem extends LibraryItem {
   timestamp: string;
   status: SharboxStatus;
   id_item: string; // Original library ID
+  isRead?: boolean;
 }
 
 // --- NOTEBOOK MODULE TYPES ---

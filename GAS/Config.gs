@@ -37,7 +37,7 @@ const CONFIG = {
       'id', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
     ],
     SHARBOX_INBOX: [
-      'id', 'senderName', 'senderPhotoUrl', 'senderAffiliation', 'senderUniqueAppId', 'senderEmail', 'senderPhone', 'senderSocialMedia', 'message', 'timestamp', 'status',
+      'id', 'senderName', 'senderPhotoUrl', 'senderAffiliation', 'senderUniqueAppId', 'senderEmail', 'senderPhone', 'senderSocialMedia', 'message', 'timestamp', 'status', 'isRead',
       'id_item', 'title', 'type', 'category', 'topic', 'subTopic', 'authors', 'publisher', 'year', 'fullDate', 'pubInfo', 'identifiers', 'source', 'format', 'url', 'fileId', 'imageView', 'youtubeId', 'tags', 'abstract', 'mainInfo', 'extractedJsonId', 'insightJsonId', 'storageNodeUrl', 'isFavorite', 'isBookmarked', 'createdAt', 'updatedAt', 'supportingReferences'
     ],
     SHARBOX_SENT: [
@@ -61,6 +61,9 @@ const CONFIG = {
     ],
     RESEARCH_PROJECTS: [
       'id', 'projectName', 'language', 'status', 'isFavorite', 'isUsed', 'proposedTitle', 'noveltyNarrative', 'futureDirections', 'createdAt', 'updatedAt'
+    ],
+    PROJECT_SOURCES: [
+      'id', 'projectId', 'sourceId', 'title', 'findings', 'methodology', 'limitations', 'createdAt', 'isFavorite', 'isUsed'
     ],
     PROJECT_SOURCES: [
       'id', 'projectId', 'sourceId', 'title', 'findings', 'methodology', 'limitations', 'createdAt', 'isFavorite', 'isUsed'

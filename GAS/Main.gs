@@ -332,6 +332,7 @@ function doPost(e) {
     if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(body.targetUniqueAppId, body.receiverName, body.receiverPhotoUrl, body.message, body.item, body.receiverContacts));
     if (action === 'claimSharboxItem') return createJsonResponse(handleClaimSharboxItem(body.id));
     if (action === 'deleteSharboxItem') return createJsonResponse(deleteSharboxItem(body.id, body.type));
+    if (action === 'markSharboxRead') return createJsonResponse(markSharboxItemAsRead(body.id));
 
     // NEW: saveNote
     if (action === 'saveNote') return createJsonResponse(saveNoteToRegistry(body.item, body.content));

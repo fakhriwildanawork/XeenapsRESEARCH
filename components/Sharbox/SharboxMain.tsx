@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { SharboxItem, SharboxStatus } from '../../types';
-import { fetchSharboxItems, claimSharboxItem, deleteSharboxItem } from '../../services/SharboxService';
+import { fetchSharboxItems, claimSharboxItem, deleteSharboxItem, markSharboxItemAsRead } from '../../services/SharboxService';
 import { 
   InboxIcon, 
   PaperAirplaneIcon, 
@@ -44,6 +44,19 @@ const SharboxMain: React.FC = () => {
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  const handleItemClick = (item: SharboxItem) => {
+    setSelectedItem(item);
+    
+    // OPTIMISTIC & SILENT BACKGROUND SYNC
+    if (activeTab === 'Inbox' && !item.isRead) {
+      // 1. Optimistic Update (Instant UI feedback)
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, isRead: true } : i));
+      
+      // 2. Silent Background API Call (No feedback per instruction)
+      markSharboxItemAsRead(item.id);
+    }
+  };
 
   const handleClaim = async (item: SharboxItem) => {
     showXeenapsToast('info', 'Importing knowledge to your library...');
@@ -166,7 +179,7 @@ const SharboxMain: React.FC = () => {
             {filteredItems.map(item => (
               <div 
                 key={item.id}
-                onClick={() => setSelectedItem(item)}
+                onClick={() => handleItemClick(item)}
                 className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col h-full cursor-pointer"
               >
                 {/* a. Foto Nama Affiliation (No Uppercase) */}
@@ -190,6 +203,9 @@ const SharboxMain: React.FC = () => {
                       </p>
                    </div>
                    <div className="ml-auto flex items-center gap-1.5">
+                     {activeTab === 'Inbox' && !item.isRead && (
+                       <span className="bg-red-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-sm">NEW</span>
+                     )}
                      <button 
                        onClick={(e) => handleDelete(e, item.id)}
                        className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"

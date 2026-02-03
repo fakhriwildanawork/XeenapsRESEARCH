@@ -15,6 +15,14 @@ function setupSharboxDatabase() {
       iSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       iSheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
       iSheet.setFrozenRows(1);
+    } else {
+      // Auto-update Inbox sheet headers to include isRead
+      const currentHeaders = iSheet.getRange(1, 1, 1, iSheet.getLastColumn()).getValues()[0];
+      const targetHeaders = CONFIG.SCHEMAS.SHARBOX_INBOX;
+      const missing = targetHeaders.filter(h => !currentHeaders.includes(h));
+      if (missing.length > 0) {
+        iSheet.getRange(1, currentHeaders.length + 1, 1, missing.length).setValues([missing]).setFontWeight("bold").setBackground("#f3f3f3");
+      }
     }
 
     // 2. Sent Sheet
@@ -85,6 +93,7 @@ function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, 
       if (h === 'message') return message || '';
       if (h === 'timestamp') return timestamp;
       if (h === 'status') return 'UNCLAIMED';
+      if (h === 'isRead') return false;
       
       // Collection Metadata mapping (prefix id_item)
       const colKey = h === 'id_item' ? 'id' : h;
@@ -158,6 +167,11 @@ function getSharboxItemsFromRegistry(type) {
         if (schemaKey === 'authors' && !Array.isArray(val)) val = [];
         
         obj[schemaKey] = val;
+        
+        // Specific boolean parsing for isRead
+        if (schemaKey === 'isRead') {
+          obj[schemaKey] = (val === true || String(val).toLowerCase() === 'true');
+        }
       });
       return obj;
     }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -222,6 +236,32 @@ function handleClaimSharboxItem(transactionId) {
     sheet.getRange(targetRowIndex, statusIdx + 1).setValue('CLAIMED');
 
     return { status: 'success' };
+  } catch (e) {
+    return { status: 'error', message: e.toString() };
+  }
+}
+
+/**
+ * NEW: Mark Sharbox Inbox item as Read
+ */
+function markSharboxItemAsRead(id) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
+    const sheet = ss.getSheetByName("Inbox");
+    if (!sheet) return { status: 'error', message: 'Inbox not found' };
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idIdx = headers.indexOf('id');
+    const isReadIdx = headers.indexOf('isRead');
+    if (isReadIdx === -1) return { status: 'error', message: 'isRead column missing. Please re-initialize Sharbox.' };
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idIdx] === id) {
+        sheet.getRange(i + 1, isReadIdx + 1).setValue(true);
+        return { status: 'success' };
+      }
+    }
+    return { status: 'error', message: 'Item not found' };
   } catch (e) {
     return { status: 'error', message: e.toString() };
   }
