@@ -354,6 +354,14 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
                   <p className="text-[11px] font-bold text-gray-600">{currentItem.publisher}</p>
                 </div>
               )}
+              {(pubInfo.journal || pubInfo.vol || pubInfo.issue || pubInfo.pages) && (
+                <div className="flex items-start gap-4">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest w-24 shrink-0">Publication</span>
+                  <p className="text-[11px] font-bold text-[#004A74]">
+                    {[pubInfo.journal, pubInfo.vol ? `Vol. ${pubInfo.vol}` : '', pubInfo.issue ? `No. ${pubInfo.issue}` : '', pubInfo.pages ? `pp. ${pubInfo.pages}` : ''].filter(Boolean).join(' • ')}
+                  </p>
+                </div>
+              )}
               {Object.values(identifiers).some(v => v) && (
                 <div className="flex items-start gap-4">
                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest w-24 shrink-0">Identifiers</span>

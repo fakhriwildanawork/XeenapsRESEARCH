@@ -210,6 +210,11 @@ function handleClaimSharboxItem(transactionId) {
        collectionItem[h] = val;
     });
 
+    // OVERWRITE WITH LOCAL TIMESTAMP (NOW)
+    const now = new Date().toISOString();
+    collectionItem.createdAt = now;
+    collectionItem.updatedAt = now;
+
     // 2. REGISTER TO LOCAL LIBRARY
     saveToSheet(CONFIG.SPREADSHEETS.LIBRARY, "Collections", collectionItem);
 
