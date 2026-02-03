@@ -123,34 +123,36 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                 <StandardTableWrapper>
                    <thead>
                       <tr>
-                         <StandardTh width="600px" className="text-left">Research Tracer</StandardTh>
-                         <StandardTh width="120px" className="sticky right-0 bg-gray-50">Action</StandardTh>
+                         <StandardTh width="100px">Project Label</StandardTh>
+                         <StandardTh width="280px">Title / Research Domain</StandardTh>
+                         <StandardTh width="160px">Author Team</StandardTh>
+                         <StandardTh width="90px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                       </tr>
                    </thead>
                    <tbody className="divide-y divide-gray-50">
                       {isLoading ? (
                          <TableSkeletonRows count={5} />
                       ) : projects.length === 0 ? (
-                         <tr><td colSpan={2} className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No active tracer projects</td></tr>
+                         <tr><td colSpan={4} className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No active tracer projects</td></tr>
                       ) : (
                          projects.map(p => (
                              <StandardTr key={p.id}>
                                <StandardTd>
-                                  <p className="text-xs font-bold text-[#004A74] uppercase line-clamp-1">{p.title || p.label}</p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[8px] font-black bg-[#004A74]/5 text-[#004A74] px-1.5 py-0.5 rounded-md uppercase">{p.label}</span>
-                                  </div>
-                                  <p className="text-[8px] font-bold text-gray-400 uppercase mt-1 italic">
-                                     {Array.isArray(p.authors) ? p.authors.join(', ') : 'N/A'}
-                                  </p>
+                                  <span className="text-[9px] font-black bg-[#004A74]/5 text-[#004A74] px-2 py-0.5 rounded-md uppercase">{p.label}</span>
                                </StandardTd>
+                               <StandardTd>
+                                  <p className="text-xs font-bold text-[#004A74] uppercase line-clamp-1">{p.title || p.label}</p>
+                               </StandardTd>
+                               <StandardTd className="text-[10px] font-bold text-gray-400 uppercase truncate">
+                                  {Array.isArray(p.authors) ? p.authors.join(', ') : 'N/A'}
+                                </StandardTd>
                                <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
                                   <button 
                                     disabled={isLinking}
                                     onClick={() => handleSelect(p)}
                                     className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
                                   >
-                                     {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={4} />} Select
+                                     {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} strokeWidth={4} />} Anchor
                                   </button>
                                </StandardTd>
                              </StandardTr>
@@ -173,9 +175,3 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
 };
 
 export default TracerProjectPicker;
-
-const Check = (props: any) => (
-  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);
