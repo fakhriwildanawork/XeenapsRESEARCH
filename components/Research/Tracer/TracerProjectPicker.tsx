@@ -79,7 +79,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+    <div className="fixed inset-0 z-[2000] bg-black/50 backdrop-blur-md flex items-center justify-center p-3 md:p-6 animate-in fade-in">
        {/* FULL BODY OVERLAY LOADER */}
        {isLinking && (
          <div className="fixed inset-0 z-[9999] bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
@@ -90,22 +90,24 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
          </div>
        )}
 
-       <div className="bg-white rounded-[3rem] w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+       <div className="bg-white rounded-[2rem] md:rounded-[3rem] w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] md:max-h-[85vh]">
           
-          <div className="p-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
-             <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-                   <Target size={24} />
+          <div className="p-5 md:p-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
+             <div className="flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-lg">
+                   <Target className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <div>
-                   <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Add to Tracer</h2>
-                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select available researchs below</p>
+                   <h2 className="text-lg md:text-xl font-black text-[#004A74] uppercase tracking-tight">Add to Tracer</h2>
+                   <p className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select available research below</p>
                 </div>
              </div>
-             <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
+             <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
+                <X className="w-6 h-6 md:w-7 md:h-7" />
+             </button>
           </div>
 
-          <div className="px-8 py-4 bg-white border-b border-gray-100 shrink-0">
+          <div className="px-5 md:px-8 py-3 md:py-4 bg-white border-b border-gray-100 shrink-0">
              <SmartSearchBox 
                value={search} 
                onChange={setSearch} 
@@ -118,7 +120,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
              />
           </div>
 
-          <div className="flex-1 overflow-hidden p-6 flex flex-col bg-[#fcfcfc]">
+          <div className="flex-1 overflow-hidden p-4 md:p-6 flex flex-col bg-[#fcfcfc]">
              <StandardTableContainer>
                 <StandardTableWrapper>
                    <thead>
