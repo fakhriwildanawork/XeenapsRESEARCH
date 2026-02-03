@@ -142,7 +142,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
   const placeholderUrl = BRAND_ASSETS.USER_DEFAULT;
 
   return (
-    <header className="sticky top-0 z-[60] w-full py-4 lg:py-6 bg-white/80 backdrop-blur-md flex items-center justify-between border-b border-gray-100/50 px-1">
+    <header className="sticky top-0 z-[100] w-full py-4 lg:py-6 bg-white/80 backdrop-blur-md flex items-center justify-between border-b border-gray-100/50 px-1">
       <style>{`
         @keyframes refresh-glow {
           0% { color: #ef4444; }

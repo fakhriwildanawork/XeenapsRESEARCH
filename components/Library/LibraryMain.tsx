@@ -242,7 +242,10 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
 
       <div className={`flex-1 flex flex-col transition-opacity duration-300 ${isTransitioning ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between shrink-0 mb-4">
-          <SmartSearchBox value={localSearch} onChange={setLocalSearch} onSearch={handleSearchTrigger} />
+          <SmartSearchBox 
+            value={localSearch} 
+            onChange={setLocalSearch} 
+            onSearch={handleSearchTrigger} />
           <AddButton onClick={() => navigate('/add')} icon={<PlusIcon className="w-5 h-5" />}>Add Collection</AddButton>
         </div>
 
@@ -281,8 +284,8 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
             <StandardTableWrapper>
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-[60] px-6 py-4 w-12 bg-gray-50 border-r border-gray-100/50 shadow-sm text-center"><div className="flex items-center justify-center"><StandardCheckbox onChange={toggleSelectAll} checked={serverItems.length > 0 && selectedIds.length === serverItems.length} /></div></th>
-                  {tableColumns.map(col => <StandardTh key={col.key} onClick={() => handleSort(col.key)} isActiveSort={sortConfig.key === col.key} width={col.width} className={col.key === 'title' ? 'sticky left-12 z-[55] border-r border-gray-100/50 shadow-sm' : ''}>{col.label} {getSortIcon(col.key)}</StandardTh>)}
+                  <th className="sticky left-0 z-30 px-6 py-4 w-12 bg-gray-50 border-r border-gray-100/50 shadow-sm text-center"><div className="flex items-center justify-center"><StandardCheckbox onChange={toggleSelectAll} checked={serverItems.length > 0 && selectedIds.length === serverItems.length} /></div></th>
+                  {tableColumns.map(col => <StandardTh key={col.key} onClick={() => handleSort(col.key)} isActiveSort={sortConfig.key === col.key} width={col.width} className={col.key === 'title' ? 'sticky left-12 z-20 border-r border-gray-100/50 shadow-sm' : ''}>{col.label} {getSortIcon(col.key)}</StandardTh>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
