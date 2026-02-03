@@ -37,7 +37,6 @@ import {
   ChevronRight,
   Sparkles,
   PieChart as PieChartIcon,
-  // Added missing MapPin and Award imports
   MapPin,
   Award
 } from 'lucide-react';
@@ -82,9 +81,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({ libraryItems, onRefresh }
   const [isInitializing, setIsInitializing] = useState(!dashboardCache.lastUpdated);
   const [cachedData, setCachedData] = useState(dashboardCache);
 
-  // Added missing useCallback import and fixed the hook call
   const loadAllDashboardData = useCallback(async (force = false) => {
-    // Only fetch if cache is empty, forced, or older than 30 minutes
     const isExpired = dashboardCache.lastUpdated && (Date.now() - dashboardCache.lastUpdated > 30 * 60 * 1000);
     
     if (!force && dashboardCache.lastUpdated && !isExpired) {
@@ -121,6 +118,105 @@ const DashboardMain: React.FC<DashboardMainProps> = ({ libraryItems, onRefresh }
   useEffect(() => {
     loadAllDashboardData();
   }, [loadAllDashboardData]);
+
+  // --- OPTIMISTIC SILENT UPDATE LISTENERS ---
+  useEffect(() => {
+    const updateTeaching = (e: any) => {
+      const item = e.detail as TeachingItem;
+      setCachedData(prev => {
+        const index = prev.teaching.findIndex(t => t.id === item.id);
+        const newList = index > -1 ? prev.teaching.map(t => t.id === item.id ? item : t) : [item, ...prev.teaching];
+        dashboardCache.teaching = newList;
+        return { ...prev, teaching: newList };
+      });
+    };
+
+    const deleteTeaching = (e: any) => {
+      const id = e.detail as string;
+      setCachedData(prev => {
+        const newList = prev.teaching.filter(t => t.id !== id);
+        dashboardCache.teaching = newList;
+        return { ...prev, teaching: newList };
+      });
+    };
+
+    const updateActivity = (e: any) => {
+      const item = e.detail as ActivityItem;
+      setCachedData(prev => {
+        const index = prev.activities.findIndex(a => a.id === item.id);
+        const newList = index > -1 ? prev.activities.map(a => a.id === item.id ? item : a) : [item, ...prev.activities];
+        dashboardCache.activities = newList;
+        return { ...prev, activities: newList };
+      });
+    };
+
+    const deleteActivity = (e: any) => {
+      const id = e.detail as string;
+      setCachedData(prev => {
+        const newList = prev.activities.filter(a => a.id !== id);
+        dashboardCache.activities = newList;
+        return { ...prev, activities: newList };
+      });
+    };
+
+    const updateTracer = (e: any) => {
+      const item = e.detail as TracerProject;
+      setCachedData(prev => {
+        const index = prev.tracer.findIndex(t => t.id === item.id);
+        const newList = index > -1 ? prev.tracer.map(t => t.id === item.id ? item : t) : [item, ...prev.tracer];
+        dashboardCache.tracer = newList;
+        return { ...prev, tracer: newList };
+      });
+    };
+
+    const deleteTracer = (e: any) => {
+      const id = e.detail as string;
+      setCachedData(prev => {
+        const newList = prev.tracer.filter(t => t.id !== id);
+        dashboardCache.tracer = newList;
+        return { ...prev, tracer: newList };
+      });
+    };
+
+    const updatePublication = (e: any) => {
+      const item = e.detail as PublicationItem;
+      setCachedData(prev => {
+        const index = prev.publications.findIndex(p => p.id === item.id);
+        const newList = index > -1 ? prev.publications.map(p => p.id === item.id ? item : p) : [item, ...prev.publications];
+        dashboardCache.publications = newList;
+        return { ...prev, publications: newList };
+      });
+    };
+
+    const deletePublication = (e: any) => {
+      const id = e.detail as string;
+      setCachedData(prev => {
+        const newList = prev.publications.filter(p => p.id !== id);
+        dashboardCache.publications = newList;
+        return { ...prev, publications: newList };
+      });
+    };
+
+    window.addEventListener('xeenaps-teaching-updated', updateTeaching);
+    window.addEventListener('xeenaps-teaching-deleted', deleteTeaching);
+    window.addEventListener('xeenaps-activity-updated', updateActivity);
+    window.addEventListener('xeenaps-activity-deleted', deleteActivity);
+    window.addEventListener('xeenaps-tracer-updated', updateTracer);
+    window.addEventListener('xeenaps-tracer-deleted', deleteTracer);
+    window.addEventListener('xeenaps-publication-updated', updatePublication);
+    window.addEventListener('xeenaps-publication-deleted', deletePublication);
+
+    return () => {
+      window.removeEventListener('xeenaps-teaching-updated', updateTeaching);
+      window.removeEventListener('xeenaps-teaching-deleted', deleteTeaching);
+      window.removeEventListener('xeenaps-activity-updated', updateActivity);
+      window.removeEventListener('xeenaps-activity-deleted', deleteActivity);
+      window.removeEventListener('xeenaps-tracer-updated', updateTracer);
+      window.removeEventListener('xeenaps-tracer-deleted', deleteTracer);
+      window.removeEventListener('xeenaps-publication-updated', updatePublication);
+      window.removeEventListener('xeenaps-publication-deleted', deletePublication);
+    };
+  }, []);
 
   // --- AGGREGATION LOGIC ---
 

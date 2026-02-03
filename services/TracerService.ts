@@ -1,3 +1,4 @@
+
 import { TracerProject, TracerLog, TracerReference, TracerReferenceContent, TracerQuote, TracerTodo, TracerFinanceItem, TracerFinanceContent, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
@@ -28,6 +29,10 @@ export const fetchTracerProjects = async (
 
 export const saveTracerProject = async (item: TracerProject): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
+
+  // SILENT BROADCAST FOR DASHBOARD
+  window.dispatchEvent(new CustomEvent('xeenaps-tracer-updated', { detail: item }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
@@ -42,6 +47,10 @@ export const saveTracerProject = async (item: TracerProject): Promise<boolean> =
 
 export const deleteTracerProject = async (id: string): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
+
+  // SILENT BROADCAST FOR DASHBOARD
+  window.dispatchEvent(new CustomEvent('xeenaps-tracer-deleted', { detail: id }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',

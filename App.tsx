@@ -48,6 +48,33 @@ const App: React.FC = () => {
     loadData();
   }, [loadData]);
 
+  // --- OPTIMISTIC LIBRARY LISTENERS ---
+  useEffect(() => {
+    const handleLibraryUpdate = (e: any) => {
+      const updatedItem = e.detail as LibraryItem;
+      setItems(prev => {
+        const index = prev.findIndex(i => i.id === updatedItem.id);
+        if (index > -1) {
+          return prev.map(i => i.id === updatedItem.id ? updatedItem : i);
+        }
+        return [updatedItem, ...prev];
+      });
+    };
+
+    const handleLibraryDelete = (e: any) => {
+      const id = e.detail as string;
+      setItems(prev => prev.filter(i => i.id !== id));
+    };
+
+    window.addEventListener('xeenaps-library-updated', handleLibraryUpdate);
+    window.addEventListener('xeenaps-library-deleted', handleLibraryDelete);
+
+    return () => {
+      window.removeEventListener('xeenaps-library-updated', handleLibraryUpdate);
+      window.removeEventListener('xeenaps-library-deleted', handleLibraryDelete);
+    };
+  }, []);
+
   useEffect(() => {
     const forceCloseSidebar = () => {
       setIsMobileSidebarOpen(false);
@@ -74,7 +101,6 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      {/* Outer container uses min-h-screen instead of fixed h-[100dvh] to allow natural body scroll */}
       <div className={`flex min-h-screen bg-white text-[#004A74] ${isLoading ? 'pointer-events-none select-none' : ''}`}>
         {isMobileSidebarOpen && (
           <div 
@@ -88,7 +114,6 @@ const App: React.FC = () => {
           onMobileClose={() => setIsMobileSidebarOpen(false)} 
         />
 
-        {/* main container no longer restricts overflow to allow whole page scroll behavior */}
         <main className="flex-1 flex flex-col px-4 md:px-8 lg:px-12 relative min-w-0 bg-white z-0">
           <Header 
             searchQuery={searchQuery} 
@@ -96,7 +121,6 @@ const App: React.FC = () => {
             onRefresh={loadData}
           />
 
-          {/* Wrapper Routes grows naturally within the main scroll context */}
           <div className="mt-4 lg:mt-6 pb-20 relative bg-white">
             <React.Suspense fallback={<GlobalAppLoader />}>
               <Routes>
@@ -110,7 +134,6 @@ const App: React.FC = () => {
                 <Route path="/archived-articles" element={<ArchivedArticle />} />
                 <Route path="/sharbox" element={<SharboxMain />} />
 
-                {/* RESEARCH SUB-ROUTES */}
                 <Route path="/research/*" element={<GapFinderModule items={items} />} />
                 <Route path="/research/literature-review" element={<AllReview />} />
                 <Route path="/research/literature-review/:id" element={<ReviewDetail libraryItems={items} />} />
@@ -120,16 +143,12 @@ const App: React.FC = () => {
                 <Route path="/presentations" element={<AllPresentation items={items} />} />
                 <Route path="/questions" element={<AllQuestion items={items} />} />
                 
-                {/* ACTIVITIES ROUTE */}
                 <Route path="/activities/*" element={<ActivityMain />} />
 
-                {/* TEACHING ROUTE */}
                 <Route path="/teaching/*" element={<TeachingMain />} />
 
-                {/* CV ARCHITECT ROUTE */}
                 <Route path="/cv-architect/*" element={<CVMain />} />
 
-                {/* COLLEAGUES ROUTE */}
                 <Route path="/colleagues/*" element={<ColleagueMain />} />
                 
                 <Route path="/add" element={isLoading ? <GlobalAppLoader /> : <LibraryForm onComplete={loadData} items={items} />} />

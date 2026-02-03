@@ -31,6 +31,10 @@ export const fetchTeachingPaginated = async (
 
 export const saveTeachingItem = async (item: TeachingItem): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
+  
+  // SILENT BROADCAST FOR DASHBOARD
+  window.dispatchEvent(new CustomEvent('xeenaps-teaching-updated', { detail: item }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
@@ -45,6 +49,10 @@ export const saveTeachingItem = async (item: TeachingItem): Promise<boolean> => 
 
 export const deleteTeachingItem = async (id: string): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
+
+  // SILENT BROADCAST FOR DASHBOARD
+  window.dispatchEvent(new CustomEvent('xeenaps-teaching-deleted', { detail: id }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',

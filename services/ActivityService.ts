@@ -32,6 +32,10 @@ export const fetchActivitiesPaginated = async (
 
 export const saveActivity = async (item: ActivityItem): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
+
+  // SILENT BROADCAST FOR DASHBOARD
+  window.dispatchEvent(new CustomEvent('xeenaps-activity-updated', { detail: item }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
@@ -46,6 +50,10 @@ export const saveActivity = async (item: ActivityItem): Promise<boolean> => {
 
 export const deleteActivity = async (id: string): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
+
+  // SILENT BROADCAST FOR DASHBOARD
+  window.dispatchEvent(new CustomEvent('xeenaps-activity-deleted', { detail: id }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',

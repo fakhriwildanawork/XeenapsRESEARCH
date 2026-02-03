@@ -1,3 +1,4 @@
+
 import { PublicationItem, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
@@ -29,6 +30,10 @@ export const fetchPublicationsPaginated = async (
 
 export const savePublication = async (item: PublicationItem): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
+
+  // SILENT BROADCAST FOR DASHBOARD
+  window.dispatchEvent(new CustomEvent('xeenaps-publication-updated', { detail: item }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
@@ -43,6 +48,10 @@ export const savePublication = async (item: PublicationItem): Promise<boolean> =
 
 export const deletePublication = async (id: string): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
+
+  // SILENT BROADCAST FOR DASHBOARD
+  window.dispatchEvent(new CustomEvent('xeenaps-publication-deleted', { detail: id }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',

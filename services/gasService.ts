@@ -293,6 +293,9 @@ export const uploadAndStoreFile = async (file: File, signal?: AbortSignal): Prom
 };
 
 export const saveLibraryItem = async (item: LibraryItem, fileContent?: any): Promise<boolean> => {
+  // SILENT BROADCAST FOR OPTIMISTIC UI
+  window.dispatchEvent(new CustomEvent('xeenaps-library-updated', { detail: item }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
@@ -308,6 +311,9 @@ export const saveLibraryItem = async (item: LibraryItem, fileContent?: any): Pro
 };
 
 export const deleteLibraryItem = async (id: string): Promise<boolean> => {
+  // SILENT BROADCAST FOR OPTIMISTIC UI
+  window.dispatchEvent(new CustomEvent('xeenaps-library-deleted', { detail: id }));
+
   const res = await fetch(GAS_WEB_APP_URL, {
     method: 'POST',
     mode: 'cors',
