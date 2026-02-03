@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LibraryItem, LibraryType } from '../../types';
@@ -62,6 +62,7 @@ type SortConfig = { key: keyof LibraryItem | 'none'; direction: 'asc' | 'desc' |
 const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoading, onRefresh, globalSearch, isMobileSidebarOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const containerRef = useRef<HTMLDivElement>(null);
   const workflow = useAsyncWorkflow(30000);
   const { performUpdate, performDelete } = useOptimisticUpdate<LibraryItem>();
   const [serverItems, setServerItems] = useState<LibraryItem[]>([]);
@@ -95,6 +96,17 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
       setAppliedSearch(globalSearch);
     }
   }, [globalSearch]);
+
+  // RESET VIEW LOGIC: Reset Detail View and Scroll when navigating without item payload
+  useEffect(() => {
+    const state = location.state as any;
+    if (!state?.openItem) {
+      setSelectedItem(null);
+      if (containerRef.current) {
+        containerRef.current.scrollTop = 0;
+      }
+    }
+  }, [location.pathname, location.key]);
 
   // DATA RE-HYDRATION LOGIC: Ensure partial items from navigation are filled with full metadata
   useEffect(() => {
@@ -233,7 +245,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
   } as React.CSSProperties;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto custom-scrollbar pr-1 relative">
+    <div ref={containerRef} className="flex flex-col h-full overflow-y-auto custom-scrollbar pr-1 relative">
       {selectedItem && (
         <LibraryDetailView 
           item={selectedItem} 

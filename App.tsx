@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { LibraryItem, TeachingItem, ActivityItem, TracerProject, PublicationItem } from './types';
 import { fetchLibrary } from './services/gasService';
 import { fetchTeachingPaginated } from './services/TeachingService';
@@ -34,6 +34,15 @@ const TracerDetail = React.lazy(() => import('./components/Research/Tracer/Trace
 const SharboxMain = React.lazy(() => import('./components/Sharbox/SharboxMain'));
 import { BRAND_ASSETS } from './assets';
 import { GlobalAppLoader } from './components/Common/LoadingComponents';
+
+// Global Scroll Reset Component
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
 
 const App: React.FC = () => {
   const [items, setItems] = useState<LibraryItem[]>([]);
@@ -189,6 +198,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className={`flex min-h-screen bg-white text-[#004A74] ${isLoading ? 'pointer-events-none select-none' : ''}`}>
         {isMobileSidebarOpen && (
           <div 
