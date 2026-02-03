@@ -281,4 +281,5 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
   );
 };
 
+
 export default Header;
