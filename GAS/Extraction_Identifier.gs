@@ -1,3 +1,4 @@
+
 /**
  * XEENAPS PKM - ACADEMIC IDENTIFIER MODULE (SMART ROUTER V6)
  * Exclusive OpenLibrary for Books, Crossref/OpenAlex for Journals
@@ -70,61 +71,61 @@ function handleIdentifierSearch(idValue) {
 }
 
 /**
- * NEW: Supporting References Logic
- * Fetches 3 related citations from Crossref and formats them as Harvard Bibliographic Entry.
- * Returns Array of citations.
+ * UPDATED: Supporting References Logic (OpenAlex Migration)
+ * Fetches 3 related citations from OpenAlex API (Faster & more reliable than Crossref).
+ * Includes Smart Query Sanitization to prevent zero-results.
  */
-function getSupportingReferencesFromCrossref(keywords) {
+function getSupportingReferencesFromOpenAlex(keywords) {
   if (!keywords || keywords.length === 0) return [];
   
-  const query = keywords.slice(0, 3).join(" ");
+  // SMART QUERY SANITIZATION: Take first 3 keywords, but only the first 2 words of each 
+  // to avoid overly specific technical phrases that cause 0 results.
+  const cleanQuery = keywords.slice(0, 3)
+    .map(k => k.split(' ').slice(0, 2).join(' '))
+    .join(' ')
+    .trim();
+
   try {
-    const url = `https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=3&filter=type:journal-article`;
+    const url = `https://api.openalex.org/works?search=${encodeURIComponent(cleanQuery)}&per_page=3&filter=type:article`;
     const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
     if (response.getResponseCode() !== 200) return [];
     
     const data = JSON.parse(response.getContentText());
-    const items = data.message.items || [];
+    const results = data.results || [];
     
-    const citations = items.map(item => {
-      // Format Authors: Last, F.
-      const authors = (item.author || []).map(a => {
-        const last = a.family || "";
-        const first = a.given ? a.given.charAt(0) + "." : "";
-        return last + (first ? ", " + first : "");
-      });
-      
+    return results.map(item => {
+      const authors = (item.authorships || []).map(a => a.author.display_name);
       let authorStr = authors.length > 2 
         ? authors[0] + " et al." 
         : (authors.join(" and ") || "Anon.");
         
-      const year = item.issued?.["date-parts"]?.[0]?.[0] || "n.d.";
-      const title = (item.title && item.title[0]) || "Untitled";
-      const journal = (item["container-title"] && item["container-title"][0]) || "";
-      const vol = item.volume ? "vol. " + item.volume : "";
-      const issue = item.issue ? "(" + item.issue + ")" : "";
-      const pages = item.page ? "pp. " + item.page : "";
-      const doi = item.DOI ? "https://doi.org/" + item.DOI : "";
+      const year = item.publication_year || "n.d.";
+      const title = item.display_name || "Untitled";
+      const journal = item.primary_location?.source?.display_name || "Academic Source";
+      const doi = item.doi || "";
 
       // Assemble Harvard Citation
-      let bib = `${authorStr} (${year}). ${title}. <i>${journal}</i>, ${vol}${issue}, ${pages}. Available at: ${doi}`;
+      let bib = `${authorStr} (${year}). '${title}'. <i>${journal}</i>.`;
+      if (doi) bib += ` Available at: ${doi}`;
+      
       return bib.replace(/, ,/g, ',').replace(/\.\./g, '.').trim();
     });
-    
-    return citations;
   } catch (e) {
-    console.error("Crossref search failed: " + e.toString());
+    console.error("OpenAlex search failed: " + e.toString());
     return [];
   }
 }
 
 /**
- * NEW: YouTube Recommendation Logic
- * Uses first 3 keywords to find 1 highly relevant video.
+ * UPDATED: YouTube Recommendation Logic
+ * Improved fallback: Never returns null to protect JSON parsing.
  */
 function getYoutubeRecommendation(keywords) {
-  if (!keywords || keywords.length === 0) return null;
-  const query = keywords.slice(0, 3).join(" ");
+  if (!keywords || keywords.length === 0) return "";
+  
+  // Sanitization: Use first 2 keywords for a broader search on YouTube
+  const query = keywords.slice(0, 2).join(" ").trim();
+  
   try {
     const results = YouTube.Search.list('id', {
       q: query,
@@ -140,7 +141,7 @@ function getYoutubeRecommendation(keywords) {
   } catch (e) {
     console.error("YouTube Search failed: " + e.toString());
   }
-  return null;
+  return ""; // Return empty string instead of null
 }
 
 /**

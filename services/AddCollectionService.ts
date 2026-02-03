@@ -1,3 +1,4 @@
+
 import { LibraryItem } from "../types";
 import { callAiProxy } from "./gasService";
 // Fix: GAS_WEB_APP_URL must be imported from the constants file where it is exported
@@ -113,7 +114,7 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
         }
       });
 
-      // NEW: Fetch Supporting References from Crossref & YouTube based on AI Keywords
+      // SYNC GUARD: Fetch Supporting References as part of the PRIMARY workflow
       if (merged.keywords && merged.keywords.length > 0) {
         try {
           const refRes = await fetch(GAS_WEB_APP_URL, {
@@ -125,12 +126,19 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
             signal
           });
           const refData = await refRes.json();
-          if (refData.status === 'success') {
-            merged.supportingReferences = refData.data;
+          if (refData.status === 'success' && refData.data) {
+            // Ensure even empty structures are valid
+            merged.supportingReferences = {
+              references: refData.data.references || [],
+              videoUrl: refData.data.videoUrl || ""
+            };
           }
         } catch (e) {
-          console.warn("Failed to fetch supporting data:", e);
+          console.warn("Supporting data fetch failed, continuing with partial metadata:", e);
+          merged.supportingReferences = { references: [], videoUrl: "" };
         }
+      } else {
+        merged.supportingReferences = { references: [], videoUrl: "" };
       }
 
       return merged;

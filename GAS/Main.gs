@@ -1,3 +1,4 @@
+
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -922,17 +923,25 @@ function doPost(e) {
       }
     }
 
-    // NEW ACTION: getSupportingReferences
+    // UPDATED ACTION: getSupportingReferences (Protected Logic)
     if (action === 'getSupportingReferences') {
       const keywords = body.keywords || [];
-      const references = getSupportingReferencesFromCrossref(keywords);
-      const videoUrl = getYoutubeRecommendation(keywords);
+      let references = [];
+      let videoUrl = "";
+      
+      try {
+        references = getSupportingReferencesFromOpenAlex(keywords);
+      } catch (e) { console.error("Ref fetch fail: " + e.toString()); }
+      
+      try {
+        videoUrl = getYoutubeRecommendation(keywords);
+      } catch (e) { console.error("YT fetch fail: " + e.toString()); }
       
       return createJsonResponse({
         status: 'success',
         data: {
           references: references,
-          videoUrl: videoUrl
+          videoUrl: videoUrl || ""
         }
       });
     }
