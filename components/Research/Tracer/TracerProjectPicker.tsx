@@ -79,6 +79,16 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
 
   return (
     <div className="fixed inset-0 z-[2000] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+       {/* FULL BODY OVERLAY LOADER */}
+       {isLinking && (
+         <div className="fixed inset-0 z-[9999] bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+           <div className="flex flex-col items-center gap-4">
+             <Loader2 size={48} className="text-[#004A74] animate-spin" />
+             <p className="text-sm font-black text-[#004A74] uppercase tracking-[0.2em] animate-pulse">Anchoring Intelligence...</p>
+           </div>
+         </div>
+       )}
+
        <div className="bg-white rounded-[3rem] w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
           
           <div className="p-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">

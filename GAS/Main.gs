@@ -348,7 +348,7 @@ function doPost(e) {
     // NEW: deleteTracerLog
     if (action === 'deleteTracerLog') return createJsonResponse(deleteTracerLogFromRegistry(body.id));
     // NEW: linkTracerReference
-    if (action === 'linkTracerReference') return createJsonResponse(linkTracerReferenceToRegistry(item));
+    if (action === 'linkTracerReference') return createJsonResponse(linkTracerReferenceToRegistry(body.item));
     // NEW: unlinkTracerReference
     if (action === 'unlinkTracerReference') return createJsonResponse(unlinkTracerReferenceFromRegistry(body.id));
     // NEW: saveReferenceContent
