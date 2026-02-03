@@ -17,7 +17,9 @@
     "sweetalert2": "^11.10.0",
     "@google/genai": "^1.37.0",
     "lucide-react": "^0.475.0",
-    "pptxgenjs": "^3.12.0"
+    "pptxgenjs": "^3.12.0",
+    "chart.js": "^4.4.1",
+    "react-chartjs-2": "^5.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
