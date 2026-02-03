@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+// @ts-ignore
+import { useLocation } from 'react-router-dom';
 import { SharboxItem, SharboxStatus } from '../../types';
 import { fetchSharboxItems, claimSharboxItem, deleteSharboxItem, markSharboxItemAsRead } from '../../services/SharboxService';
 import { 
@@ -16,7 +18,6 @@ import {
   ShareIcon
 } from '@heroicons/react/24/outline';
 import { SmartSearchBox } from '../Common/SearchComponents';
-import { StandardFilterButton } from '../Common/ButtonComponents';
 import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -25,12 +26,12 @@ import SharboxWorkflowModal from './SharboxWorkflowModal';
 import SharboxDetailView from './SharboxDetailView';
 
 const SharboxMain: React.FC = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'Inbox' | 'Sent'>('Inbox');
   const [items, setItems] = useState<SharboxItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   
-  // Workflow state
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SharboxItem | null>(null);
 
@@ -38,8 +39,19 @@ const SharboxMain: React.FC = () => {
     setIsLoading(true);
     const data = await fetchSharboxItems(activeTab);
     setItems(data);
+    
+    // AUTO-OPEN LOGIC FROM NOTIFICATION
+    const state = location.state as any;
+    if (state?.openItemId && activeTab === 'Inbox') {
+       const found = data.find(i => i.id === state.openItemId);
+       if (found) {
+         setSelectedItem(found);
+         if (!found.isRead) markSharboxItemAsRead(found.id);
+       }
+    }
+    
     setIsLoading(false);
-  }, [activeTab]);
+  }, [activeTab, location.state]);
 
   useEffect(() => {
     loadItems();
@@ -47,13 +59,8 @@ const SharboxMain: React.FC = () => {
 
   const handleItemClick = (item: SharboxItem) => {
     setSelectedItem(item);
-    
-    // OPTIMISTIC & SILENT BACKGROUND SYNC
     if (activeTab === 'Inbox' && !item.isRead) {
-      // 1. Optimistic Update (Instant UI feedback)
       setItems(prev => prev.map(i => i.id === item.id ? { ...i, isRead: true } : i));
-      
-      // 2. Silent Background API Call (No feedback per instruction)
       markSharboxItemAsRead(item.id);
     }
   };
@@ -107,7 +114,6 @@ const SharboxMain: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden animate-in fade-in duration-500">
-      {/* SHARBOX DETAIL VIEW OVERLAY */}
       {selectedItem && (
         <SharboxDetailView 
           item={selectedItem} 
@@ -115,6 +121,12 @@ const SharboxMain: React.FC = () => {
           onClose={() => setSelectedItem(null)} 
           onRefresh={loadItems}
           onClaim={() => handleClaim(selectedItem)}
+        />
+      )}
+
+      {isWorkflowOpen && (
+        <SharboxWorkflowModal 
+          onClose={() => setIsWorkflowOpen(false)} 
         />
       )}
 
@@ -180,93 +192,61 @@ const SharboxMain: React.FC = () => {
               <div 
                 key={item.id}
                 onClick={() => handleItemClick(item)}
-                className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col h-full cursor-pointer"
+                className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full ${activeTab === 'Inbox' && !item.isRead ? 'ring-2 ring-blue-500/20' : ''}`}
               >
-                {/* a. Foto Nama Affiliation (No Uppercase) */}
-                <div className="flex items-center gap-3 mb-6">
-                   <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shadow-sm shrink-0 bg-gray-50">
-                      <img 
-                        src={activeTab === 'Inbox' ? (item.senderPhotoUrl || BRAND_ASSETS.USER_DEFAULT) : (item.receiverPhotoUrl || BRAND_ASSETS.USER_DEFAULT)} 
-                        className="w-full h-full object-cover" 
-                        alt="User" 
-                      />
-                   </div>
-                   <div className="min-w-0 flex-1">
-                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
-                        {activeTab === 'Inbox' ? 'FROM' : 'TO'}
-                      </p>
-                      <h4 className="text-[11px] font-bold text-[#004A74] truncate">
-                        {activeTab === 'Inbox' ? (item.senderName || 'Anonymous') : (item.receiverName || 'Recipient')}
-                      </h4>
-                      <p className="text-[9px] text-gray-400 truncate">
-                        {activeTab === 'Inbox' ? (item.senderAffiliation || 'Independent') : 'Authorized Partner'}
-                      </p>
-                   </div>
-                   <div className="ml-auto flex items-center gap-1.5">
-                     {activeTab === 'Inbox' && !item.isRead && (
-                       <span className="bg-red-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-sm">NEW</span>
-                     )}
-                     <button 
-                       onClick={(e) => handleDelete(e, item.id)}
-                       className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
-                       title="Delete"
-                     >
-                       <TrashIcon className="w-4 h-4" />
-                     </button>
-                   </div>
-                </div>
-
-                {/* b. Title koleksi + Author(s) */}
-                <div className="mb-4 flex-1">
-                   <div className="flex items-center gap-1.5 mb-2">
-                      <SparklesIcon className="w-3 h-3 text-[#FED400]" />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[#004A74]/40">{item.category || 'General'}</span>
-                   </div>
-                   <h3 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2 mb-2">{item.title || 'Untitled Document'}</h3>
-                   <p className="text-[10px] font-bold text-gray-500 italic line-clamp-2 leading-relaxed">
-                      {Array.isArray(item.authors) ? item.authors.join(', ') : 'Unknown Authors'}
-                   </p>
-                </div>
-
-                {/* c. Message */}
-                {item.message && (
-                  <div className="mb-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden">
-                    <ChatBubbleBottomCenterTextIcon className="absolute -bottom-1 -right-1 w-8 h-8 text-[#004A74]/5" />
-                    <p className="text-[10px] font-bold text-[#004A74]/70 italic leading-relaxed line-clamp-2">
-                      "{item.message}"
-                    </p>
-                  </div>
+                {activeTab === 'Inbox' && !item.isRead && (
+                   <span className="absolute top-6 right-6 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm" />
                 )}
 
-                {/* d. Timestamp */}
-                <div className="flex items-center gap-2 text-gray-400 mb-6">
-                   <ClockIcon className="w-3.5 h-3.5" />
-                   <span className="text-[9px] font-bold uppercase tracking-tight">{formatTimestamp(item.timestamp)}</span>
-                </div>
-
-                {/* e. Status label (No Button) */}
-                <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                   <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${item.status === SharboxStatus.CLAIMED ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {item.status}
-                   </span>
-                   <div className="p-2 bg-gray-50 rounded-xl text-gray-300 group-hover:text-[#004A74] transition-colors">
-                      <ChevronRightIcon className="w-4 h-4" />
+                <div className="mb-6 flex items-center gap-3">
+                   <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-100 shadow-sm bg-white shrink-0">
+                      <img 
+                        src={(activeTab === 'Inbox' ? item.senderPhotoUrl : item.receiverPhotoUrl) || BRAND_ASSETS.USER_DEFAULT} 
+                        className="w-full h-full object-cover" 
+                        alt="Profile" 
+                      />
+                   </div>
+                   <div className="min-w-0">
+                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{activeTab === 'Inbox' ? 'SENDER' : 'RECIPIENT'}</p>
+                      <h4 className="text-xs font-bold text-[#004A74] truncate uppercase">{activeTab === 'Inbox' ? item.senderName : item.receiverName}</h4>
                    </div>
                 </div>
+
+                <div className="flex-1 space-y-4">
+                   <div className="space-y-1">
+                      <h3 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2">{item.title}</h3>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">{item.topic} • {item.year}</p>
+                   </div>
+                   <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 relative">
+                      <ChatBubbleBottomCenterTextIcon className="absolute -top-2 -left-2 w-6 h-6 text-[#FED400]/20" />
+                      <p className="text-[10px] text-gray-500 italic font-medium line-clamp-2">"{item.message || 'No message provided.'}"</p>
+                   </div>
+                </div>
+
+                <div className="mt-8 pt-4 border-t border-gray-50 flex items-center justify-between">
+                   <div className="flex items-center gap-1.5 text-gray-400">
+                      <ClockIcon className="w-3 h-3" />
+                      <span className="text-[8px] font-black uppercase tracking-tighter">{formatTimestamp(item.timestamp)}</span>
+                   </div>
+                   <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest ${item.status === 'CLAIMED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                        {item.status}
+                      </span>
+                      <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-[#FED400] transition-colors" />
+                   </div>
+                </div>
+
+                <button 
+                  onClick={(e) => handleDelete(e, item.id)}
+                  className="absolute bottom-4 left-6 p-2 text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                   <TrashIcon className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {isWorkflowOpen && (
-        <SharboxWorkflowModal 
-          onClose={() => {
-            setIsWorkflowOpen(false);
-            loadItems();
-          }} 
-        />
-      )}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }

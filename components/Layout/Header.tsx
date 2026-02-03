@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowPathIcon, BellIcon, InboxIcon, CheckCircleIcon, ClockIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { Target } from 'lucide-react';
 // @ts-ignore
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
+import { BRAND_ASSETS } from '../../assets';
 import { fetchUserProfile } from '../../services/ProfileService';
+import { fetchNotifications, NotificationData, getUrgencyColor, getUrgencyLabel } from '../../services/NotificationService';
+import { SharboxItem, TracerTodo } from '../../types';
 
 interface HeaderProps {
   searchQuery: string;
@@ -11,7 +14,6 @@ interface HeaderProps {
   onRefresh?: () => Promise<void>;
 }
 
-// GLOBAL CACHE SINGLETON - Mencegah render ulang saat pindah modul
 let profileCache = {
   name: "",
   photo: "",
@@ -21,21 +23,20 @@ let profileCache = {
 const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [tutorialLink, setTutorialLink] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(!profileCache.isLoaded);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationData>({ sharbox: [], todos: [] });
+  const notifRef = useRef<HTMLDivElement>(null);
   
   const [userProfile, setUserProfile] = useState<{name: string, photo: string}>({
     name: profileCache.name || "Xeenaps User",
     photo: profileCache.photo || BRAND_ASSETS.USER_DEFAULT
   });
 
-  // Helper logic to extract name only (removing Dr., dr., Prof. and suffixes like , Sp.P)
   const extractCleanName = (fullName: string): string => {
     if (!fullName) return "Xeenaps User";
-    // 1. Remove Suffixes (everything after first comma)
     let name = fullName.split(',')[0].trim();
-    // 2. Remove all Prefixes (words ending with dot at the beginning)
     name = name.replace(/^([A-Za-z]+\.\s*)+/i, '').trim();
     return name || "Xeenaps User";
   };
@@ -45,32 +46,32 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
       setIsInitialLoading(false);
       return;
     }
-
     const profile = await fetchUserProfile();
     if (profile) {
       const displayName = extractCleanName(profile.fullName);
       const displayPhoto = profile.photoUrl || BRAND_ASSETS.USER_DEFAULT;
-      
-      // Update Cache
       profileCache = { name: displayName, photo: displayPhoto, isLoaded: true };
-      
       setUserProfile({ name: displayName, photo: displayPhoto });
     }
     setIsInitialLoading(false);
   };
 
+  const loadNotifications = async () => {
+    const data = await fetchNotifications();
+    setNotifications(data);
+  };
+
   useEffect(() => {
     loadProfile();
+    loadNotifications();
     
-    // DATA-DRIVEN EVENT LISTENERS (INSTANT UPDATES WITHOUT FETCH)
+    const interval = setInterval(loadNotifications, 60000 * 5); // Polling 5 minutes
+
     const handleProfileUpdate = (e: any) => {
       const profileData = e.detail;
       if (!profileData) return;
-
       const newName = extractCleanName(profileData.fullName || "");
       const newPhoto = profileData.photoUrl || BRAND_ASSETS.USER_DEFAULT;
-      
-      // Update local state & cache instantly
       profileCache = { ...profileCache, name: newName, photo: newPhoto };
       setUserProfile({ name: newName, photo: newPhoto });
     };
@@ -81,72 +82,45 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
       setUserProfile(prev => ({ ...prev, photo: newPhoto }));
     };
 
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    };
+
     window.addEventListener('xeenaps-profile-updated', handleProfileUpdate);
     window.addEventListener('xeenaps-instant-photo', handleInstantPhoto);
+    document.addEventListener('mousedown', handleClickOutside);
     
     return () => {
       window.removeEventListener('xeenaps-profile-updated', handleProfileUpdate);
       window.removeEventListener('xeenaps-instant-photo', handleInstantPhoto);
+      document.removeEventListener('mousedown', handleClickOutside);
+      clearInterval(interval);
     };
   }, []);
-
-  // Mapping path to Tutorial ID from Spreadsheet
-  const getTutorialId = (pathname: string): string => {
-    if (pathname === '/add') return 'AddLibrary';
-    if (pathname === '/settings') return 'Settings';
-    if (pathname === '/' || pathname === '/favorite' || pathname === '/bookmark' || pathname === '/research') {
-      return 'MainLibrary';
-    }
-    return 'General';
-  };
-
-  useEffect(() => {
-    const fetchTutorialLink = async () => {
-      const tutorialId = getTutorialId(location.pathname);
-      const spreadsheetUrl = SPREADSHEET_CONFIG.TUTORIAL_CSV;
-      
-      try {
-        const response = await fetch(spreadsheetUrl);
-        if (!response.ok) throw new Error('Network response was not ok');
-        const csvData = await response.text();
-        const rows = csvData.split('\n');
-        
-        for (const row of rows) {
-          const cols = row.split(',').map(c => c.replace(/"/g, '').trim());
-          if (cols[0] === tutorialId) {
-            if (cols[2] && cols[2].startsWith('http')) {
-              setTutorialLink(cols[2]);
-              return;
-            }
-          }
-        }
-        setTutorialLink(null);
-      } catch (e) {
-        console.error('Failed to fetch tutorial link:', e);
-        setTutorialLink(null);
-      }
-    };
-
-    fetchTutorialLink();
-  }, [location.pathname]);
-
-  const handleTutorialClick = () => {
-    if (tutorialLink) {
-      window.open(tutorialLink, '_blank', 'noopener,noreferrer');
-    }
-  };
 
   const handleRefreshClick = async () => {
     if (isRefreshing || !onRefresh) return;
     setIsRefreshing(true);
     try {
-      await onRefresh();
-      await loadProfile(true); // Force sync profile cache too
+      await Promise.all([onRefresh(), loadProfile(true), loadNotifications()]);
     } finally {
       setTimeout(() => setIsRefreshing(false), 1000);
     }
   };
 
+  const handleInboxClick = (item: SharboxItem) => {
+    setIsNotifOpen(false);
+    navigate('/sharbox', { state: { openItemId: item.id } });
+  };
+
+  const handleTodoClick = (todo: TracerTodo) => {
+    setIsNotifOpen(false);
+    navigate(`/research/tracer/${todo.projectId}`, { state: { activeTab: 'todo' } });
+  };
+
+  const totalNotifCount = notifications.sharbox.length + notifications.todos.length;
   const placeholderUrl = BRAND_ASSETS.USER_DEFAULT;
 
   return (
@@ -166,7 +140,6 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
         }
       `}</style>
 
-      {/* Bagian Kiri: Welcome Message */}
       <div className="flex flex-col min-w-0">
         <span className="text-[9px] md:text-[11px] uppercase font-normal tracking-[0.2em] text-[#004A74] opacity-90">
           WELCOME,
@@ -180,9 +153,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
         )}
       </div>
 
-      {/* Bagian Kanan: Icons */}
       <div className="flex items-center gap-1 md:gap-3 shrink-0">
-        {/* Refresh Button */}
         <button 
           onClick={handleRefreshClick}
           disabled={isRefreshing}
@@ -194,22 +165,99 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
           />
         </button>
 
-        {/* YouTube Tutorial Icon */}
-        {tutorialLink && (
+        <div className="relative" ref={notifRef}>
           <button 
-            onClick={handleTutorialClick}
-            className="p-1 hover:bg-red-50 rounded-full transition-all duration-300 group outline-none"
-            title="Watch Tutorial"
+            onClick={() => setIsNotifOpen(!isNotifOpen)}
+            className={`p-2 text-[#004A74] hover:bg-gray-50 rounded-full transition-all duration-300 relative group ${isNotifOpen ? 'bg-gray-100' : ''}`}
+            title="Notifications"
           >
-            <img 
-              src={BRAND_ASSETS.YOUTUBE_ICON} 
-              alt="Watch Tutorial" 
-              className="w-7 h-7 md:w-8 md:h-8 object-contain transition-transform group-hover:scale-110" 
-            />
+            <BellIcon className="w-5 h-5 md:w-6 md:h-6 group-hover:scale-110 transition-transform" />
+            {totalNotifCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                {totalNotifCount > 9 ? '9+' : totalNotifCount}
+              </span>
+            )}
           </button>
-        )}
+
+          {isNotifOpen && (
+            <div className="absolute right-0 mt-3 w-[320px] md:w-[380px] bg-white/90 backdrop-blur-xl border border-gray-100 rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                 <h3 className="text-xs font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2">
+                   <SparklesIcon className="w-4 h-4 text-[#FED400]" /> Intelligence Center
+                 </h3>
+                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{totalNotifCount} Updates</span>
+              </div>
+              
+              <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
+                {totalNotifCount === 0 ? (
+                  <div className="py-16 text-center opacity-30 flex flex-col items-center">
+                    <CheckCircleIcon className="w-12 h-12 mb-3 text-[#004A74]" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Protocol Stable</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {notifications.sharbox.length > 0 && (
+                      <div>
+                        <div className="px-5 py-2 bg-blue-50/50 border-y border-gray-100">
+                          <span className="text-[8px] font-black text-[#004A74] uppercase tracking-widest">Incoming Knowledge ({notifications.sharbox.length})</span>
+                        </div>
+                        {notifications.sharbox.map(item => (
+                          <button key={item.id} onClick={() => handleInboxClick(item)} className="w-full p-4 flex items-start gap-4 hover:bg-[#FED400]/5 transition-all text-left border-b border-gray-50 last:border-0 group">
+                            <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shrink-0 bg-white">
+                              <img src={item.senderPhotoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                               <p className="text-[10px] font-bold text-[#004A74] truncate group-hover:text-blue-600 transition-colors uppercase">{item.title}</p>
+                               <p className="text-[9px] text-gray-400 truncate mt-0.5">From: {item.senderName}</p>
+                               <div className="flex items-center gap-1.5 mt-2 opacity-50">
+                                  <InboxIcon className="w-3 h-3" />
+                                  <span className="text-[7px] font-black uppercase tracking-widest">UNCLAIMED RESOURCE</span>
+                               </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {notifications.todos.length > 0 && (
+                      <div>
+                        <div className="px-5 py-2 bg-orange-50/50 border-y border-gray-100">
+                          <span className="text-[8px] font-black text-[#004A74] uppercase tracking-widest">Project Criticals ({notifications.todos.length})</span>
+                        </div>
+                        {notifications.todos.map(todo => {
+                          const uColor = getUrgencyColor(todo);
+                          const uLabel = getUrgencyLabel(todo);
+                          return (
+                            <button key={todo.id} onClick={() => handleTodoClick(todo)} className="w-full p-4 flex items-start gap-4 hover:bg-red-50/30 transition-all text-left border-b border-gray-50 last:border-0 group">
+                              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-[#004A74] shrink-0 border border-gray-100 group-hover:bg-white transition-all">
+                                <ClockIcon className={`w-5 h-5 ${uColor}`} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                 <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[10px] font-bold text-[#004A74] truncate uppercase group-hover:text-red-500 transition-colors">{todo.title}</p>
+                                    <span className={`shrink-0 text-[7px] font-black uppercase tracking-tighter ${uColor}`}>{uLabel}</span>
+                                 </div>
+                                 <p className="text-[9px] text-gray-400 line-clamp-1 mt-0.5">{todo.description || 'No description provided.'}</p>
+                                 <div className="flex items-center gap-1.5 mt-2 opacity-50">
+                                    <Target className="w-3 h-3 text-red-400" />
+                                    <span className="text-[7px] font-black uppercase tracking-widest">TASK PENDING SYNC</span>
+                                 </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="p-4 bg-gray-50/80 text-center border-t border-gray-100">
+                 <p className="text-[7px] font-black text-gray-400 uppercase tracking-[0.4em]">XEENAPS ANALYTIC ENGINE • STABLE</p>
+              </div>
+            </div>
+          )}
+        </div>
         
-        {/* User Photo - Clickable to navigate to Profile */}
         <button 
           onClick={() => navigate('/profile')}
           className="flex items-center focus:outline-none p-1 relative group"

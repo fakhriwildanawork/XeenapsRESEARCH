@@ -562,6 +562,34 @@ function getTracerTodosFromRegistry(projectId) {
   } catch (e) { return []; }
 }
 
+/**
+ * NEW: getGlobalUnfinishedTodos
+ * Mengambil seluruh tugas yang belum selesai dari semua project.
+ */
+function getGlobalUnfinishedTodos() {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
+    const sheet = ss.getSheetByName("TracerTodos");
+    if (!sheet) return [];
+    
+    const data = sheet.getDataRange().getDisplayValues();
+    const headers = data[0];
+    const isDoneIdx = headers.indexOf('isDone');
+    
+    return data.slice(1)
+      .filter(r => r[isDoneIdx] !== 'true' && r[isDoneIdx] !== true)
+      .map(row => {
+        let obj = {};
+        headers.forEach((h, i) => {
+          let val = row[i];
+          if (h === 'isDone') val = false;
+          obj[h] = val;
+        });
+        return obj;
+      });
+  } catch (e) { return []; }
+}
+
 function saveTracerTodoToRegistry(item) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);

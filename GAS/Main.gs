@@ -34,6 +34,19 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
+    // NEW: getNotifications
+    if (action === 'getNotifications') {
+      const unreadSharbox = getSharboxItemsFromRegistry('Inbox').filter(i => !i.isRead);
+      const unfinishedTodos = getGlobalUnfinishedTodos();
+      return createJsonResponse({
+        status: 'success',
+        data: {
+          sharbox: unreadSharbox,
+          todos: unfinishedTodos
+        }
+      });
+    }
+
     // NEW: getSharboxItems
     if (action === 'getSharboxItems') {
       const type = e.parameter.type || 'Inbox'; // 'Inbox' or 'Sent'
