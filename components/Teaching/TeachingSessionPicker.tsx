@@ -134,16 +134,15 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
                    <thead>
                       <tr>
                          <StandardTh width="120px">Session Date</StandardTh>
-                         <StandardTh width="300px">Course / Topic</StandardTh>
-                         <StandardTh width="250px">Institution</StandardTh>
-                         <StandardTh width="100px" className="sticky right-0 bg-gray-50">Action</StandardTh>
+                         <StandardTh width="500px" className="text-left">Course</StandardTh>
+                         <StandardTh width="120px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                       </tr>
                    </thead>
                    <tbody className="divide-y divide-gray-50">
                       {isLoading ? (
                          <TableSkeletonRows count={5} />
                       ) : sessions.length === 0 ? (
-                         <tr><td colSpan={4} className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No matching teaching sessions</td></tr>
+                         <tr><td colSpan={3} className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No matching teaching sessions</td></tr>
                       ) : (
                          sessions.map(s => (
                              <StandardTr key={s.id}>
@@ -153,15 +152,15 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
                                <StandardTd>
                                   <p className="text-xs font-bold text-[#004A74] uppercase truncate">{s.courseTitle || 'Untitled Course'}</p>
                                   <p className="text-[9px] font-bold text-gray-400 uppercase truncate mt-0.5">{s.label}</p>
+                                  <p className="text-[8px] font-bold text-gray-500 uppercase mt-1 italic">{s.institution || 'N/A'}</p>
                                </StandardTd>
-                               <StandardTd className="text-[10px] font-bold text-gray-500 uppercase truncate">{s.institution || 'N/A'}</StandardTd>
                                <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
                                   <button 
                                     disabled={isLinking}
                                     onClick={() => handleSelect(s)}
                                     className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
                                   >
-                                     {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} strokeWidth={4} />} Link
+                                     {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={4} />} Select
                                   </button>
                                </StandardTd>
                              </StandardTr>
@@ -184,3 +183,9 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
 };
 
 export default TeachingSessionPicker;
+
+const Check = (props: any) => (
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
