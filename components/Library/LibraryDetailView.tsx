@@ -682,13 +682,6 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                 Cite
               </button>
               
-              <button 
-                onClick={() => setIsShareModalOpen(true)}
-                className="flex items-center gap-2 px-5 py-2 bg-[#004A74] text-[#FED400] text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md hover:scale-105 transition-all"
-              >
-                Share
-              </button>
-              
               {hasViewLink && (
                 <div className="relative group">
                   <button 
@@ -740,7 +733,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     </button>
                     <button onClick={() => { setIsTracerPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><Target className="w-4 h-4" /> Add to Tracer</button>
                     <button onClick={() => { setIsTeachingPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><BookOpenCheck className="w-4 h-4" /> Add to Teaching</button>
-                    <button onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share Entry</button>
+                    <button onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share</button>
                     <div className="h-px bg-gray-50 my-1 mx-2" />
                     <button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all">
                       <TrashIcon className="w-4 h-4" /> Delete
@@ -882,7 +875,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
               <section className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-black text-[#004A74] flex items-center gap-2">
-                    <SparklesIcon className="w-5 h-5 text-[#004A74]" /> KNOWLEDGE INSIGHTS
+                    <SparklesIcon className="w-5 h-5 text-[#004A74]" /> INSIGHTS
                   </h2>
                   <div className="flex items-center gap-2">
                     <button 
@@ -1007,7 +1000,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
 
                 <div className="bg-[#004A74] p-6 rounded-[2.5rem] shadow-xl space-y-4 flex flex-col">
                   <h3 className="text-[9px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
-                    <VideoCameraIcon className="w-3.5 h-3.5" /> Visual Insights
+                    <VideoCameraIcon className="w-3.5 h-3.5" /> Video Recommendation
                   </h3>
                   <div className="1-flex flex-col justify-center">
                     {isLoading && !isSyncing ? <div className="aspect-video w-full skeleton rounded-2xl" /> : (
@@ -1018,12 +1011,12 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       ) : (
                         <div className="aspect-video rounded-2xl bg-white/5 flex flex-col items-center justify-center border-2 border-dashed border-white/10">
                           <VideoCameraIcon className="w-10 h-10 text-white/10 mb-2" />
-                          <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Video stream unavailable</p>
+                          <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Video recommendation unavailable</p>
                         </div>
                       )
                     )}
                     <p className="mt-4 text-[10px] text-[#FED400]/80 font-bold italic text-center px-4 leading-relaxed">
-                      "Conceptual visualization facilitates faster knowledge anchoring."
+                      "This video may irrelevant, please watch it thoroughly."
                     </p>
                   </div>
                 </div>
