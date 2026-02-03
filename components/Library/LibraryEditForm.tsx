@@ -245,7 +245,7 @@ const LibraryEditForm: React.FC<LibraryEditFormProps> = ({ onComplete, items = [
 
   return (
     <FormPageContainer>
-      <FormStickyHeader title="Update Collection" subtitle="Refining your knowledge anchor" onBack={() => {
+      <FormStickyHeader title="Update Collection" subtitle="Refining your collection" onBack={() => {
         const item = items.find(i => i.id === id);
         navigate('/', { state: { openItem: item }, replace: true });
       }} />
