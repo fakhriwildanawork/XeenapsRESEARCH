@@ -30,6 +30,16 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
     photo: profileCache.photo || BRAND_ASSETS.USER_DEFAULT
   });
 
+  // Helper logic to extract name only (removing Dr., dr., Prof. and suffixes like , Sp.P)
+  const extractCleanName = (fullName: string): string => {
+    if (!fullName) return "Xeenaps User";
+    // 1. Remove Suffixes (everything after first comma)
+    let name = fullName.split(',')[0].trim();
+    // 2. Remove all Prefixes (words ending with dot at the beginning)
+    name = name.replace(/^([A-Za-z]+\.\s*)+/i, '').trim();
+    return name || "Xeenaps User";
+  };
+
   const loadProfile = async (forceRefresh = false) => {
     if (profileCache.isLoaded && !forceRefresh) {
       setIsInitialLoading(false);
@@ -38,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
 
     const profile = await fetchUserProfile();
     if (profile) {
-      const displayName = profile.fullName.split(',')[0].trim() || "Xeenaps User";
+      const displayName = extractCleanName(profile.fullName);
       const displayPhoto = profile.photoUrl || BRAND_ASSETS.USER_DEFAULT;
       
       // Update Cache
@@ -54,12 +64,10 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
     
     // DATA-DRIVEN EVENT LISTENERS (INSTANT UPDATES WITHOUT FETCH)
     const handleProfileUpdate = (e: any) => {
-      // Ensure we extract from fullName property in detail
       const profileData = e.detail;
       if (!profileData) return;
 
-      const newFullName = profileData.fullName || "";
-      const newName = newFullName ? newFullName.split(',')[0].trim() : "Xeenaps User";
+      const newName = extractCleanName(profileData.fullName || "");
       const newPhoto = profileData.photoUrl || BRAND_ASSETS.USER_DEFAULT;
       
       // Update local state & cache instantly
