@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -18,6 +19,7 @@ import ArchivedArticle from './components/Research/Literature/ArchivedArticle';
 import NotebookMain from './components/Notebook/NotebookMain';
 import AllReview from './components/Research/LiteratureReview/AllReview';
 import ReviewDetail from './components/Research/LiteratureReview/ReviewDetail';
+import DashboardMain from './components/Dashboard/DashboardMain';
 // Placeholder for the upcoming modules
 const ActivityMain = React.lazy(() => import('./components/Activities/ActivityMain'));
 const TeachingMain = React.lazy(() => import('./components/Teaching/TeachingMain'));
@@ -98,6 +100,7 @@ const App: React.FC = () => {
           <div className="mt-4 lg:mt-6 pb-20 relative bg-white">
             <React.Suspense fallback={<GlobalAppLoader />}>
               <Routes>
+                <Route path="/dashboard" element={<DashboardMain libraryItems={items} onRefresh={loadData} />} />
                 <Route path="/" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/favorite" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/bookmark" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
@@ -134,7 +137,7 @@ const App: React.FC = () => {
                 <Route path="/settings" element={isLoading ? <GlobalAppLoader /> : <SettingsView />} />
                 <Route path="/profile" element={isLoading ? <GlobalAppLoader /> : <UserProfileView />} />
                 
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </React.Suspense>
           </div>

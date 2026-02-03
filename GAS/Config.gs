@@ -30,7 +30,7 @@ const CONFIG = {
     NOTEBOOK: '1LxDILaoTFkHV9ZRx67YUhLQmHANeySdvR8AcYO8NMQs',
     LITERATURE_REVIEW: '1l8P-jSZsj6Q6OuBjPDpM3nCNpDcxeoreYebhr0RMz_Y',
     TRACER: '1TKp9891UDP5dgH94PtgZmiDeEh0fNCuaOyic1v5GlOE',
-    SHARBOX: '1u4xS9R7N3Y6_J7vR9qK9L2xX7p8M5n9tV2B6W3U1S0' // User will replace with their Sharbox SS ID
+    SHARBOX: '17oCBcTIkdq4zqY0RtlzgiFR2dk9vzq1wLZhQ2tiQTqc'
   },
   SCHEMAS: {
     LIBRARY: [
