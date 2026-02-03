@@ -2,8 +2,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { LibraryItem } from './types';
+import { LibraryItem, TeachingItem, ActivityItem, TracerProject, PublicationItem } from './types';
 import { fetchLibrary } from './services/gasService';
+import { fetchTeachingPaginated } from './services/TeachingService';
+import { fetchActivitiesPaginated } from './services/ActivityService';
+import { fetchTracerProjects } from './services/TracerService';
+import { fetchPublicationsPaginated } from './services/PublicationService';
 import LibraryMain from './components/Library/LibraryMain';
 import LibraryForm from './components/Library/LibraryForm';
 import LibraryEditForm from './components/Library/LibraryEditForm';
@@ -33,45 +37,129 @@ import { GlobalAppLoader } from './components/Common/LoadingComponents';
 
 const App: React.FC = () => {
   const [items, setItems] = useState<LibraryItem[]>([]);
+  const [teachingItems, setTeachingItems] = useState<TeachingItem[]>([]);
+  const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
+  const [tracerProjects, setTracerProjects] = useState<TracerProject[]>([]);
+  const [publicationItems, setPublicationItems] = useState<PublicationItem[]>([]);
+  
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const data = await fetchLibrary();
-    setItems(data);
-    setIsLoading(false);
+    try {
+      // Parallel fetch for all main data sets to minimize initial loading time
+      const [libData, tRes, aRes, trRes, pRes] = await Promise.all([
+        fetchLibrary(),
+        fetchTeachingPaginated(1, 100, "", "", ""),
+        fetchActivitiesPaginated(1, 100, "", "", "", "All"),
+        fetchTracerProjects(1, 100, ""),
+        fetchPublicationsPaginated(1, 100, "")
+      ]);
+      
+      setItems(libData);
+      setTeachingItems(tRes.items);
+      setActivityItems(aRes.items);
+      setTracerProjects(trRes.items);
+      setPublicationItems(pRes.items);
+    } catch (e) {
+      console.error("Xeenaps Data Synchronization Error", e);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // --- OPTIMISTIC LIBRARY LISTENERS ---
+  // --- GLOBAL OPTIMISTIC SYNC LISTENERS ---
+  // These listeners are placed here at the root so they stay active 24/7
+  // regardless of which page the user is currently visiting.
   useEffect(() => {
+    // 1. Library Listeners
     const handleLibraryUpdate = (e: any) => {
-      const updatedItem = e.detail as LibraryItem;
+      const item = e.detail as LibraryItem;
       setItems(prev => {
-        const index = prev.findIndex(i => i.id === updatedItem.id);
-        if (index > -1) {
-          return prev.map(i => i.id === updatedItem.id ? updatedItem : i);
-        }
-        return [updatedItem, ...prev];
+        const index = prev.findIndex(i => i.id === item.id);
+        return index > -1 ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
       });
     };
-
     const handleLibraryDelete = (e: any) => {
-      const id = e.detail as string;
-      setItems(prev => prev.filter(i => i.id !== id));
+      setItems(prev => prev.filter(i => i.id !== e.detail));
+    };
+
+    // 2. Teaching Listeners
+    const handleTeachingUpdate = (e: any) => {
+      const item = e.detail as TeachingItem;
+      setTeachingItems(prev => {
+        const index = prev.findIndex(i => i.id === item.id);
+        return index > -1 ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
+      });
+    };
+    const handleTeachingDelete = (e: any) => {
+      setTeachingItems(prev => prev.filter(i => i.id !== e.detail));
+    };
+
+    // 3. Activity Listeners
+    const handleActivityUpdate = (e: any) => {
+      const item = e.detail as ActivityItem;
+      setActivityItems(prev => {
+        const index = prev.findIndex(i => i.id === item.id);
+        return index > -1 ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
+      });
+    };
+    const handleActivityDelete = (e: any) => {
+      setActivityItems(prev => prev.filter(i => i.id !== e.detail));
+    };
+
+    // 4. Tracer Listeners
+    const handleTracerUpdate = (e: any) => {
+      const item = e.detail as TracerProject;
+      setTracerProjects(prev => {
+        const index = prev.findIndex(i => i.id === item.id);
+        return index > -1 ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
+      });
+    };
+    const handleTracerDelete = (e: any) => {
+      setTracerProjects(prev => prev.filter(i => i.id !== e.detail));
+    };
+
+    // 5. Publication Listeners
+    const handlePublicationUpdate = (e: any) => {
+      const item = e.detail as PublicationItem;
+      setPublicationItems(prev => {
+        const index = prev.findIndex(i => i.id === item.id);
+        return index > -1 ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
+      });
+    };
+    const handlePublicationDelete = (e: any) => {
+      setPublicationItems(prev => prev.filter(i => i.id !== e.detail));
     };
 
     window.addEventListener('xeenaps-library-updated', handleLibraryUpdate);
     window.addEventListener('xeenaps-library-deleted', handleLibraryDelete);
+    window.addEventListener('xeenaps-teaching-updated', handleTeachingUpdate);
+    window.addEventListener('xeenaps-teaching-deleted', handleTeachingDelete);
+    window.addEventListener('xeenaps-activity-updated', handleActivityUpdate);
+    window.addEventListener('xeenaps-activity-deleted', handleActivityDelete);
+    window.addEventListener('xeenaps-tracer-updated', handleTracerUpdate);
+    window.addEventListener('xeenaps-tracer-deleted', handleTracerDelete);
+    window.addEventListener('xeenaps-publication-updated', handlePublicationUpdate);
+    window.addEventListener('xeenaps-publication-deleted', handlePublicationDelete);
 
     return () => {
       window.removeEventListener('xeenaps-library-updated', handleLibraryUpdate);
       window.removeEventListener('xeenaps-library-deleted', handleLibraryDelete);
+      window.removeEventListener('xeenaps-teaching-updated', handleTeachingUpdate);
+      window.removeEventListener('xeenaps-teaching-deleted', handleTeachingDelete);
+      window.removeEventListener('xeenaps-activity-updated', handleActivityUpdate);
+      window.removeEventListener('xeenaps-activity-deleted', handleActivityDelete);
+      window.removeEventListener('xeenaps-tracer-updated', handleTracerUpdate);
+      window.removeEventListener('xeenaps-tracer-deleted', handleTracerDelete);
+      window.removeEventListener('xeenaps-publication-updated', handlePublicationUpdate);
+      window.removeEventListener('xeenaps-publication-deleted', handlePublicationDelete);
     };
   }, []);
 
@@ -124,7 +212,19 @@ const App: React.FC = () => {
           <div className="mt-4 lg:mt-6 pb-20 relative bg-white">
             <React.Suspense fallback={<GlobalAppLoader />}>
               <Routes>
-                <Route path="/dashboard" element={<DashboardMain libraryItems={items} onRefresh={loadData} />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <DashboardMain 
+                      libraryItems={items} 
+                      teachingItems={teachingItems}
+                      activityItems={activityItems}
+                      tracerProjects={tracerProjects}
+                      publicationItems={publicationItems}
+                      onRefresh={loadData} 
+                    />
+                  } 
+                />
                 <Route path="/" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/favorite" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/bookmark" element={<LibraryMain items={items} isLoading={isLoading} onRefresh={loadData} globalSearch={searchQuery} isMobileSidebarOpen={isMobileSidebarOpen} />} />

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -23,19 +23,13 @@ import {
   TracerStatus,
   PublicationStatus
 } from '../../types';
-import { fetchTeachingPaginated } from '../../services/TeachingService';
-import { fetchActivitiesPaginated } from '../../services/ActivityService';
-import { fetchTracerProjects } from '../../services/TracerService';
-import { fetchPublicationsPaginated } from '../../services/PublicationService';
 import { 
   Library, 
   TrendingUp, 
-  Layers, 
   Target, 
   BookOpenCheck, 
   ClipboardCheck,
   ChevronRight,
-  Sparkles,
   PieChart as PieChartIcon,
   MapPin,
   Award
@@ -58,165 +52,21 @@ ChartJS.register(
 
 interface DashboardMainProps {
   libraryItems: LibraryItem[];
+  teachingItems: TeachingItem[];
+  activityItems: ActivityItem[];
+  tracerProjects: TracerProject[];
+  publicationItems: PublicationItem[];
   onRefresh: () => Promise<void>;
 }
 
-// Global Dashboard Cache Singleton
-let dashboardCache: {
-  teaching: TeachingItem[];
-  activities: ActivityItem[];
-  tracer: TracerProject[];
-  publications: PublicationItem[];
-  lastUpdated: number | null;
-} = {
-  teaching: [],
-  activities: [],
-  tracer: [],
-  publications: [],
-  lastUpdated: null
-};
-
-const DashboardMain: React.FC<DashboardMainProps> = ({ libraryItems, onRefresh }) => {
+const DashboardMain: React.FC<DashboardMainProps> = ({ 
+  libraryItems, 
+  teachingItems, 
+  activityItems, 
+  tracerProjects, 
+  publicationItems 
+}) => {
   const navigate = useNavigate();
-  const [isInitializing, setIsInitializing] = useState(!dashboardCache.lastUpdated);
-  const [cachedData, setCachedData] = useState(dashboardCache);
-
-  const loadAllDashboardData = useCallback(async (force = false) => {
-    const isExpired = dashboardCache.lastUpdated && (Date.now() - dashboardCache.lastUpdated > 30 * 60 * 1000);
-    
-    if (!force && dashboardCache.lastUpdated && !isExpired) {
-      setIsInitializing(false);
-      return;
-    }
-
-    setIsInitializing(true);
-    try {
-      const [tRes, aRes, trRes, pRes] = await Promise.all([
-        fetchTeachingPaginated(1, 100, "", "", ""),
-        fetchActivitiesPaginated(1, 100, "", "", "", "All"),
-        fetchTracerProjects(1, 100, ""),
-        fetchPublicationsPaginated(1, 100, "")
-      ]);
-
-      const newData = {
-        teaching: tRes.items,
-        activities: aRes.items,
-        tracer: trRes.items,
-        publications: pRes.items,
-        lastUpdated: Date.now()
-      };
-
-      dashboardCache = newData;
-      setCachedData(newData);
-    } catch (e) {
-      console.error("Dashboard hydration error", e);
-    } finally {
-      setIsInitializing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadAllDashboardData();
-  }, [loadAllDashboardData]);
-
-  // --- OPTIMISTIC SILENT UPDATE LISTENERS ---
-  useEffect(() => {
-    const updateTeaching = (e: any) => {
-      const item = e.detail as TeachingItem;
-      setCachedData(prev => {
-        const index = prev.teaching.findIndex(t => t.id === item.id);
-        const newList = index > -1 ? prev.teaching.map(t => t.id === item.id ? item : t) : [item, ...prev.teaching];
-        dashboardCache.teaching = newList;
-        return { ...prev, teaching: newList };
-      });
-    };
-
-    const deleteTeaching = (e: any) => {
-      const id = e.detail as string;
-      setCachedData(prev => {
-        const newList = prev.teaching.filter(t => t.id !== id);
-        dashboardCache.teaching = newList;
-        return { ...prev, teaching: newList };
-      });
-    };
-
-    const updateActivity = (e: any) => {
-      const item = e.detail as ActivityItem;
-      setCachedData(prev => {
-        const index = prev.activities.findIndex(a => a.id === item.id);
-        const newList = index > -1 ? prev.activities.map(a => a.id === item.id ? item : a) : [item, ...prev.activities];
-        dashboardCache.activities = newList;
-        return { ...prev, activities: newList };
-      });
-    };
-
-    const deleteActivity = (e: any) => {
-      const id = e.detail as string;
-      setCachedData(prev => {
-        const newList = prev.activities.filter(a => a.id !== id);
-        dashboardCache.activities = newList;
-        return { ...prev, activities: newList };
-      });
-    };
-
-    const updateTracer = (e: any) => {
-      const item = e.detail as TracerProject;
-      setCachedData(prev => {
-        const index = prev.tracer.findIndex(t => t.id === item.id);
-        const newList = index > -1 ? prev.tracer.map(t => t.id === item.id ? item : t) : [item, ...prev.tracer];
-        dashboardCache.tracer = newList;
-        return { ...prev, tracer: newList };
-      });
-    };
-
-    const deleteTracer = (e: any) => {
-      const id = e.detail as string;
-      setCachedData(prev => {
-        const newList = prev.tracer.filter(t => t.id !== id);
-        dashboardCache.tracer = newList;
-        return { ...prev, tracer: newList };
-      });
-    };
-
-    const updatePublication = (e: any) => {
-      const item = e.detail as PublicationItem;
-      setCachedData(prev => {
-        const index = prev.publications.findIndex(p => p.id === item.id);
-        const newList = index > -1 ? prev.publications.map(p => p.id === item.id ? item : p) : [item, ...prev.publications];
-        dashboardCache.publications = newList;
-        return { ...prev, publications: newList };
-      });
-    };
-
-    const deletePublication = (e: any) => {
-      const id = e.detail as string;
-      setCachedData(prev => {
-        const newList = prev.publications.filter(p => p.id !== id);
-        dashboardCache.publications = newList;
-        return { ...prev, publications: newList };
-      });
-    };
-
-    window.addEventListener('xeenaps-teaching-updated', updateTeaching);
-    window.addEventListener('xeenaps-teaching-deleted', deleteTeaching);
-    window.addEventListener('xeenaps-activity-updated', updateActivity);
-    window.addEventListener('xeenaps-activity-deleted', deleteActivity);
-    window.addEventListener('xeenaps-tracer-updated', updateTracer);
-    window.addEventListener('xeenaps-tracer-deleted', deleteTracer);
-    window.addEventListener('xeenaps-publication-updated', updatePublication);
-    window.addEventListener('xeenaps-publication-deleted', deletePublication);
-
-    return () => {
-      window.removeEventListener('xeenaps-teaching-updated', updateTeaching);
-      window.removeEventListener('xeenaps-teaching-deleted', deleteTeaching);
-      window.removeEventListener('xeenaps-activity-updated', updateActivity);
-      window.removeEventListener('xeenaps-activity-deleted', deleteActivity);
-      window.removeEventListener('xeenaps-tracer-updated', updateTracer);
-      window.removeEventListener('xeenaps-tracer-deleted', deleteTracer);
-      window.removeEventListener('xeenaps-publication-updated', updatePublication);
-      window.removeEventListener('xeenaps-publication-deleted', deletePublication);
-    };
-  }, []);
 
   // --- AGGREGATION LOGIC ---
 
@@ -317,7 +167,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({ libraryItems, onRefresh }
   // Block C: Research & Publication
   const pubStatusData = useMemo(() => {
     const counts: Record<string, number> = {};
-    cachedData.publications.forEach(p => {
+    publicationItems.forEach(p => {
       counts[p.status] = (counts[p.status] || 0) + 1;
     });
 
@@ -330,41 +180,28 @@ const DashboardMain: React.FC<DashboardMainProps> = ({ libraryItems, onRefresh }
         borderColor: '#ffffff'
       }]
     };
-  }, [cachedData.publications]);
+  }, [publicationItems]);
 
   const upcomingTeaching = useMemo(() => {
     const now = new Date();
     now.setHours(0,0,0,0);
-    return cachedData.teaching
+    return teachingItems
       .filter(t => new Date(t.teachingDate) >= now)
       .sort((a,b) => new Date(a.teachingDate).getTime() - new Date(b.teachingDate).getTime())
       .slice(0, 5);
-  }, [cachedData.teaching]);
+  }, [teachingItems]);
 
   const recentActivities = useMemo(() => {
-    return [...cachedData.activities]
+    return [...activityItems]
       .sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
       .slice(0, 5);
-  }, [cachedData.activities]);
+  }, [activityItems]);
 
   const tracerStats = useMemo(() => {
-    const completed = cachedData.tracer.filter(t => t.status === TracerStatus.COMPLETED).length;
-    const inProgress = cachedData.tracer.filter(t => t.status === TracerStatus.IN_PROGRESS).length;
+    const completed = tracerProjects.filter(t => t.status === TracerStatus.COMPLETED).length;
+    const inProgress = tracerProjects.filter(t => t.status === TracerStatus.IN_PROGRESS).length;
     return { completed, inProgress };
-  }, [cachedData.tracer]);
-
-  if (isInitializing) {
-    return (
-      <div className="space-y-8 p-1">
-        <div className="h-96 w-full skeleton rounded-[3rem]" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           <div className="h-64 skeleton rounded-[2.5rem]" />
-           <div className="h-64 skeleton rounded-[2.5rem]" />
-           <div className="h-64 skeleton rounded-[2.5rem]" />
-        </div>
-      </div>
-    );
-  }
+  }, [tracerProjects]);
 
   return (
     <div className="flex flex-col space-y-8 pb-32 animate-in fade-in duration-700">
@@ -495,7 +332,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({ libraryItems, onRefresh }
                <h3 className="text-sm font-black text-[#004A74] uppercase tracking-tighter flex items-center gap-2">
                   <PieChartIcon size={18} className="text-[#FED400]" /> Publication Lifecycle
                </h3>
-               <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Total: {cachedData.publications.length} Papers</span>
+               <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Total: {publicationItems.length} Papers</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-8 items-center">
                <div className="h-48">
@@ -504,9 +341,9 @@ const DashboardMain: React.FC<DashboardMainProps> = ({ libraryItems, onRefresh }
                <div className="space-y-4">
                   <div className="p-4 bg-gray-50 rounded-2xl">
                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Recent Achievement</p>
-                     {cachedData.publications.find(p => p.status === PublicationStatus.PUBLISHED) ? (
+                     {publicationItems.find(p => p.status === PublicationStatus.PUBLISHED) ? (
                         <h5 className="text-[11px] font-black text-[#004A74] uppercase leading-tight line-clamp-2">
-                           {cachedData.publications.find(p => p.status === PublicationStatus.PUBLISHED)?.title}
+                           {publicationItems.find(p => p.status === PublicationStatus.PUBLISHED)?.title}
                         </h5>
                      ) : (
                         <p className="text-[10px] text-gray-300 italic">No published items yet.</p>
