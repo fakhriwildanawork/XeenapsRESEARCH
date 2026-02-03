@@ -38,7 +38,16 @@ import {
   BookmarkIcon as BookmarkSolid, 
   StarIcon as StarSolid
 } from '@heroicons/react/24/solid';
-import { StickyNote, Share2, Target, BookOpenCheck } from 'lucide-react';
+import { 
+  StickyNote, 
+  Share2, 
+  Target, 
+  BookOpenCheck,
+  Presentation,
+  ListTodo,
+  NotebookPen,
+  Grip
+} from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { saveLibraryItem, deleteLibraryItem, generateCitations, generateInsight, fetchFileContent, translateInsightSection } from '../../services/gasService';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -721,18 +730,18 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     <button onClick={handleUpdate} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
                       <PencilIcon className="w-4 h-4" /> Update
                     </button>
-                    <button onClick={() => { setShowPresentations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><PresentationChartBarIcon className="w-4 h-4" /> Presentation Mode</button>
+                    <button onClick={() => { setShowPresentations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><Presentation className="w-4 h-4" /> Presentation</button>
                     <button onClick={() => { setShowQuestions(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
-                      <AcademicCapIcon className="w-4 h-4" /> AI Question Bank
+                      <ListTodo className="w-4 h-4" /> Question Bank
                     </button>
                     <button onClick={() => { setShowConsultations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-[#004A74] bg-[#FED400]/10 hover:bg-[#FED400]/20 rounded-xl transition-all">
                       <ChatBubbleLeftRightIcon className="w-4 h-4" /> Consultation
                     </button>
                     <button onClick={() => { setShowNotebook(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
-                      <StickyNote className="w-4 h-4" /> Notes
+                      <NotebookPen className="w-4 h-4" /> Note
                     </button>
-                    <button onClick={() => { setIsTracerPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><Target className="w-4 h-4" /> Add to Tracer</button>
-                    <button onClick={() => { setIsTeachingPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><BookOpenCheck className="w-4 h-4" /> Add to Teaching</button>
+                    <button onClick={() => { setIsTracerPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><Target className="w-4 h-4" /> Tracer Attachment</button>
+                    <button onClick={() => { setIsTeachingPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><Grip className="w-4 h-4" /> Teaching Attachment</button>
                     <button onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><ShareIcon className="w-4 h-4" /> Share</button>
                     <div className="h-px bg-gray-50 my-1 mx-2" />
                     <button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all">
