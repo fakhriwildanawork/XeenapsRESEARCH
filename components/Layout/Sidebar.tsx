@@ -11,7 +11,8 @@ import {
   Presentation,
   Target,
   Inbox,
-  LayoutDashboard,
+  LayoutGrid,
+  Handshake,
   LibraryBig,
   FileSearch,
   TextSearch,
@@ -40,7 +41,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
   const location = useLocation();
 
   const navItemsBlock1 = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutGrid },
+    { name: 'Collaboration', path: '#', icon: Handshake, inactive: true },
     { name: 'Library', path: '/', icon: LibraryBig },
     { name: 'Favorite', path: '/favorite', icon: Star },
     { name: 'Bookmark', path: '/bookmark', icon: Bookmark },
@@ -174,6 +176,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         {/* Block 1: Items 1-6 */}
         {navItemsBlock1.map((item) => {
           const isActive = location.pathname === item.path;
+
+          if ((item as any).inactive) {
+            return (
+              <div
+                key={item.name}
+                className="relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 overflow-hidden text-black/30 cursor-not-allowed"
+                title="Coming Soon"
+              >
+                <div className="shrink-0 flex items-center justify-center w-7 md:w-8">
+                  <item.icon size={18} strokeWidth={2} className="lg:w-5 lg:h-5" />
+                </div>
+                <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
+                  <span className="text-xs md:text-sm font-semibold whitespace-nowrap">{item.name}</span>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <NavLink
               key={item.name}
