@@ -34,15 +34,29 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
-    // NEW: getNotifications
+    // NEW: getNotifications with Server-Side Date Filtering
     if (action === 'getNotifications') {
       const unreadSharbox = getSharboxItemsFromRegistry('Inbox').filter(i => !i.isRead);
-      const unfinishedTodos = getGlobalUnfinishedTodos();
+      const allUnfinished = getGlobalUnfinishedTodos();
+      
+      // Calculate Time Thresholds
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const limitDate = new Date(today);
+      limitDate.setDate(today.getDate() + 3); // Threshold: 3 days from now
+      
+      const criticalTodos = allUnfinished.filter(t => {
+        if (!t.deadline) return false;
+        const d = new Date(t.deadline);
+        // Only include if deadline is past (overdue), today, or within 3 days
+        return d <= limitDate;
+      });
+
       return createJsonResponse({
         status: 'success',
         data: {
           sharbox: unreadSharbox,
-          todos: unfinishedTodos
+          todos: criticalTodos
         }
       });
     }

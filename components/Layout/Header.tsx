@@ -65,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
     loadProfile();
     loadNotifications();
     
-    const interval = setInterval(loadNotifications, 60000 * 5); // Polling 5 minutes
+    const interval = setInterval(loadNotifications, 60000 * 5); // Default polling 5 minutes
 
     const handleProfileUpdate = (e: any) => {
       const profileData = e.detail;
@@ -82,6 +82,11 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
       setUserProfile(prev => ({ ...prev, photo: newPhoto }));
     };
 
+    // ACTIVE LISTENER: Respond instantly to Read/Done changes in other modules
+    const handleRefreshSignal = () => {
+      loadNotifications();
+    };
+
     const handleClickOutside = (event: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setIsNotifOpen(false);
@@ -90,11 +95,13 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
 
     window.addEventListener('xeenaps-profile-updated', handleProfileUpdate);
     window.addEventListener('xeenaps-instant-photo', handleInstantPhoto);
+    window.addEventListener('xeenaps-notif-refresh', handleRefreshSignal);
     document.addEventListener('mousedown', handleClickOutside);
     
     return () => {
       window.removeEventListener('xeenaps-profile-updated', handleProfileUpdate);
       window.removeEventListener('xeenaps-instant-photo', handleInstantPhoto);
+      window.removeEventListener('xeenaps-notif-refresh', handleRefreshSignal);
       document.removeEventListener('mousedown', handleClickOutside);
       clearInterval(interval);
     };
@@ -138,6 +145,9 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        .notif-scroll::-webkit-scrollbar { width: 3px; }
+        .notif-scroll::-webkit-scrollbar-track { background: transparent; }
+        .notif-scroll::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
       `}</style>
 
       <div className="flex flex-col min-w-0">
@@ -180,38 +190,39 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
           </button>
 
           {isNotifOpen && (
-            <div className="absolute right-0 mt-3 w-[320px] md:w-[380px] bg-white/90 backdrop-blur-xl border border-gray-100 rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                 <h3 className="text-xs font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2">
-                   <SparklesIcon className="w-4 h-4 text-[#FED400]" /> Intelligence Center
+            <div className="absolute right-0 mt-3 w-[280px] md:w-[340px] bg-white/95 backdrop-blur-xl border border-gray-100 rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                 <h3 className="text-[10px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2">
+                   <SparklesIcon className="w-4 h-4 text-[#FED400]" /> Intelligence Hub
                  </h3>
-                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{totalNotifCount} Updates</span>
+                 <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{totalNotifCount} Alerts</span>
               </div>
               
-              <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
+              <div className="max-h-[350px] overflow-y-auto notif-scroll">
                 {totalNotifCount === 0 ? (
-                  <div className="py-16 text-center opacity-30 flex flex-col items-center">
-                    <CheckCircleIcon className="w-12 h-12 mb-3 text-[#004A74]" />
-                    <p className="text-[10px] font-black uppercase tracking-widest">Protocol Stable</p>
+                  <div className="py-12 text-center opacity-30 flex flex-col items-center">
+                    <CheckCircleIcon className="w-10 h-10 mb-3 text-[#004A74]" />
+                    <p className="text-[9px] font-black uppercase tracking-widest">System Stable</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col divide-y divide-gray-50">
+                    {/* INBOX SECTION */}
                     {notifications.sharbox.length > 0 && (
-                      <div>
-                        <div className="px-5 py-2 bg-blue-50/50 border-y border-gray-100">
-                          <span className="text-[8px] font-black text-[#004A74] uppercase tracking-widest">Incoming Knowledge ({notifications.sharbox.length})</span>
+                      <div className="flex flex-col">
+                        <div className="px-5 py-2 bg-blue-50/50">
+                          <span className="text-[7px] font-black text-[#004A74] uppercase tracking-widest">Incoming Knowledge</span>
                         </div>
                         {notifications.sharbox.map(item => (
-                          <button key={item.id} onClick={() => handleInboxClick(item)} className="w-full p-4 flex items-start gap-4 hover:bg-[#FED400]/5 transition-all text-left border-b border-gray-50 last:border-0 group">
-                            <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shrink-0 bg-white">
+                          <button key={item.id} onClick={() => handleInboxClick(item)} className="w-full p-4 flex items-start gap-3 hover:bg-[#FED400]/5 transition-all text-left group">
+                            <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-100 shrink-0 bg-white">
                               <img src={item.senderPhotoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-full h-full object-cover" />
                             </div>
                             <div className="min-w-0 flex-1">
-                               <p className="text-[10px] font-bold text-[#004A74] truncate group-hover:text-blue-600 transition-colors uppercase">{item.title}</p>
-                               <p className="text-[9px] text-gray-400 truncate mt-0.5">From: {item.senderName}</p>
-                               <div className="flex items-center gap-1.5 mt-2 opacity-50">
-                                  <InboxIcon className="w-3 h-3" />
-                                  <span className="text-[7px] font-black uppercase tracking-widest">UNCLAIMED RESOURCE</span>
+                               <p className="text-[9px] font-bold text-[#004A74] truncate group-hover:text-blue-600 transition-colors uppercase leading-tight">{item.title}</p>
+                               <p className="text-[8px] text-gray-400 truncate mt-0.5">From: {item.senderName}</p>
+                               <div className="flex items-center gap-1.5 mt-1.5 opacity-50">
+                                  <InboxIcon className="w-2.5 h-2.5" />
+                                  <span className="text-[6px] font-black uppercase tracking-widest">UNREAD</span>
                                </div>
                             </div>
                           </button>
@@ -219,28 +230,29 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
                       </div>
                     )}
 
+                    {/* TODOS SECTION */}
                     {notifications.todos.length > 0 && (
-                      <div>
-                        <div className="px-5 py-2 bg-orange-50/50 border-y border-gray-100">
-                          <span className="text-[8px] font-black text-[#004A74] uppercase tracking-widest">Project Criticals ({notifications.todos.length})</span>
+                      <div className="flex flex-col">
+                        <div className="px-5 py-2 bg-orange-50/50">
+                          <span className="text-[7px] font-black text-[#004A74] uppercase tracking-widest">Critical Milestones</span>
                         </div>
                         {notifications.todos.map(todo => {
                           const uColor = getUrgencyColor(todo);
                           const uLabel = getUrgencyLabel(todo);
                           return (
-                            <button key={todo.id} onClick={() => handleTodoClick(todo)} className="w-full p-4 flex items-start gap-4 hover:bg-red-50/30 transition-all text-left border-b border-gray-50 last:border-0 group">
-                              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-[#004A74] shrink-0 border border-gray-100 group-hover:bg-white transition-all">
-                                <ClockIcon className={`w-5 h-5 ${uColor}`} />
+                            <button key={todo.id} onClick={() => handleTodoClick(todo)} className="w-full p-4 flex items-start gap-3 hover:bg-red-50/30 transition-all text-left group">
+                              <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-[#004A74] shrink-0 border border-gray-100 group-hover:bg-white transition-all">
+                                <ClockIcon className={`w-4 h-4 ${uColor}`} />
                               </div>
                               <div className="min-w-0 flex-1">
                                  <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[10px] font-bold text-[#004A74] truncate uppercase group-hover:text-red-500 transition-colors">{todo.title}</p>
-                                    <span className={`shrink-0 text-[7px] font-black uppercase tracking-tighter ${uColor}`}>{uLabel}</span>
+                                    <p className="text-[9px] font-bold text-[#004A74] truncate uppercase leading-tight group-hover:text-red-500 transition-colors">{todo.title}</p>
+                                    <span className={`shrink-0 text-[6px] font-black uppercase tracking-tighter ${uColor}`}>{uLabel}</span>
                                  </div>
-                                 <p className="text-[9px] text-gray-400 line-clamp-1 mt-0.5">{todo.description || 'No description provided.'}</p>
-                                 <div className="flex items-center gap-1.5 mt-2 opacity-50">
-                                    <Target className="w-3 h-3 text-red-400" />
-                                    <span className="text-[7px] font-black uppercase tracking-widest">TASK PENDING SYNC</span>
+                                 <p className="text-[8px] text-gray-400 line-clamp-1 mt-0.5">{todo.description || 'Action required.'}</p>
+                                 <div className="flex items-center gap-1.5 mt-1.5 opacity-50">
+                                    <Target className="w-2.5 h-2.5 text-red-400" />
+                                    <span className="text-[6px] font-black uppercase tracking-widest">PENDING TASK</span>
                                  </div>
                               </div>
                             </button>
@@ -251,8 +263,8 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
                   </div>
                 )}
               </div>
-              <div className="p-4 bg-gray-50/80 text-center border-t border-gray-100">
-                 <p className="text-[7px] font-black text-gray-400 uppercase tracking-[0.4em]">XEENAPS ANALYTIC ENGINE • STABLE</p>
+              <div className="p-3 bg-gray-50/80 text-center border-t border-gray-100">
+                 <p className="text-[6px] font-black text-gray-400 uppercase tracking-[0.4em]">XEENAPS ANALYTIC CORE • STABLE</p>
               </div>
             </div>
           )}

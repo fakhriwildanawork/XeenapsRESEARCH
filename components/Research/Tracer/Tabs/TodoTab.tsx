@@ -96,6 +96,8 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
     });
 
     if (await saveTracerTodo(data)) {
+      // Trigger notification update (as new task might be urgent)
+      window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
       await onRefresh(); 
     }
   };
@@ -105,6 +107,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
     if (await showXeenapsDeleteConfirm(1)) {
       setTodos(prev => prev.filter(t => t.id !== id));
       if (await deleteTracerTodo(id)) {
+        window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
         await onRefresh();
       }
     }
@@ -125,6 +128,8 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
     setTodos(prev => prev.map(t => t.id === updated.id ? updated : t));
 
     if (await saveTracerTodo(updated)) {
+      // Trigger notification update (remove from bell)
+      window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
       await onRefresh();
     }
   };

@@ -46,7 +46,10 @@ const SharboxMain: React.FC = () => {
        const found = data.find(i => i.id === state.openItemId);
        if (found) {
          setSelectedItem(found);
-         if (!found.isRead) markSharboxItemAsRead(found.id);
+         if (!found.isRead) {
+            markSharboxItemAsRead(found.id);
+            window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
+         }
        }
     }
     
@@ -62,6 +65,8 @@ const SharboxMain: React.FC = () => {
     if (activeTab === 'Inbox' && !item.isRead) {
       setItems(prev => prev.map(i => i.id === item.id ? { ...i, isRead: true } : i));
       markSharboxItemAsRead(item.id);
+      // Trigger notification update
+      window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
     }
   };
 
@@ -70,6 +75,8 @@ const SharboxMain: React.FC = () => {
     const success = await claimSharboxItem(item.id);
     if (success) {
       showXeenapsToast('success', 'Claimed successfully');
+      // Trigger notification update (as status changed from UNCLAIMED)
+      window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
       loadItems();
       setSelectedItem(null);
     } else {
@@ -84,6 +91,7 @@ const SharboxMain: React.FC = () => {
       const success = await deleteSharboxItem(id, activeTab);
       if (success) {
         showXeenapsToast('success', 'Record removed');
+        window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
         loadItems();
       } else {
         showXeenapsToast('error', 'Delete failed');
