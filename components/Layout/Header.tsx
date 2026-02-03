@@ -193,7 +193,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
             <div className="absolute right-0 mt-3 w-[280px] md:w-[340px] bg-white/95 backdrop-blur-xl border border-gray-100 rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                  <h3 className="text-[10px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2">
-                   <SparklesIcon className="w-4 h-4 text-[#FED400]" /> Intelligence Hub
+                  Notification
                  </h3>
                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{totalNotifCount} Alerts</span>
               </div>
@@ -210,7 +210,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
                     {notifications.sharbox.length > 0 && (
                       <div className="flex flex-col">
                         <div className="px-5 py-2 bg-blue-50/50">
-                          <span className="text-[7px] font-black text-[#004A74] uppercase tracking-widest">Incoming Knowledge</span>
+                          <span className="text-[7px] font-black text-[#004A74] uppercase tracking-widest">Unread Inbox</span>
                         </div>
                         {notifications.sharbox.map(item => (
                           <button key={item.id} onClick={() => handleInboxClick(item)} className="w-full p-4 flex items-start gap-3 hover:bg-[#FED400]/5 transition-all text-left group">
@@ -234,7 +234,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
                     {notifications.todos.length > 0 && (
                       <div className="flex flex-col">
                         <div className="px-5 py-2 bg-orange-50/50">
-                          <span className="text-[7px] font-black text-[#004A74] uppercase tracking-widest">Critical Milestones</span>
+                          <span className="text-[7px] font-black text-[#004A74] uppercase tracking-widest">To Do</span>
                         </div>
                         {notifications.todos.map(todo => {
                           const uColor = getUrgencyColor(todo);
@@ -262,9 +262,6 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
                     )}
                   </div>
                 )}
-              </div>
-              <div className="p-3 bg-gray-50/80 text-center border-t border-gray-100">
-                 <p className="text-[6px] font-black text-gray-400 uppercase tracking-[0.4em]">XEENAPS ANALYTIC CORE • STABLE</p>
               </div>
             </div>
           )}
