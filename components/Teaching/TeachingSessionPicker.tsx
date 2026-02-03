@@ -34,13 +34,14 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
   const [isLinking, setIsLinking] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const result = await fetchTeachingPaginated(currentPage, itemsPerPage, search);
+      const result = await fetchTeachingPaginated(currentPage, itemsPerPage, appliedSearch);
       setSessions(result.items);
       setTotalCount(result.totalCount);
     } catch (e) {
@@ -48,7 +49,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, search]);
+  }, [currentPage, appliedSearch]);
 
   useEffect(() => {
     loadData();
@@ -119,7 +120,10 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
                value={search} 
                onChange={setSearch} 
                className="w-full"
-               onSearch={() => setCurrentPage(1)}
+               onSearch={() => {
+                 setAppliedSearch(search);
+                 setCurrentPage(1);
+               }}
                phrases={["Search course title...", "Search session label..."]}
              />
           </div>

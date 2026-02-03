@@ -34,13 +34,14 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
   const [isLinking, setIsLinking] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const result = await fetchTracerProjects(currentPage, itemsPerPage, search);
+      const result = await fetchTracerProjects(currentPage, itemsPerPage, appliedSearch);
       setProjects(result.items);
       setTotalCount(result.totalCount);
     } catch (e) {
@@ -48,7 +49,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, search]);
+  }, [currentPage, appliedSearch]);
 
   useEffect(() => {
     loadData();
@@ -109,7 +110,10 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                value={search} 
                onChange={setSearch} 
                className="w-full"
-               onSearch={() => setCurrentPage(1)}
+               onSearch={() => {
+                 setAppliedSearch(search);
+                 setCurrentPage(1);
+               }}
                phrases={["Search project name...", "Search by label..."]}
              />
           </div>
@@ -141,7 +145,7 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                                </StandardTd>
                                <StandardTd className="text-[10px] font-bold text-gray-400 uppercase truncate">
                                   {Array.isArray(p.authors) ? p.authors.join(', ') : 'N/A'}
-                               </StandardTd>
+                                </StandardTd>
                                <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
                                   <button 
                                     disabled={isLinking}
