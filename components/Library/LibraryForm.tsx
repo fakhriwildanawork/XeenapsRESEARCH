@@ -19,6 +19,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { Bold, Italic } from 'lucide-react';
 import { showXeenapsAlert, XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
+/* Fix: Added missing import for showXeenapsToast to resolve the "Cannot find name" error */
+import { showXeenapsToast } from '../../utils/toastUtils';
 import { 
   FormPageContainer, 
   FormStickyHeader, 
@@ -323,7 +325,6 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
         extractedText: extractedText
       };
     });
-    setExtractionStage('IDLE');
   };
 
   const isSocialMediaBlocked = (url: string) => {
@@ -467,8 +468,15 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // GUARD: Ensure extraction is complete
+    if (extractionStage !== 'IDLE') {
+      showXeenapsToast('warning', 'Please wait until content analysis is finished.');
+      return;
+    }
+
     setIsSubmitting(true);
-    Swal.fire({ title: 'Registering Item...', text: 'Processing larger data may take more time...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
+    Swal.fire({ title: 'Registering Item...', text: 'Larger data may take longer time...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
     try {
       let detectedFormat = FileFormat.PDF;
       let fileUploadData = undefined;
@@ -481,10 +489,11 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
         fileUploadData = { fileName: file.name, mimeType: file.type, fileData: b64 };
       }
       const generatedId = crypto.randomUUID();
+      const finalId = generatedId;
       const finalUrl = formData.addMethod === 'LINK' ? formData.url : (formData.url || (formData.doi ? `https://doi.org/${formData.doi}` : ''));
       const newItem: any = { 
         ...formData, 
-        id: generatedId, 
+        id: finalId, 
         url: finalUrl,
         createdAt: new Date().toISOString(), 
         updatedAt: new Date().toISOString(), 

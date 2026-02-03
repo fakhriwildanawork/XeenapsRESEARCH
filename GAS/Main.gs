@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -349,7 +348,7 @@ function doPost(e) {
     // NEW: deleteTracerLog
     if (action === 'deleteTracerLog') return createJsonResponse(deleteTracerLogFromRegistry(body.id));
     // NEW: linkTracerReference
-    if (action === 'linkTracerReference') return createJsonResponse(linkTracerReferenceToRegistry(body.item));
+    if (action === 'linkTracerReference') return createJsonResponse(linkTracerReferenceToRegistry(item));
     // NEW: unlinkTracerReference
     if (action === 'unlinkTracerReference') return createJsonResponse(unlinkTracerReferenceFromRegistry(body.id));
     // NEW: saveReferenceContent
@@ -703,6 +702,22 @@ function doPost(e) {
 
       const extractedText = body.extractedText || "";
       const isFileUpload = (body.file && body.file.fileData);
+
+      // --- SELF-HEALING MECHANISM: Supporting References (Atomic Protection) ---
+      // If references are missing but keywords exist, attempt a final server-side enrichment
+      if (!item.supportingReferences || (Array.isArray(item.supportingReferences.references) && item.supportingReferences.references.length === 0)) {
+         const keywords = (item.tags && Array.isArray(item.tags.keywords)) ? item.tags.keywords : [];
+         if (keywords.length > 0) {
+            try {
+               item.supportingReferences = {
+                  references: getSupportingReferencesFromOpenAlex(keywords) || [],
+                  videoUrl: getYoutubeRecommendation(keywords) || ""
+               };
+            } catch (healErr) {
+               console.warn("Self-healing enrichment failed: " + healErr.toString());
+            }
+         }
+      }
       
       // Determine required threshold based on method
       const threshold = isFileUpload ? CONFIG.STORAGE.THRESHOLD : CONFIG.STORAGE.CRITICAL_THRESHOLD;

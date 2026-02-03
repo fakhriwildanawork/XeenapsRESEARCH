@@ -1,7 +1,5 @@
-
 import { LibraryItem } from "../types";
 import { callAiProxy } from "./gasService";
-// Fix: GAS_WEB_APP_URL must be imported from the constants file where it is exported
 import { GAS_WEB_APP_URL } from "../constants";
 
 /**
@@ -87,7 +85,7 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
       "abstract": "HTML formatted verbatim abstract",
       "mainInfo": "Clean technical noun-based index string (Max 1000 chars)",
       "keywords": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7"],
-      "labels": ["label1", "label2", "label3", "label4", "label5"],
+      "labels": ["label1", "label2", "label3", "label4", "label5"]
     }`;
 
     const response = await callAiProxy('groq', prompt, undefined, signal);
@@ -127,7 +125,6 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
           });
           const refData = await refRes.json();
           if (refData.status === 'success' && refData.data) {
-            // Ensure even empty structures are valid
             merged.supportingReferences = {
               references: refData.data.references || [],
               videoUrl: refData.data.videoUrl || ""
@@ -135,10 +132,7 @@ export const extractMetadataWithAI = async (textSnippet: string, existingData: P
           }
         } catch (e) {
           console.warn("Supporting data fetch failed, continuing with partial metadata:", e);
-          merged.supportingReferences = { references: [], videoUrl: "" };
         }
-      } else {
-        merged.supportingReferences = { references: [], videoUrl: "" };
       }
 
       return merged;
