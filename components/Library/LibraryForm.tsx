@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { SourceType, FileFormat, LibraryItem, LibraryType, ExtractionResult } from '../../types';
+import { SourceType, FileFormat, LibraryItem, LibraryType, ExtractionResult, SupportingData } from '../../types';
 import { saveLibraryItem, uploadAndStoreFile, extractFromUrl, callIdentifierSearch } from '../../services/gasService';
 import { extractMetadataWithAI } from '../../services/AddCollectionService';
 import { GAS_WEB_APP_URL } from '../../constants';
@@ -163,7 +163,8 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
     fileId: '',
     imageView: '',
     chunks: [] as string[],
-    extractedText: '' 
+    extractedText: '',
+    supportingReferences: undefined as SupportingData | undefined
   });
 
   const existingValues = useMemo(() => ({
@@ -206,7 +207,8 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
       labels: [],
       imageView: '',
       extractedText: '',
-      chunks: []
+      chunks: [],
+      supportingReferences: undefined
     }));
     // Fix: Only clear file if NOT keeping input (manual reset)
     if (!keepInput) setFile(null);
@@ -316,6 +318,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
         topic: (aiEnriched.topic && aiEnriched.topic !== "") ? aiEnriched.topic : prev.topic,
         subTopic: (aiEnriched.subTopic && aiEnriched.subTopic !== "") ? aiEnriched.subTopic : prev.subTopic,
         mainInfo: aiEnriched.mainInfo || prev.mainInfo,
+        supportingReferences: aiEnriched.supportingReferences || prev.supportingReferences,
         chunks: chunks,
         extractedText: extractedText
       };
@@ -491,7 +494,8 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
         identifiers: { doi: formData.doi || "", issn: formData.issn || "", isbn: formData.isbn || "", pmid: formData.pmid || "", arxiv: formData.arxivId || "", bibcode: formData.bibcode || "" }, 
         tags: { keywords: formData.keywords || [], labels: formData.labels || [] }, 
         insightJsonId: '', 
-        mainInfo: formData.mainInfo 
+        mainInfo: formData.mainInfo,
+        supportingReferences: formData.supportingReferences
       };
       
       const res = await fetch(GAS_WEB_APP_URL, { 
@@ -515,7 +519,8 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
           extractedJsonId: result.extractedJsonId || newItem.extractedJsonId,
           insightJsonId: result.insightJsonId || newItem.insightJsonId,
           storageNodeUrl: result.nodeUrl || newItem.storageNodeUrl,
-          fileId: result.fileId || newItem.fileId
+          fileId: result.fileId || newItem.fileId,
+          supportingReferences: formData.supportingReferences // Ensure it's explicitly carried
         };
         
         // Redirect to main and auto-open detail view with FULL cloud metadata
@@ -574,7 +579,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
         <div className="flex bg-gray-100/50 p-1.5 rounded-2xl gap-1 w-full md:w-auto">
           <button type="button" onClick={() => setMode('FILE')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'FILE' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><DocumentIcon className="w-4 h-4" /> FILE</button>
           <button type="button" onClick={() => setMode('LINK')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'LINK' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><LinkIcon className="w-4 h-4" /> LINK</button>
-          <button type="button" onClick={() => setMode('REF')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'REF' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><FingerPrintIcon className="w-4 h-4" /> REF</button>
+          <button type="button" onClick={() => setMode('REF')} disabled={isFormDisabled} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-2.5 py-2.5 rounded-xl text-xs font-black transition-all ${formData.addMethod === 'REF' ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}><FingerPrintIcon className="w-4 h-4" /> REF</button>
         </div>
       } />
       <FormContentArea>

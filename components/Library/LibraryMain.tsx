@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -38,6 +39,7 @@ import {
   StandardQuickAccessBar, 
   StandardQuickActionButton, 
   StandardPrimaryButton as AddButton,
+  StandardPrimaryButton, 
   StandardFilterButton 
 } from '../Common/ButtonComponents';
 import { TableSkeletonRows, CardGridSkeleton } from '../Common/LoadingComponents';
@@ -103,8 +105,12 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
       const fullItem = items.find(i => i.id === partialItem.id) || 
                        serverItems.find(i => i.id === partialItem.id);
       
-      // If we found a fuller version, use it, otherwise use what we have
-      setSelectedItem(fullItem || partialItem);
+      // IMPROVED: Merge data to ensure supportingReferences from partialItem are not lost if serverItem is lagging
+      if (fullItem) {
+        setSelectedItem({ ...partialItem, ...fullItem });
+      } else {
+        setSelectedItem(partialItem);
+      }
       
       const timer = setTimeout(() => {
         const { openItem, ...rest } = state;
