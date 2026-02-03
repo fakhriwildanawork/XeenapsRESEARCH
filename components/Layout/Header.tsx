@@ -107,14 +107,8 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, setSearchQuery, onRefresh 
     };
   }, []);
 
-  const handleRefreshClick = async () => {
-    if (isRefreshing || !onRefresh) return;
-    setIsRefreshing(true);
-    try {
-      await Promise.all([onRefresh(), loadProfile(true), loadNotifications()]);
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 1000);
-    }
+  const handleRefreshClick = () => {
+    window.location.reload();
   };
 
   const handleInboxClick = (item: SharboxItem) => {
