@@ -3,28 +3,28 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Settings, 
-  LayoutGrid, 
   Star, 
   Bookmark, 
   Search,
-  User,
   Key,
   ChevronDown,
   Presentation,
-  GraduationCap,
-  Sparkles,
-  Zap,
   Target,
-  SearchCode,
-  Share2,
-  ClipboardCheck,
-  BookOpenCheck,
-  FileUser,
-  Users,
-  StickyNote,
-  BookOpen,
   Inbox,
-  LayoutDashboard
+  LayoutDashboard,
+  LibraryBig,
+  FileSearch,
+  TextSearch,
+  BrainCog,
+  BookUp,
+  School,
+  Footprints,
+  ListTodo,
+  NotebookPen,
+  CircleUserRound,
+  BookOpen,
+  Users,
+  FileUser
 } from 'lucide-react';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
 
@@ -39,22 +39,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
   const [researchMenuOpen, setResearchMenuOpen] = useState(false);
   const location = useLocation();
 
-  const navItems = [
+  const navItemsBlock1 = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Library', path: '/', icon: LayoutGrid },
+    { name: 'Library', path: '/', icon: LibraryBig },
     { name: 'Favorite', path: '/favorite', icon: Star },
     { name: 'Bookmark', path: '/bookmark', icon: Bookmark },
-    { name: 'Notebook', path: '/notebook', icon: StickyNote },
-    { name: 'Find Article', path: '/find-article', icon: SearchCode },
-    { name: 'Sharbox', path: '/sharbox', icon: Inbox },
-    // Research is handled separately as a dropdown below
-    { name: 'Presentations', path: '/presentations', icon: Presentation },
-    { name: 'Question Bank', path: '/questions', icon: GraduationCap },
-    { name: 'Colleagues', path: '/colleagues', icon: Users },
-    { name: 'Activities', path: '/activities', icon: ClipboardCheck },
-    { name: 'Teaching', path: '/teaching', icon: BookOpenCheck },
-    { name: 'CV Architect', path: '/cv-architect', icon: FileUser },
-    { name: 'Profile', path: '/profile', icon: User },
+    { name: 'Find Article', path: '/find-article', icon: FileSearch },
+    { name: 'Literature Review', path: '/research/literature-review', icon: BookOpen },
+  ];
+
+  const navItemsBlock2 = [
+    { name: 'Teaching', path: '/teaching', icon: School },
+    { name: 'Activities', path: '/activities', icon: Footprints },
+    { name: 'Presentation', path: '/presentations', icon: Presentation },
+    { name: 'Question Bank', path: '/questions', icon: ListTodo },
+    { name: 'Notebook', path: '/notebook', icon: NotebookPen },
+    { name: 'Sharebox', path: '/sharbox', icon: Inbox },
+    { name: 'Colleague', path: '/colleagues', icon: Users },
+    { name: 'CV Generator', path: '/cv-architect', icon: FileUser },
+    { name: 'Profile', path: '/profile', icon: CircleUserRound },
   ];
 
   // Combined state: expanded if hovered on desktop, or if it's open on mobile
@@ -168,8 +171,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
 
       {/* Menu Area */}
       <nav className="flex-1 mt-4 lg:mt-6 px-2 space-y-1 lg:space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
-        {/* Static items including Dashboard, Library, etc. */}
-        {navItems.slice(0, 7).map((item) => {
+        {/* Block 1: Items 1-6 */}
+        {navItemsBlock1.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink
@@ -195,7 +198,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           );
         })}
 
-        {/* Research Dropdown */}
+        {/* 7. Research Dropdown */}
         <div className="relative" onMouseEnter={() => isExpanded && setResearchMenuOpen(true)}>
           <button 
             onClick={() => isExpanded && setResearchMenuOpen(!researchMenuOpen)}
@@ -218,32 +221,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
               onClick={handleNavClick}
               className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
-              <Zap size={14} className="mr-2 shrink-0" />
+              <TextSearch size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Gap Finder</span>
-            </NavLink>
-            <NavLink 
-              to="/research/literature-review"
-              onClick={handleNavClick}
-              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname.startsWith('/research/literature-review') ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
-            >
-              <BookOpen size={14} className="mr-2 shrink-0" />
-              <span className="whitespace-nowrap">Literature Review</span>
             </NavLink>
             <NavLink 
               to="/research/brainstorming"
               onClick={handleNavClick}
               className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/brainstorming' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
-              <Sparkles size={14} className="mr-2 shrink-0" />
+              <BrainCog size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Brainstorming</span>
-            </NavLink>
-            <NavLink 
-              to="/research/publication"
-              onClick={handleNavClick}
-              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/publication' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
-            >
-              <Share2 size={14} className="mr-2 shrink-0" />
-              <span className="whitespace-nowrap">Publication</span>
             </NavLink>
             <NavLink 
               to="/research/tracer"
@@ -253,11 +240,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
               <Target size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Tracer</span>
             </NavLink>
+            <NavLink 
+              to="/research/publication"
+              onClick={handleNavClick}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/publication' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
+            >
+              <BookUp size={14} className="mr-2 shrink-0" />
+              <span className="whitespace-nowrap">Publication</span>
+            </NavLink>
           </div>
         </div>
 
-        {/* Last static items including Profile */}
-        {navItems.slice(7, 13).map((item) => {
+        {/* Block 2: Items 8-16 */}
+        {navItemsBlock2.map((item) => {
           const isActive = location.pathname.startsWith(item.path) && (item.path !== '/' || location.pathname === '/');
           return (
             <NavLink
@@ -283,7 +278,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           );
         })}
 
-        {/* Settings Dropdown */}
+        {/* 17. Setting Dropdown */}
         <div className="relative pt-1 lg:pt-2" onMouseEnter={() => isExpanded && setSettingsMenuOpen(true)}>
           <button 
             onClick={() => isExpanded && setSettingsMenuOpen(!settingsMenuOpen)}
@@ -295,7 +290,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
               <Settings size={18} className="lg:w-5 lg:h-5" />
             </div>
             <div className={`flex-1 ml-2 flex items-center justify-between overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
-              <span className="text-xs md:text-sm font-semibold whitespace-nowrap">Settings</span>
+              <span className="text-xs md:text-sm font-semibold whitespace-nowrap">Setting</span>
               <ChevronDown size={14} className={`transition-transform duration-300 ${settingsMenuOpen ? 'rotate-180' : ''}`} />
             </div>
           </button>
@@ -323,25 +318,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             </button>
           </div>
         </div>
-
-        {/* Profile (Always Last) */}
-        <NavLink
-          key="Profile"
-          to="/profile"
-          onClick={handleNavClick}
-          className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
-            location.pathname === '/profile' 
-              ? 'bg-[#FED400] text-black shadow-md' 
-              : 'text-black hover:bg-[#FED400]/5 hover:text-black'
-          }`}
-        >
-          <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
-            <User size={18} strokeWidth={location.pathname === '/profile' ? 2.5 : 2} className="lg:w-5 lg:h-5" />
-          </div>
-          <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
-            <span className="text-xs md:text-sm font-semibold whitespace-nowrap">Profile</span>
-          </div>
-        </NavLink>
       </nav>
 
       {/* Bottom Area */}
