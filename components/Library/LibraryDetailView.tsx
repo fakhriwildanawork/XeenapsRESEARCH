@@ -49,8 +49,8 @@ import {
   Grip
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
-import { saveLibraryItem, deleteLibraryItem, generateCitations, generateInsight, fetchFileContent, translateInsightSection } from '../../services/gasService';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
+import { saveLibraryItem, deleteLibraryItem, generateCitations, generateInsight, fetchFileContent, translateInsightSection } from '../../services/gasService';
 import { FormDropdown } from '../Common/FormComponents';
 import Header from '../Layout/Header';
 import RelatedPresentations from '../Presenter/RelatedPresentations';
@@ -734,7 +734,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     <button onClick={() => { setShowQuestions(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
                       <ListTodo className="w-4 h-4" /> Question Bank
                     </button>
-                    <button onClick={() => { setShowConsultations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-[#004A74] bg-[#FED400]/10 hover:bg-[#FED400]/20 rounded-xl transition-all">
+                    <button onClick={() => { setShowConsultations(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
                       <ChatBubbleLeftRightIcon className="w-4 h-4" /> Consultation
                     </button>
                     <button onClick={() => { setShowNotebook(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
@@ -983,9 +983,8 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                               <p className="text-xs font-semibold text-[#004A74]/80 leading-relaxed flex-1" dangerouslySetInnerHTML={{ __html: ref }} />
                             </div>
                             <div className="flex items-center justify-end gap-2">
+                              {/* Fix: Added missing event argument to handleCopy call */}
                               <button 
-                                // Added comment above the fix for line 985 (User reported line 985, which corresponds to the start of this map block)
-                                // Fix: Added missing event argument 'e' to handleCopy call to resolve argument count mismatch
                                 onClick={(e) => handleCopy(e, ref.replace(/<[^>]*>/g, ''))}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#004A74] rounded-lg border border-gray-100 text-[9px] font-black uppercase tracking-tight shadow-sm hover:bg-[#FED400] transition-all"
                               >
