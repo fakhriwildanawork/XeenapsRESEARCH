@@ -508,8 +508,18 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
       
       if (result.status === 'success') { 
         onComplete(); 
-        // Redirect to main and auto-open detail view for the newly created item
-        navigate('/', { state: { openItem: newItem }, replace: true }); 
+        
+        // --- FIX: Patched newItem with Cloud identities from server response ---
+        const patchedItem = {
+          ...newItem,
+          extractedJsonId: result.extractedJsonId || newItem.extractedJsonId,
+          insightJsonId: result.insightJsonId || newItem.insightJsonId,
+          storageNodeUrl: result.nodeUrl || newItem.storageNodeUrl,
+          fileId: result.fileId || newItem.fileId
+        };
+        
+        // Redirect to main and auto-open detail view with FULL cloud metadata
+        navigate('/', { state: { openItem: patchedItem }, replace: true }); 
       } else {
         showXeenapsAlert({ 
           icon: 'error', 
