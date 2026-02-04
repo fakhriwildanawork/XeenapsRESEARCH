@@ -538,7 +538,7 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
                     onClick={(e) => { e.stopPropagation(); toggleSelectItem(ppt.id); }}
                     className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(ppt.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}
                   >
-                    {selectedIds.includes(ppt.id) && <CheckIcon size={12} strokeWidth={4} />}
+                    {selectedIds.includes(ppt.id) && <CheckIcon className="w-3 h-3" strokeWidth={2.5} />}
                   </div>
                   <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: ppt.themeConfig.primaryColor }} />
                   <div className="flex-1 min-w-0">
