@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { NoteItem, NoteContent, NoteAttachment } from '../../types';
 import { fetchNoteContent } from '../../services/NoteService';
 import { 
@@ -47,9 +48,9 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
     } catch { return "-"; }
   };
 
-  return (
+  return createPortal(
     <div 
-      className={`fixed top-0 right-0 bottom-0 z-[1200] bg-white flex flex-col will-change-transform overflow-hidden transition-all duration-500 animate-in fade-in slide-in-from-right-10 border-l border-gray-100 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] ${
+      className={`fixed top-0 right-0 bottom-0 z-[2000] bg-white flex flex-col will-change-transform overflow-hidden transition-all duration-500 animate-in fade-in slide-in-from-right-10 border-l border-gray-100 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] ${
         isMobileSidebarOpen ? 'blur-[15px] opacity-40 pointer-events-none scale-[0.98]' : ''
       }`}
       style={{ 
@@ -205,7 +206,8 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
         .note-body-output b { font-weight: 800; color: #004A74; }
         .note-body-output i { font-style: italic; color: #64748B; }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 };
 

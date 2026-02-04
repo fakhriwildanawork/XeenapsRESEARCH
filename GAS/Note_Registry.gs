@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - NOTEBOOK REGISTRY MODULE
  */
@@ -49,7 +48,12 @@ function getNotesFromRegistry(page = 1, limit = 25, search = "", collectionId = 
 
     let filtered = rawItems.filter(row => {
       // 1. Filter by Collection ID if provided
-      if (collectionId && row[colIdIdx] !== collectionId) return false;
+      // SPECIAL TOKEN: __INDEPENDENT__ means collectionId must be empty in sheet
+      if (collectionId === "__INDEPENDENT__") {
+        if (row[colIdIdx] && row[colIdIdx].toString().trim() !== "") return false;
+      } else if (collectionId && row[colIdIdx] !== collectionId) {
+        return false;
+      }
 
       // 2. BACKEND TOKENIZED SMART SEARCH (Label, Title Collection, Description & Lampiran Index)
       if (searchTokens.length > 0) {

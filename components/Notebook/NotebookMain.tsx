@@ -57,11 +57,12 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
+        // Requirement: Filter independent notes if collectionId is empty (from sidebar)
         const result = await fetchNotesPaginated(
           currentPage, 
           itemsPerPage, 
           appliedSearch, 
-          collectionId,
+          collectionId || "__INDEPENDENT__",
           "createdAt", 
           "desc", 
           signal
