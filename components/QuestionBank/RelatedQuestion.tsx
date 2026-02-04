@@ -329,7 +329,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
             <table className="w-full text-left border-separate border-spacing-0 min-w-[1000px]">
                <thead>
                  <tr>
-                    <StandardTh width="60px">
+                    <th className="sticky left-0 z-[60] px-6 py-4 w-[60px] bg-gray-50 border-r border-gray-100/50 shadow-sm text-center">
                       <div className="flex items-center justify-center">
                         <StandardCheckbox 
                           onChange={() => {
@@ -339,7 +339,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                           checked={selectedIds.length === questions.length && questions.length > 0}
                         />
                       </div>
-                    </StandardTh>
+                    </th>
                     <StandardTh width="120px">Bloom Tier</StandardTh>
                     <StandardTh width="150px">Label</StandardTh>
                     <StandardTh width="450px">Question Text</StandardTh>
@@ -351,7 +351,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                <tbody className="divide-y divide-gray-50">
                   {questions.map((q) => (
                     <StandardTr key={q.id} onClick={() => setSelectedQuestionDetail(q)} className="cursor-pointer">
-                       <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                       <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={(e) => e.stopPropagation()}>
                          <StandardCheckbox checked={selectedIds.includes(q.id)} onChange={() => toggleSelect(q.id)} />
                        </td>
                        <StandardTd>

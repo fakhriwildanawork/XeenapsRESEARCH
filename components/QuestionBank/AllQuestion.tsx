@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { QuestionItem, LibraryItem, BloomsLevel } from '../../types';
 import { fetchAllQuestionsPaginated, deleteQuestion } from '../../services/QuestionService';
 import { 
-  PlusIcon, 
+  Plus as PlusIcon, 
   TrashIcon,
   PlayIcon,
   RectangleStackIcon,
@@ -449,7 +449,7 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                     const isSelected = selectedIds.includes(q.id);
                     return (
                       <StandardTr key={q.id} className="cursor-pointer" onClick={() => setSelectedQuestionDetail(q)}>
-                        <td className="px-6 py-4 text-center" onClick={e => e.stopPropagation()}>
+                        <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={e => e.stopPropagation()}>
                           <StandardCheckbox checked={isSelected} onChange={() => toggleSelect(q.id)} />
                         </td>
                         <StandardTd>
@@ -537,7 +537,7 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                     </div>
                     <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setSelectedQuestionDetail(q)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><EyeIcon className="w-5 h-5" /></button>
-                      <button onClick={() => handleDelete(q.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><TrashIcon className="w-5 h-5" /></button>
+                      <button onClick={() => handleDelete(q.id)} className="p-2 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><TrashIcon className="w-5 h-5" /></button>
                     </div>
                   </div>
                 );
