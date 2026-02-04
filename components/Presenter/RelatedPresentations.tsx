@@ -32,6 +32,7 @@ import {
   ElegantTooltip 
 } from '../Common/TableComponents';
 import { SmartSearchBox } from '../Common/SearchComponents';
+import { StandardPrimaryButton } from '../Common/ButtonComponents';
 import { useAsyncWorkflow } from '../../hooks/useAsyncWorkflow';
 import { useOptimisticUpdate } from '../../hooks/useOptimisticUpdate';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -208,15 +209,12 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setShowSetup(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-white rounded-2xl font-bold hover:shadow-lg hover:bg-[#003859] transition-all transform active:scale-95 shadow-lg shadow-[#004A74]/10"
-            >
-              <PlusIcon className="w-5 h-5" />
-              <span className="text-[11px] uppercase tracking-widest font-black">Create New</span>
-            </button>
-          </div>
+          <StandardPrimaryButton 
+            onClick={() => setShowSetup(true)}
+            icon={<PlusIcon className="w-5 h-5" />}
+          >
+            Create Presentation
+          </StandardPrimaryButton>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
