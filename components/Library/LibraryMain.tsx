@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -48,12 +47,13 @@ import { showXeenapsAlert } from '../../utils/swalUtils';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 
+// Fix: Added missing LibraryMainProps interface
 interface LibraryMainProps {
   items: LibraryItem[];
   isLoading: boolean;
   onRefresh: () => Promise<void>;
   globalSearch: string;
-  isMobileSidebarOpen?: boolean;
+  isMobileSidebarOpen: boolean;
 }
 
 // Fix: Corrected typo 'key0f' to 'keyof' in SortConfig definition
@@ -100,13 +100,15 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
   // RESET VIEW LOGIC: Reset Detail View and Scroll when navigating without item payload
   useEffect(() => {
     const state = location.state as any;
-    if (!state?.openItem) {
+    // FIX: Only close the detail view if there is no openItem AND we are not in the middle of re-hydration transition.
+    // This prevents the race condition when the sanitization navigate (replace: true) is called.
+    if (!state?.openItem && !isTransitioning) {
       setSelectedItem(null);
       if (containerRef.current) {
         containerRef.current.scrollTop = 0;
       }
     }
-  }, [location.pathname, location.key]);
+  }, [location.pathname, location.key, isTransitioning]);
 
   // DATA RE-HYDRATION LOGIC: Ensure partial items from navigation are filled with full metadata
   useEffect(() => {
@@ -126,6 +128,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
       
       const timer = setTimeout(() => {
         const { openItem, ...rest } = state;
+        // This navigation triggers location.key change, which hits RESET VIEW LOGIC above
         navigate(location.pathname, { replace: true, state: rest });
         setIsTransitioning(false);
       }, 800); 
