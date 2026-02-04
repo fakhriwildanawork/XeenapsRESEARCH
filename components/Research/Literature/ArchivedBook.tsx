@@ -198,7 +198,7 @@ const ArchivedBook: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-base md:text-xl font-black text-[#004A74] uppercase tracking-tight truncate max-w-[180px] md:max-w-md">Book Detail</h3>
-                    <p className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">Personal Archive Asset</p>
+                    <p className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">Personal Knowledge Asset</p>
                   </div>
                </div>
                <button onClick={() => setDetailItem(null)} className="p-1.5 md:p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
@@ -280,7 +280,7 @@ const ArchivedBook: React.FC = () => {
               </button>
               <div>
                 <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight leading-none">Archived Books</h2>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Stored Personal References</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Stored Book References</p>
               </div>
            </div>
 

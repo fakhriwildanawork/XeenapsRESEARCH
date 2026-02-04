@@ -65,7 +65,7 @@ const AllReview: React.FC = () => {
       inputLabel: 'Review Project Label',
       inputPlaceholder: 'e.g., AI in Healthcare Synthesis...',
       showCancelButton: true,
-      confirmButtonText: 'INITIALIZE',
+      confirmButtonText: 'CREATE',
       ...XEENAPS_SWAL_CONFIG,
       inputValidator: (value) => {
         if (!value) return 'Label is mandatory!';
@@ -74,6 +74,17 @@ const AllReview: React.FC = () => {
     });
 
     if (label) {
+      // UX Improvement: Show loading feedback during cloud synchronization
+      Swal.fire({
+        title: 'ARCHITECTING WORKSPACE...',
+        text: 'Initializing cloud synchronization...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        ...XEENAPS_SWAL_CONFIG
+      });
+
       const id = crypto.randomUUID();
       const newItem: ReviewItem = {
         id,
@@ -87,8 +98,12 @@ const AllReview: React.FC = () => {
       };
 
       const success = await saveReview(newItem, { matrix: [], finalSynthesis: '' });
+      Swal.close();
+      
       if (success) {
         navigate(`/research/literature-review/${id}`);
+      } else {
+        showXeenapsToast('error', 'Cloud sync failed. Please try again.');
       }
     }
   };

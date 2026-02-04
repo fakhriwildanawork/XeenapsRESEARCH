@@ -217,8 +217,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     }
   };
 
-  if (isLoading) return <div className="p-20 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Opening Review Workspace...</div>;
-  if (!review) return null;
+  if (!review && !isLoading) return null;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#fcfcfc] overflow-hidden relative">
@@ -230,22 +229,26 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                <ArrowLeft size={20} strokeWidth={3} />
             </button>
             <div className="min-w-0">
-               <input 
-                 className="text-lg md:text-xl font-black text-[#004A74] uppercase tracking-tighter leading-none bg-transparent border-none outline-none focus:ring-0 truncate max-w-xs md:max-w-xl placeholder:text-gray-200"
-                 value={review.label}
-                 onChange={(e) => setReview({ ...review, label: e.target.value.toUpperCase() })}
-                 placeholder="REVIEW PROJECT LABEL..."
-               />
+               {isLoading || !review ? (
+                 <div className="h-8 w-64 skeleton rounded-lg" />
+               ) : (
+                 <input 
+                   className="text-lg md:text-xl font-black text-[#004A74] uppercase tracking-tighter leading-none bg-transparent border-none outline-none focus:ring-0 truncate max-w-xs md:max-w-xl placeholder:text-gray-200"
+                   value={review.label}
+                   onChange={(e) => setReview({ ...review, label: e.target.value.toUpperCase() })}
+                   placeholder="REVIEW PROJECT LABEL..."
+                 />
+               )}
                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Multi-Source Synthesis Matrix</p>
             </div>
          </div>
 
          <div className="flex items-center gap-3">
             <button 
-              onClick={() => setReview({ ...review, isFavorite: !review.isFavorite })}
-              className={`p-2.5 rounded-xl border transition-all ${review.isFavorite ? 'bg-yellow-50 border-yellow-200 text-[#FED400]' : 'bg-white border-gray-100 text-gray-300'}`}
+              onClick={() => review && setReview({ ...review, isFavorite: !review.isFavorite })}
+              className={`p-2.5 rounded-xl border transition-all ${review?.isFavorite ? 'bg-yellow-50 border-yellow-200 text-[#FED400]' : 'bg-white border-gray-100 text-gray-300'}`}
             >
-              <Star size={18} fill={review.isFavorite ? "currentColor" : "none"} />
+              <Star size={18} fill={review?.isFavorite ? "currentColor" : "none"} />
             </button>
             <div className="w-10 h-10 flex items-center justify-center">
                {(isBusy || translatingSynthesis) && <Loader2 size={20} className="animate-spin text-[#004A74]" />}
@@ -258,16 +261,20 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
          {/* 1. CENTRAL QUESTION HUB */}
          <section className="space-y-4">
             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">
-               <Zap size={14} className="text-[#FED400] fill-[#FED400]" /> The Compass: Central Review Question
+               <Zap size={14} className="text-[#FED400] fill-[#FED400]" /> THE COMPASS: CENTRAL REVIEW QUESTION
             </h3>
             <div className="relative group">
                <MessageSquare className="absolute left-6 top-8 w-6 h-6 text-gray-200 group-focus-within:text-[#FED400] transition-colors" />
-               <textarea 
-                 className="w-full bg-white p-8 pl-16 border border-gray-200 rounded-[3rem] outline-none text-base md:text-lg font-bold text-[#004A74] placeholder:text-gray-200 resize-none transition-all focus:border-[#FED400] focus:ring-8 focus:ring-[#FED400]/5 min-h-[120px]"
-                 placeholder="What specific question should AI answer across all selected papers?"
-                 value={review.centralQuestion}
-                 onChange={(e) => setReview({ ...review, centralQuestion: e.target.value })}
-               />
+               {isLoading || !review ? (
+                 <div className="h-24 w-full skeleton rounded-[3rem]" />
+               ) : (
+                 <textarea 
+                   className="w-full bg-white p-8 pl-16 border border-gray-200 rounded-[3rem] outline-none text-base md:text-lg font-bold text-[#004A74] placeholder:text-gray-200 resize-none transition-all focus:border-[#FED400] focus:ring-8 focus:ring-[#FED400]/5 min-h-[120px]"
+                   placeholder="What specific question should AI answer across all selected papers?"
+                   value={review.centralQuestion}
+                   onChange={(e) => setReview({ ...review, centralQuestion: e.target.value })}
+                 />
+               )}
             </div>
          </section>
 
@@ -277,8 +284,8 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><ClipboardList size={16} /> Comparative Analysis Matrix</h3>
                <button 
                  onClick={() => setIsReviewSelectorOpen(true)}
-                 disabled={isBusy}
-                 className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-[#004A74] rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
+                 disabled={isBusy || isLoading}
+                 className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-100 text-[#004A74] rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
                >
                  <Plus size={14} /> Add Sources
                </button>
@@ -296,14 +303,25 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-gray-50">
-                        {content.matrix.length === 0 ? (
+                        {isLoading ? (
+                           /* Inline Table Skeletons */
+                           [1,2,3].map(i => (
+                             <tr key={i}>
+                               <td className="p-6"><div className="h-4 w-32 skeleton rounded-lg"/></td>
+                               <td className="p-6"><div className="space-y-2"><div className="h-4 w-full skeleton rounded-lg"/><div className="h-4 w-3/4 skeleton rounded-lg"/></div></td>
+                               <td className="p-6"><div className="h-12 w-full skeleton rounded-2xl"/></td>
+                               <td className="p-6"><div className="h-8 w-8 skeleton rounded-lg mx-auto"/></td>
+                             </tr>
+                           ))
+                        ) : content.matrix.length === 0 ? (
                            <tr>
                               <td colSpan={4} className="py-24 text-center opacity-30">
                                  <BookOpen size={48} className="mx-auto mb-4 text-[#004A74]" />
                                  <p className="text-[10px] font-black uppercase tracking-widest">Synthesis Matrix is empty</p>
                               </td>
                            </tr>
-                        ) : content.matrix.map((row, idx) => {
+                        ) : (
+                          content.matrix.map((row, idx) => {
                            const isAnalyzing = analyzingIds.includes(row.collectionId);
                            const isTranslating = translatingId === row.collectionId;
                            
@@ -370,7 +388,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                                                      <button 
                                                         key={lang.code}
                                                         onClick={() => handleTranslateRow(row, lang.code)}
-                                                        className="w-full text-left px-3 py-2 text-[10px] font-bold text-[#004A74] hover:bg-gray-50 rounded-lg transition-all"
+                                                        className="w-full text-left px-3 py-2 text-[10px] font-bold text-[#004A74] hover:bg-gray-50 rounded-lg transition-all flex items-center justify-between"
                                                      >
                                                         {lang.label}
                                                      </button>
@@ -386,7 +404,8 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                                 </td>
                              </tr>
                            );
-                        })}
+                          })
+                        )}
                      </tbody>
                   </table>
                </div>
@@ -396,7 +415,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
             <div className="flex justify-center pt-8 animate-in slide-in-from-bottom-5 duration-700">
                <button 
                   onClick={handleSynthesize}
-                  disabled={isBusy || content.matrix.length === 0 || analyzingIds.length > 0}
+                  disabled={isBusy || isLoading || content.matrix.length === 0 || analyzingIds.length > 0}
                   className="group relative flex items-center gap-4 px-20 py-6 bg-[#004A74] text-[#FED400] rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-sm shadow-[0_20px_50px_-10px_rgba(0,74,116,0.3)] hover:scale-105 active:scale-95 transition-all duration-500 disabled:opacity-40 disabled:grayscale overflow-hidden"
                >
                   <div className="relative z-10 flex items-center gap-3">
@@ -420,7 +439,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                   <div className="relative">
                      <button 
                         onClick={() => setOpenTranslationMenu(openTranslationMenu === 'synthesis' ? null : 'synthesis')}
-                        disabled={translatingSynthesis || !content.finalSynthesis}
+                        disabled={translatingSynthesis || !content.finalSynthesis || isLoading}
                         className={`p-3 border border-gray-200 rounded-xl transition-all ${translatingSynthesis ? 'bg-[#004A74] text-white animate-pulse' : 'bg-white text-[#004A74] hover:bg-gray-50 shadow-sm'}`}
                         title="Translate Final Review"
                      >
@@ -447,8 +466,8 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                   </div>
                   <button 
                      onClick={handleSynthesize}
-                     disabled={isBusy || content.matrix.length === 0 || analyzingIds.length > 0}
-                     className="p-3 bg-white border border-gray-200 rounded-xl text-[#004A74] hover:bg-gray-50 transition-all shadow-sm"
+                     disabled={isBusy || isLoading || content.matrix.length === 0 || analyzingIds.length > 0}
+                     className="p-3 bg-white border border-gray-100 rounded-xl text-[#004A74] hover:bg-gray-50 transition-all shadow-sm"
                      title="Re-Synthesize"
                   >
                      <RefreshCcw size={18} className={isBusy ? 'animate-spin' : ''} />
@@ -468,14 +487,27 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                )}
                <div className="bg-white p-10 md:p-16 border border-gray-100 rounded-[3.5rem] shadow-xl relative overflow-hidden min-h-[400px]">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-[#FED400]/5 -translate-y-24 translate-x-24 rounded-full" />
-                  <div 
-                    className="text-sm md:text-base leading-[1.8] text-[#004A74] font-medium relative z-10 review-output-body"
-                    dangerouslySetInnerHTML={{ __html: content.finalSynthesis || '<p className="text-gray-200 text-center py-20 uppercase font-black tracking-widest">Synthesis Pending Matrix Completion</p>' }}
-                  />
+                  
+                  {isLoading ? (
+                    <div className="space-y-4 relative z-10">
+                      <div className="h-4 w-full skeleton rounded-lg" />
+                      <div className="h-4 w-full skeleton rounded-lg" />
+                      <div className="h-4 w-full skeleton rounded-lg" />
+                      <div className="h-4 w-5/6 skeleton rounded-lg" />
+                      <div className="h-4 w-4/6 skeleton rounded-lg pt-4" />
+                      <div className="h-4 w-full skeleton rounded-lg" />
+                      <div className="h-4 w-full skeleton rounded-lg" />
+                    </div>
+                  ) : (
+                    <div 
+                      className="text-sm md:text-base leading-[1.8] text-[#004A74] font-medium relative z-10 review-output-body"
+                      dangerouslySetInnerHTML={{ __html: content.finalSynthesis || '<p className="text-gray-200 text-center py-20 uppercase font-black tracking-widest">Synthesis Pending Matrix Completion</p>' }}
+                    />
+                  )}
                </div>
             </div>
 
-            {content.finalSynthesis && (
+            {content.finalSynthesis && !isLoading && (
                <div className="p-8 bg-[#004A74]/5 rounded-[2.5rem] border border-[#004A74]/10 flex flex-col md:flex-row items-center gap-6 animate-in slide-in-from-bottom-2">
                   <div className="w-14 h-14 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shrink-0 shadow-xl"><ShieldAlert size={28} /></div>
                   <div>
