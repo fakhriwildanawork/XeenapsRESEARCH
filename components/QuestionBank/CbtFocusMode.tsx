@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { QuestionItem } from '../../types';
 import { 
   XMarkIcon, 
@@ -62,9 +63,9 @@ const CbtFocusMode: React.FC<CbtFocusModeProps> = ({ questions, mode, onClose })
     return () => window.removeEventListener('keydown', handleKey);
   }, [currentIndex, isFlipped]);
 
-  return (
+  return createPortal(
     <div 
-      className="fixed top-0 right-0 bottom-0 z-[500] bg-white flex flex-col animate-in fade-in duration-300 overflow-hidden transition-all duration-500 ease-in-out"
+      className="fixed top-0 right-0 bottom-0 z-[9999] bg-white flex flex-col animate-in fade-in duration-300 overflow-hidden transition-all duration-500 ease-in-out"
       style={{ left: 'var(--sidebar-offset, 0px)' }}
     >
       {/* Header - Compact */}
@@ -265,7 +266,8 @@ const CbtFocusMode: React.FC<CbtFocusModeProps> = ({ questions, mode, onClose })
         .custom-scrollbar-white::-webkit-scrollbar { width: 2px; }
         .custom-scrollbar-white::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 };
 

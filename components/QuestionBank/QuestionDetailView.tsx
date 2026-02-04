@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { QuestionItem, BloomsLevel, LibraryItem } from '../../types';
 import { 
   XMarkIcon, 
@@ -27,9 +27,9 @@ const QuestionDetailView: React.FC<QuestionDetailViewProps> = ({ question, colle
     return 'bg-[#FED400] text-[#004A74]';
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed top-0 right-0 bottom-0 z-[600] bg-white flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden transition-all duration-500 ease-in-out"
+      className="fixed top-0 right-0 bottom-0 z-[9999] bg-white flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden transition-all duration-500 ease-in-out"
       style={{ left: 'var(--sidebar-offset, 0px)' }}
     >
       {/* Header - Minimal Sticky */}
@@ -175,7 +175,8 @@ const QuestionDetailView: React.FC<QuestionDetailViewProps> = ({ question, colle
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #004A7415; border-radius: 10px; }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 };
 
