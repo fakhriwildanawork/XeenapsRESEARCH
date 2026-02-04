@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { LibraryItem, TeachingItem, ActivityItem, TracerProject, PublicationItem } from './types';
+import { LibraryItem, TeachingItem, ActivityItem, TracerProject, PublicationItem, PresentationItem } from './types';
 import { fetchLibrary } from './services/gasService';
 import { fetchTeachingPaginated } from './services/TeachingService';
 import { fetchActivitiesPaginated } from './services/ActivityService';
@@ -147,6 +147,18 @@ const App: React.FC = () => {
       setPublicationItems(prev => prev.filter(i => i.id !== e.detail));
     };
 
+    // 6. Presentation Listeners (CASCADE CLEANUP LOGIC)
+    const handlePresentationDelete = (e: any) => {
+      const deletedId = e.detail;
+      // Real-time cleanup of presentation references in Teaching Sessions
+      setTeachingItems(prev => prev.map(session => ({
+        ...session,
+        presentationId: Array.isArray(session.presentationId) 
+          ? session.presentationId.filter(p => p.id !== deletedId)
+          : []
+      })));
+    };
+
     window.addEventListener('xeenaps-library-updated', handleLibraryUpdate);
     window.addEventListener('xeenaps-library-deleted', handleLibraryDelete);
     window.addEventListener('xeenaps-teaching-updated', handleTeachingUpdate);
@@ -157,6 +169,7 @@ const App: React.FC = () => {
     window.addEventListener('xeenaps-tracer-deleted', handleTracerDelete);
     window.addEventListener('xeenaps-publication-updated', handlePublicationUpdate);
     window.addEventListener('xeenaps-publication-deleted', handlePublicationDelete);
+    window.addEventListener('xeenaps-presentation-deleted', handlePresentationDelete);
 
     return () => {
       window.removeEventListener('xeenaps-library-updated', handleLibraryUpdate);
@@ -169,6 +182,7 @@ const App: React.FC = () => {
       window.removeEventListener('xeenaps-tracer-deleted', handleTracerDelete);
       window.removeEventListener('xeenaps-publication-updated', handlePublicationUpdate);
       window.removeEventListener('xeenaps-publication-deleted', handlePublicationDelete);
+      window.removeEventListener('xeenaps-presentation-deleted', handlePresentationDelete);
     };
   }, []);
 

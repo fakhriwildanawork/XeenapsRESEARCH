@@ -90,11 +90,34 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [collection.id, currentPage, appliedSearch, sortConfig, itemsPerPage]);
+  }, [collection.id, currentPage, appliedSearch, sortConfig, itemsPerPage, workflow.execute]);
 
   useEffect(() => {
     loadPresentations();
   }, [loadPresentations]);
+
+  // --- GLOBAL SYNC LISTENER ---
+  useEffect(() => {
+    const handleGlobalUpdate = (e: any) => {
+      const updatedPpt = e.detail as PresentationItem;
+      // Only care if it's related to this collection
+      if (updatedPpt.collectionIds?.includes(collection.id)) {
+        setPresentations(prev => {
+          const index = prev.findIndex(p => p.id === updatedPpt.id);
+          return index > -1 ? prev.map(p => p.id === updatedPpt.id ? updatedPpt : p) : [updatedPpt, ...prev];
+        });
+      }
+    };
+    const handleGlobalDelete = (e: any) => {
+      setPresentations(prev => prev.filter(p => p.id !== e.detail));
+    };
+    window.addEventListener('xeenaps-presentation-updated', handleGlobalUpdate);
+    window.addEventListener('xeenaps-presentation-deleted', handleGlobalDelete);
+    return () => {
+      window.removeEventListener('xeenaps-presentation-updated', handleGlobalUpdate);
+      window.removeEventListener('xeenaps-presentation-deleted', handleGlobalDelete);
+    };
+  }, [collection.id]);
 
   const handleSearchTrigger = () => {
     setCurrentPage(1);
@@ -133,6 +156,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      // OPTIMISTIC DELETE
       await performDelete(
         presentations,
         setPresentations,
@@ -141,7 +165,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
         () => showXeenapsAlert({ icon: 'error', title: 'DELETE FAILED', text: 'Server error occurred.' })
       );
       setSelectedIds(prev => prev.filter(i => i !== id));
-      showXeenapsToast('success', 'Presentation deleted.');
+      // Success toast removed for SILENT UPDATE
     }
   };
 
@@ -151,6 +175,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
     if (confirmed) {
       const idsToDelete = [...selectedIds];
       setSelectedIds([]);
+      // OPTIMISTIC DELETE
       await performDelete(
         presentations,
         setPresentations,
@@ -158,7 +183,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
         async (id) => await deletePresentation(id),
         () => showXeenapsAlert({ icon: 'error', title: 'BATCH DELETE FAILED', text: 'Server error occurred.' })
       );
-      showXeenapsToast('success', 'Batch deletion processed.');
+      // Success toast removed for SILENT UPDATE
     }
   };
 
@@ -181,6 +206,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
           onClose={() => setShowSetup(false)} 
           onComplete={() => {
             setShowSetup(false);
+            // Even though we have events, loadData ensures we pick up any server-calculated counts if needed
             loadPresentations();
           }} 
         />

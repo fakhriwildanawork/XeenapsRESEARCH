@@ -218,11 +218,31 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [currentPage, appliedSearch, startDate, endDate, sortConfig, itemsPerPage]);
+  }, [currentPage, appliedSearch, startDate, endDate, sortConfig, itemsPerPage, workflow.execute]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // --- GLOBAL SYNC LISTENER ---
+  useEffect(() => {
+    const handleGlobalUpdate = (e: any) => {
+      const updatedPpt = e.detail as PresentationItem;
+      setPresentations(prev => {
+        const index = prev.findIndex(p => p.id === updatedPpt.id);
+        return index > -1 ? prev.map(p => p.id === updatedPpt.id ? updatedPpt : p) : [updatedPpt, ...prev];
+      });
+    };
+    const handleGlobalDelete = (e: any) => {
+      setPresentations(prev => prev.filter(p => p.id !== e.detail));
+    };
+    window.addEventListener('xeenaps-presentation-updated', handleGlobalUpdate);
+    window.addEventListener('xeenaps-presentation-deleted', handleGlobalDelete);
+    return () => {
+      window.removeEventListener('xeenaps-presentation-updated', handleGlobalUpdate);
+      window.removeEventListener('xeenaps-presentation-deleted', handleGlobalDelete);
+    };
+  }, []);
 
   useEffect(() => {
     const state = location.state as any;
@@ -280,21 +300,23 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
     const idsToDelete = [...selectedIds];
     setSelectedIds([]);
 
+    // OPTIMISTIC DELETE
     await performDelete(
       presentations,
       setPresentations,
       idsToDelete,
       async (id) => await deletePresentation(id),
       () => {
-        showXeenapsAlert({ icon: 'error', title: 'BATCH DELETE FAILED', text: 'Server error occurred during deletion.' });
+        showXeenapsAlert({ icon: 'error', title: 'SYNC FAILED', text: 'Server error occurred during deletion.' });
       }
     );
-    showXeenapsToast('success', 'Batch deletion processed successfully');
+    // Success toast removed for SILENT UPDATE
   };
 
   const handleDelete = async (id: string) => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      // OPTIMISTIC DELETE
       await performDelete(
         presentations,
         setPresentations,
@@ -306,14 +328,13 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
       );
 
       if (selectedDetail?.id === id) setSelectedDetail(null);
-      showXeenapsToast('success', 'Presentation deleted successfully');
+      // Success toast removed for SILENT UPDATE
     }
   };
 
   const formatDateTime = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return '-';
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
     } catch { return '-'; }

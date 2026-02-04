@@ -1,3 +1,4 @@
+
 import pptxgen from 'pptxgenjs';
 import { LibraryItem, PresentationItem, PresentationTemplate, PresentationThemeConfig, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
@@ -5,7 +6,7 @@ import { callAiProxy, fetchFileContent } from './gasService';
 import * as Templates from './PresentationTemplates';
 
 /**
- * XEENAPS PRESENTATION SERVICE V44 (PAGINATION & DELETE HARDENED)
+ * XEENAPS PRESENTATION SERVICE V45 (OPTIMISTIC & SILENT UPDATE HARDENED)
  */
 
 const LOGO_ICON_URL = "https://lh3.googleusercontent.com/d/1ZpVAXWGLDP2C42Fct0bisloaQLf2095_";
@@ -162,7 +163,7 @@ export const createPresentationWorkflow = async (
     1. RETURN ROOT OBJECT WITH "slides" (Array) AND "citations" (Array).
     2. DATA MAPPING RULES:
        - 1_CARD: "data" must be a STRING containing the slide's core message.
-       - 2_COL: "data" must be { "left": "...", "right": "..." }.
+       - 2_COL: "data" must { "left": "...", "right": "..." }.
        - 3_COL, 2X2, STACKING: "data" must be an Array of Objects: { "h": "Short Heading", "b": "Detailed Body Text" }.
     3. CITATIONS RULE (CRITICAL): In 'citations', generate a Harvard Bibliographic citation list ONLY using the information from 'COLLECTION METADATA' provided below. 
        Format per item: [Authors]. ([Year]) '[Title]'. [Publisher/Journal].
@@ -240,7 +241,14 @@ export const createPresentationWorkflow = async (
     });
 
     const result = await res.json();
-    return result.status === 'success' ? result.data : null;
+    
+    if (result.status === 'success') {
+      // SILENT BROADCAST FOR REAL-TIME SYNC
+      window.dispatchEvent(new CustomEvent('xeenaps-presentation-updated', { detail: result.data }));
+      return result.data;
+    }
+    
+    return null;
 
   } catch (error: any) {
     console.error("Synthesis Engine Error:", error);
@@ -308,9 +316,12 @@ export const fetchPresentationsPaginated = async (
 };
 
 /**
- * Delete Presentation
+ * Delete Presentation with SILENT BROADCAST
  */
 export const deletePresentation = async (id: string): Promise<boolean> => {
+  // SILENT BROADCAST FOR REAL-TIME SYNC & CASCADE CLEANUP
+  window.dispatchEvent(new CustomEvent('xeenaps-presentation-deleted', { detail: id }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL!, {
       method: 'POST',
