@@ -50,6 +50,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<NoteItem | undefined>();
   const [viewNote, setViewNote] = useState<NoteItem | null>(null);
+  const [tempNoteContent, setTempNoteContent] = useState<NoteContent | null>(null);
 
   const itemsPerPage = 12;
 
@@ -320,7 +321,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
           collectionId={collectionId}
           libraryItems={libraryItems}
           onClose={() => setIsFormOpen(false)} 
-          onComplete={(newItem) => { 
+          onComplete={(newItem, newContent) => { 
             setIsFormOpen(false); 
             if (newItem) {
               setItems(prev => {
@@ -328,7 +329,9 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                 return index > -1 ? prev.map(i => i.id === newItem.id ? newItem : i) : [newItem, ...prev];
               });
               setTotalCount(prev => prev + (items.some(i => i.id === newItem.id) ? 0 : 1));
-              // Trigger direct transition to Detail View after successful save
+              
+              // Handover data content untuk Detail View
+              setTempNoteContent(newContent);
               setViewNote(newItem);
             }
           }} 
@@ -338,8 +341,12 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
       {viewNote && (
         <NoteDetailView 
           note={viewNote}
+          initialContent={tempNoteContent}
           isMobileSidebarOpen={isMobileSidebarOpen}
-          onClose={() => setViewNote(null)}
+          onClose={() => {
+            setViewNote(null);
+            setTempNoteContent(null);
+          }}
           onUpdate={(updated) => {
             setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
           }}

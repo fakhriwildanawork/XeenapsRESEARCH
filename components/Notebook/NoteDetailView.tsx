@@ -17,16 +17,24 @@ import {
 
 interface NoteDetailViewProps {
   note: NoteItem;
+  initialContent?: NoteContent | null;
   onClose: () => void;
   onUpdate?: (updatedNote: NoteItem) => void;
   isMobileSidebarOpen?: boolean;
 }
 
-const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobileSidebarOpen }) => {
+const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, initialContent, onClose, isMobileSidebarOpen }) => {
   const [content, setContent] = useState<NoteContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Handover Optimistic: Gunakan data yang dipassing jika ada (mencegah race condition)
+    if (initialContent) {
+      setContent(initialContent);
+      setIsLoading(false);
+      return;
+    }
+
     const load = async () => {
       setIsLoading(true);
       try {
@@ -39,7 +47,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
       }
     };
     load();
-  }, [note]);
+  }, [note, initialContent]);
 
   const formatFullDate = (dateStr: string) => {
     try {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { NoteItem, NoteContent, NoteAttachment, LibraryItem } from '../../types';
 import { saveNote, fetchNoteContent, uploadNoteAttachment } from '../../services/NoteService';
@@ -17,7 +16,7 @@ import {
   Globe,
   FileIcon,
   ChevronRight,
-  Image as ImageIcon
+  ImageIcon
 } from 'lucide-react';
 import { FormField } from '../Common/FormComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
@@ -28,7 +27,7 @@ interface NoteFormProps {
   note?: NoteItem;
   collectionId?: string;
   onClose: () => void;
-  onComplete: (item: NoteItem) => void;
+  onComplete: (item: NoteItem, content: NoteContent) => void;
   libraryItems?: LibraryItem[];
 }
 
@@ -212,7 +211,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
       if (col) finalMetadata.collectionTitle = col.title;
     }
     
-    onComplete(finalMetadata);
+    onComplete(finalMetadata, finalContent);
     
     // START SILENT BACKGROUND PROCESS
     (async () => {
