@@ -205,7 +205,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                      [...Array(6)].map((_, i) => <div key={i} className="h-20 w-full skeleton rounded-3xl" />)
                    ) : dataList.length === 0 ? (
                      <div className="py-20 text-center opacity-30 flex flex-col items-center">
-                        {step === 'PICK_COLLEAGUE' ? <UserIcon size={48} /> : <BuildingLibraryIcon size={48} />}
+                        {step === 'PICK_COLLEAGUE' ? <UserIcon className="w-12 h-12" /> : <BuildingLibraryIcon className="w-12 h-12" />}
                         <p className="text-[10px] font-black uppercase mt-4">No results found</p>
                      </div>
                    ) : (

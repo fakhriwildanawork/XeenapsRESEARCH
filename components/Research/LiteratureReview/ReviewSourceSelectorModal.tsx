@@ -3,7 +3,6 @@ import { LibraryItem, LibraryType } from '../../../types';
 import { fetchLibraryPaginated } from '../../../services/gasService';
 import { 
   XMarkIcon, 
-  // Added missing PlusIcon import
   CheckIcon, 
   PlusIcon,
   BookOpenIcon, 
@@ -98,7 +97,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
             phrases={["Filter by title...", "Filter by author..."]}
           />
           <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-2xl">
-             <CheckCircleIcon className="text-[#004A74] shrink-0" size={16} />
+             <CheckCircleIcon className="text-[#004A74] shrink-0 w-4 h-4" />
              <p className="text-[9px] font-black text-[#004A74]/70 uppercase tracking-widest">
                 System only lists literature with verified extracted content ready for synthesis.
              </p>
@@ -112,7 +111,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
                 <CardGridSkeleton count={6} />
               ) : items.length === 0 ? (
                 <div className="py-24 text-center opacity-30 flex flex-col items-center">
-                   <InboxIcon size={64} className="mb-4" />
+                   <InboxIcon className="w-16 h-16 mb-4" />
                    <p className="text-[10px] font-black uppercase tracking-widest">No verified literature found</p>
                 </div>
               ) : (

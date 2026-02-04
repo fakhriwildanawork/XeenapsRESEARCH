@@ -4,7 +4,6 @@ import { fetchLibraryPaginated } from '../../services/gasService';
 import { 
   XMarkIcon, 
   CheckIcon,
-  // Added missing PlusIcon import
   PlusIcon,
   BookOpenIcon,
   SparklesIcon,
@@ -97,7 +96,7 @@ const ResearchSourceSelectorModal: React.FC<ResearchSourceSelectorModalProps> = 
                 <CardGridSkeleton count={6} />
               ) : items.length === 0 ? (
                 <div className="py-24 text-center opacity-30">
-                   <BookOpenIcon size={64} className="mx-auto mb-4" />
+                   <BookOpenIcon className="w-16 h-16 mx-auto mb-4" />
                    <p className="text-[10px] font-black uppercase tracking-widest">No matching literature found</p>
                 </div>
               ) : (
