@@ -11,9 +11,7 @@ import {
   ArrowLeftIcon, 
   PaperAirplaneIcon, 
   ChatBubbleBottomCenterTextIcon, 
-  ShieldCheckIcon, 
   BuildingLibraryIcon, 
-  AcademicCapIcon, 
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { SmartSearchBox } from '../Common/SearchComponents';
@@ -49,7 +47,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
   
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -200,9 +198,9 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                    )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1 pb-4">
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-1 pb-4">
                    {isLoading ? (
-                     [...Array(6)].map((_, i) => <div key={i} className="h-20 w-full skeleton rounded-3xl" />)
+                     [...Array(6)].map((_, i) => <div key={i} className="h-16 w-full skeleton rounded-2xl" />)
                    ) : dataList.length === 0 ? (
                      <div className="py-20 text-center opacity-30 flex flex-col items-center">
                         {step === 'PICK_COLLEAGUE' ? <UserIcon className="w-12 h-12" /> : <BuildingLibraryIcon className="w-12 h-12" />}
@@ -212,28 +210,20 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                      dataList.map((li) => (
                        <div 
                          key={li.id}
-                         className="bg-white border border-gray-100 rounded-3xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-[#004A74]/20 transition-all group"
+                         className="bg-white border border-gray-100 rounded-2xl p-3.5 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-[#004A74]/20 transition-all group"
                        >
-                          {/* Left Icon/Photo */}
+                          {/* Left Visual: Photo for Colleague, None for Library */}
                           {step === 'PICK_COLLEAGUE' ? (
-                            <img src={li.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-12 h-12 rounded-full border-2 border-gray-50 object-cover shadow-sm shrink-0" alt="" />
-                          ) : (
-                            <div className="w-12 h-12 bg-[#004A74]/5 text-[#004A74] rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:bg-[#004A74] group-hover:text-white transition-all">
-                               <AcademicCapIcon className="w-6 h-6" />
-                            </div>
-                          )}
+                            <img src={li.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-10 h-10 rounded-full border border-gray-50 object-cover shadow-sm shrink-0" alt="" />
+                          ) : null}
 
                           {/* Info */}
                           <div className="flex-1 min-w-0">
                              <h4 className="text-sm font-black text-[#004A74] uppercase truncate leading-tight">{li.name || li.title}</h4>
-                             <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest truncate">{li.affiliation || li.topic}</span>
-                                {li.uniqueAppId && (
-                                   <>
-                                     <div className="w-1 h-1 rounded-full bg-gray-200" />
-                                     <span className="text-[8px] font-mono font-bold text-[#004A74] opacity-50">{li.uniqueAppId}</span>
-                                   </>
-                                )}
+                             <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest truncate">
+                                  {step === 'PICK_COLLEAGUE' ? (li.affiliation || 'Independent') : (li.authors?.join(', ') || 'Unknown Author')}
+                                </span>
                              </div>
                           </div>
 
@@ -251,7 +241,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                               setSearch('');
                               setCurrentPage(1);
                             }}
-                            className="shrink-0 px-6 py-2.5 bg-gray-50 text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all border border-gray-100 flex items-center gap-2"
+                            className="shrink-0 px-5 py-2.5 bg-gray-50 text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all border border-gray-100 flex items-center gap-2"
                           >
                              Select <ChevronRightIcon className="w-3 h-3 stroke-[4]" />
                           </button>
