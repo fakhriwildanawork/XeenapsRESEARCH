@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { PresentationItem, LibraryItem } from '../../types';
 import { fetchRelatedPresentations, deletePresentation } from '../../services/PresentationService';
@@ -174,7 +173,8 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
     } catch { return "-"; }
   };
 
-  const effectiveViewMode = isMobile ? 'grid' : viewMode;
+  // effectiveViewMode is determined by screen size
+  const effectiveViewMode = isMobile ? 'mobileList' : viewMode;
 
   return (
     <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-y-auto custom-scrollbar relative">
@@ -206,10 +206,12 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="hidden lg:flex bg-gray-50 p-1 rounded-xl border border-gray-100 mr-2">
-              <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><Squares2X2Icon className="w-4 h-4" /></button>
-              <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><ListBulletIcon className="w-4 h-4" /></button>
-            </div>
+            {!isMobile && (
+              <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100 mr-2">
+                <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><Squares2X2Icon className="w-4 h-4" /></button>
+                <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><ListBulletIcon className="w-4 h-4" /></button>
+              </div>
+            )}
             <button 
               onClick={() => setShowSetup(true)}
               className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-white rounded-2xl font-bold hover:shadow-lg hover:bg-[#003859] transition-all transform active:scale-95 shadow-lg shadow-[#004A74]/10"
@@ -243,7 +245,43 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
             <h3 className="text-lg font-black text-[#004A74] uppercase tracking-widest">No Presentations Found</h3>
             <p className="text-sm font-medium text-gray-500 mt-2">Transform your collection into visual synthesis.</p>
           </div>
-        ) : effectiveViewMode === 'grid' ? (
+        ) : effectiveViewMode === 'mobileList' ? (
+          /* SPECIAL MOBILE LIST VIEW */
+          <div className="flex flex-col gap-4 animate-in fade-in duration-500">
+            {presentations.map((ppt) => (
+              <div 
+                key={ppt.id} 
+                onClick={() => openInGoogleSlides(ppt.gSlidesId)} 
+                className={`bg-white border border-gray-100 rounded-3xl p-5 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden ${
+                  selectedIds.includes(ppt.id) ? 'ring-2 ring-[#004A74] bg-blue-50' : ''
+                }`}
+              >
+                <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: ppt.themeConfig.primaryColor }} />
+                <div className="flex-1 min-w-0">
+                   <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight">{ppt.title}</h4>
+                   <p className="text-[10px] font-bold text-gray-500 italic truncate mt-0.5">{ppt.presenters.join(', ')}</p>
+                   <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
+                      <CalendarDaysIcon className="w-3 h-3" /> {formatPresentationDate(ppt.createdAt)}
+                   </div>
+                </div>
+                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                   <button 
+                     onClick={() => openInGoogleSlides(ppt.gSlidesId)} 
+                     className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"
+                   >
+                     <EyeIcon className="w-5 h-5" />
+                   </button>
+                   <button 
+                     onClick={(e) => handleDelete(e, ppt.id)} 
+                     className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"
+                   >
+                     <TrashIcon className="w-5 h-5" />
+                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {presentations.map((ppt) => (
               <div 
