@@ -220,4 +220,5 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, onEdit, 
   );
 };
 
+
 export default NoteDetailView;
