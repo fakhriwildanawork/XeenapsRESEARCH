@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { QuestionItem, LibraryItem, BloomsLevel } from '../../types';
 import { fetchRelatedQuestions, deleteQuestion } from '../../services/QuestionService';
@@ -291,48 +290,35 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
             </button>
           </div>
         ) : effectiveViewMode === 'card' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          /* MOBILE ROW-LIST VIEW */
+          <div className="flex flex-col gap-4 animate-in fade-in duration-500">
             {questions.map((q) => {
               const isSelected = selectedIds.includes(q.id);
               return (
                 <div 
                   key={q.id}
                   onClick={() => setSelectedQuestionDetail(q)}
-                  className={`group relative bg-white border rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-6 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col h-full cursor-pointer ${
-                    isSelected ? 'border-[#004A74] ring-4 ring-[#004A74]/5 bg-[#f0f7fa]' : 'border-gray-100'
+                  className={`bg-white border border-gray-100 rounded-3xl p-5 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden ${
+                    isSelected ? 'ring-2 ring-[#004A74] bg-blue-50' : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        onClick={(e) => { e.stopPropagation(); toggleSelect(q.id); }}
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${isSelected ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}
-                      >
-                          {isSelected && <CheckIcon className="w-3 h-3 stroke-[4]" />}
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-widest text-white ${getBloomColor(q.bloomLevel)}`}>
-                        {q.bloomLevel}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                      <button onClick={(e) => { e.stopPropagation(); setSelectedQuestionDetail(q); }} className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg"><EyeIcon className="w-4 h-4" /></button>
-                      <button onClick={(e) => handleDelete(e, q.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); toggleSelect(q.id); }}
+                    className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}
+                  >
+                    {isSelected && <CheckIcon className="w-3 h-3" strokeWidth={2.5} />}
+                  </div>
+                  <div className={`w-1.5 h-12 rounded-full shrink-0 ${getBloomColor(q.bloomLevel)}`} />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight line-clamp-1">{q.questionText}</h4>
+                    <p className="text-[10px] font-bold text-gray-500 truncate mt-0.5">{q.customLabel}</p>
+                    <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
+                       <CheckBadgeIcon className="w-3 h-3" /> Correct: {q.correctAnswer}
                     </div>
                   </div>
-
-                  <div className="mb-4 flex-1">
-                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1 mb-1">
-                      <TagIcon className="w-2.5 h-2.5" /> {q.customLabel}
-                    </p>
-                    <p className="text-xs md:text-sm font-bold text-[#004A74] leading-relaxed line-clamp-4">
-                      "{q.questionText}"
-                    </p>
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-50 flex items-center justify-between text-[7px] md:text-[8px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                    <div className="flex items-center gap-1.5"><ClockIcon className="w-3 h-3" /> {formatShortDate(q.createdAt)}</div>
-                    <div className="flex items-center gap-1.5 text-[#004A74]"><CheckBadgeIcon className="w-3 h-3" /> {q.correctAnswer} is Correct</div>
+                  <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => setSelectedQuestionDetail(q)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><EyeIcon className="w-5 h-5" /></button>
+                    <button onClick={(e) => handleDelete(e, q.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><TrashIcon className="w-5 h-5" /></button>
                   </div>
                 </div>
               );

@@ -134,8 +134,8 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
   }, [location.state, navigate, location.pathname]);
 
   const handleSearchTrigger = () => {
-    setCurrentPage(1);
     setAppliedSearch(localSearch);
+    setCurrentPage(1);
   };
 
   const handleApplyDateFilter = () => {
@@ -509,53 +509,40 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
               <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No Questions Found</p>
             </div>
           ) : (
-            <StandardGridContainer>
+            /* MOBILE ROW-LIST VIEW */
+            <div className="flex flex-col gap-4 animate-in fade-in duration-500">
               {questions.map((q) => {
                 const isSelected = selectedIds.includes(q.id);
                 return (
-                  <StandardItemCard key={q.id} isSelected={isSelected} onClick={() => setSelectedQuestionDetail(q)}>
-                    <div className="flex items-center gap-3 mb-4" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => toggleSelect(q.id)} className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(q.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}>
-                        {isSelected && <CheckIcon className="w-3 h-3 stroke-[4]" />}
-                      </button>
-                      <span className={`px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-white ${getBloomColor(q.bloomLevel)}`}>
-                        {q.bloomLevel}
-                      </span>
+                  <div 
+                    key={q.id} 
+                    onClick={() => setSelectedQuestionDetail(q)} 
+                    className={`bg-white border border-gray-100 rounded-3xl p-5 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden ${
+                      isSelected ? 'ring-2 ring-[#004A74] bg-blue-50' : ''
+                    }`}
+                  >
+                    <div 
+                      onClick={(e) => { e.stopPropagation(); toggleSelect(q.id); }}
+                      className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}
+                    >
+                      {isSelected && <CheckIcon className="w-3 h-3" strokeWidth={2.5} />}
                     </div>
-
-                    <div className="mb-3">
-                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1 mb-1">
-                        <TagIcon className="w-2.5 h-2.5" /> {q.customLabel}
-                      </p>
-                      <p className="text-sm font-bold text-[#004A74] leading-tight line-clamp-3 uppercase">
-                        {q.questionText}
-                      </p>
-                    </div>
-
-                    <div className="mb-4">
-                      <p className="text-[10px] font-bold text-gray-500 line-clamp-1 italic truncate">
-                        Source: {getSourceTitle(q.collectionId)}
-                      </p>
-                    </div>
-
-                    <div className="h-px bg-gray-50 mb-3" />
-                    <div className="flex items-center justify-between text-gray-400">
-                      <div className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest">
-                        <CheckBadgeIcon className="w-3 h-3 text-[#004A74]" /> {q.correctAnswer} CORRECT
-                      </div>
-                      <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setSelectedQuestionDetail(q)} className="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded-lg">
-                          <EyeIcon className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(q.id)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg">
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
+                    <div className={`w-1.5 h-12 rounded-full shrink-0 ${getBloomColor(q.bloomLevel)}`} />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight line-clamp-1">{q.questionText}</h4>
+                      <p className="text-[10px] font-bold text-gray-400 truncate mt-0.5">{getSourceTitle(q.collectionId)}</p>
+                      <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
+                         <CheckBadgeIcon className="w-3 h-3" /> Correct: {q.correctAnswer}
                       </div>
                     </div>
-                  </StandardItemCard>
+                    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => setSelectedQuestionDetail(q)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><EyeIcon className="w-5 h-5" /></button>
+                      <button onClick={() => handleDelete(q.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><TrashIcon className="w-5 h-5" /></button>
+                    </div>
+                  </div>
                 );
               })}
-            </StandardGridContainer>
+            </div>
           )}
           {totalCount > itemsPerPage && (
             <div className="pt-8">
