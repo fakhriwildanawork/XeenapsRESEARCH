@@ -17,7 +17,7 @@ import ConsultationInputModal from './ConsultationInputModal';
 import ConsultationResultView from './ConsultationResultView';
 import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { SmartSearchBox } from '../Common/SearchComponents';
-import { StandardQuickAccessBar, StandardQuickActionButton } from '../Common/ButtonComponents';
+import { StandardQuickAccessBar, StandardQuickActionButton, StandardPrimaryButton } from '../Common/ButtonComponents';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { fetchFileContent } from '../../services/gasService';
@@ -164,7 +164,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-white animate-in slide-in-from-right duration-500 relative">
+    <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-y-auto custom-scrollbar pr-1 relative">
       
       {isInputOpen && (
         <ConsultationInputModal 
@@ -179,7 +179,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
         />
       )}
 
-      {/* HEADER AREA - Unscrolled */}
+      {/* HEADER AREA - Unfixed flow */}
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex flex-col gap-6 bg-white shrink-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -192,13 +192,12 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
             </div>
           </div>
 
-          <button 
+          <StandardPrimaryButton 
             onClick={() => setIsInputOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-white rounded-2xl font-bold hover:shadow-lg hover:bg-[#003859] transition-all transform active:scale-95 shadow-lg shadow-[#004A74]/10"
+            icon={<PlusIcon className="w-5 h-5" />}
           >
-            <PlusIcon className="w-5 h-5" />
-            <span className="text-[11px] uppercase tracking-widest font-black">Ask New Question</span>
-          </button>
+            Ask New Question
+          </StandardPrimaryButton>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -215,22 +214,19 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
         </div>
       </div>
 
-      {/* SCROLLABLE AREA */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {/* MASS ACTION BAR */}
-        <div className="px-6 md:px-10 mt-4">
-          <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>
-            <StandardQuickActionButton variant="danger" onClick={handleMassDelete} title="Mass Delete">
-              <TrashIcon className="w-5 h-5" />
-            </StandardQuickActionButton>
-            <StandardQuickActionButton variant="warning" onClick={handleMassFavorite} title="Mass Favorite">
-              {anyUnfavSelected ? <StarIcon className="w-5 h-5" /> : <StarSolid className="w-5 h-5 text-[#FED400]" />}
-            </StandardQuickActionButton>
-            <button onClick={() => setSelectedIds([])} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#004A74] px-2 transition-all">Clear</button>
-          </StandardQuickAccessBar>
-        </div>
+      {/* CONTENT FLOW */}
+      <div className="flex-1 px-6 md:px-10 mt-4">
+        <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>
+          <StandardQuickActionButton variant="danger" onClick={handleMassDelete} title="Mass Delete">
+            <TrashIcon className="w-5 h-5" />
+          </StandardQuickActionButton>
+          <StandardQuickActionButton variant="warning" onClick={handleMassFavorite} title="Mass Favorite">
+            {anyUnfavSelected ? <StarIcon className="w-5 h-5" /> : <StarSolid className="w-5 h-5 text-[#FED400]" />}
+          </StandardQuickActionButton>
+          <button onClick={() => setSelectedIds([])} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#004A74] px-2 transition-all">Clear</button>
+        </StandardQuickAccessBar>
 
-        <div className="p-6 md:p-10 pb-32">
+        <div className="py-6 md:py-10 pb-32">
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(6)].map((_, i) => <div key={i} className="h-20 w-full skeleton rounded-2xl" />)}
@@ -263,24 +259,24 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
                     <div className="flex-1 min-w-0">
                        <h3 className="text-sm font-bold text-[#004A74] leading-tight truncate">"{item.question}"</h3>
                        <div className="flex items-center gap-3 mt-1.5 opacity-50">
-                          <div className="flex items-center gap-1">
-                             <ClockIcon className="w-3 h-3" />
-                             <span className="text-[9px] font-black uppercase tracking-widest">{formatTimeAgo(item.createdAt)}</span>
-                          </div>
+                        <div className="flex items-center gap-1">
+                           <ClockIcon className="w-3 h-3" />
+                           <span className="text-[9px] font-black uppercase tracking-widest">{formatTimeAgo(item.createdAt)}</span>
+                        </div>
                        </div>
                     </div>
 
                     {/* RIGHT: ACTIONS */}
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={(e) => toggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform text-[#FED400]">
-                        {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
-                      </button>
-                      <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                      <div className="ml-2 p-1.5 bg-gray-50 text-gray-400 rounded-lg group-hover:bg-[#FED400] group-hover:text-[#004A74] transition-all">
-                         <ChevronRightIcon className="w-4 h-4 stroke-[3]" />
-                      </div>
+                    <button onClick={(e) => toggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform text-[#FED400]">
+                      {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
+                    </button>
+                    <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
+                      <TrashIcon className="w-5 h-5" />
+                    </button>
+                    <div className="ml-2 p-1.5 bg-gray-50 text-gray-400 rounded-lg group-hover:bg-[#FED400] group-hover:text-[#004A74] transition-all">
+                       <ChevronRightIcon className="w-4 h-4 stroke-[3]" />
+                    </div>
                     </div>
                   </div>
                 );
