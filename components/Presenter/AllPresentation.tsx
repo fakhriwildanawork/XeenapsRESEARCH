@@ -58,7 +58,8 @@ const PresentationDetailModal: React.FC<{
   allLibraryItems: LibraryItem[];
   onClose: () => void;
   onDelete: (id: string) => void;
-}> = ({ ppt, allLibraryItems, onClose, onDelete }) => {
+  onAttach: () => void;
+}> = ({ ppt, allLibraryItems, onClose, onDelete, onAttach }) => {
   const navigate = useNavigate();
   // DEFENSIVE CHECK: collectionIds might be undefined
   const sourceItems = (ppt.collectionIds || []).map(id => allLibraryItems.find(it => it.id === id)).filter(Boolean) as LibraryItem[];
@@ -141,6 +142,13 @@ const PresentationDetailModal: React.FC<{
             className="flex-1 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all hover:scale-105"
           >
             Open Presentation
+          </button>
+          <button 
+            onClick={onAttach}
+            className="w-14 h-14 bg-gray-50 text-[#004A74] border border-gray-100 rounded-2xl flex items-center justify-center hover:bg-[#FED400] hover:text-[#004A74] transition-all shadow-md"
+            title="Attach to Teaching"
+          >
+            <Grip className="w-6 h-6" />
           </button>
           <button 
             onClick={() => onDelete(ppt.id)}
@@ -329,6 +337,10 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
           allLibraryItems={items} 
           onClose={() => setSelectedDetail(null)} 
           onDelete={handleDelete}
+          onAttach={() => {
+            setSelectedPptForPicker(selectedDetail);
+            setIsPickerOpen(true);
+          }}
         />
       )}
 
