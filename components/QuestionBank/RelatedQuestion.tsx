@@ -17,7 +17,7 @@ import {
   ListBulletIcon,
   Squares2X2Icon
 } from '@heroicons/react/24/outline';
-import { Grip } from 'lucide-react';
+import { Grip, Trash2 } from 'lucide-react';
 import QuestionSetupModal from './QuestionSetupModal';
 import CbtFocusMode from './CbtFocusMode';
 import QuestionDetailView from './QuestionDetailView';
@@ -376,7 +376,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                   </div>
                   <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                     <button onClick={() => setSelectedQuestionDetail(q)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><EyeIcon className="w-5 h-5" /></button>
-                    <button onClick={(e) => handleGripSingle(e, q)} className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><Grip size={18} /></button>
+                    <button onClick={(e) => handleGripSingle(e, q)} className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><Grip className="w-5 h-5" /></button>
                     <button onClick={(e) => handleDelete(e, q.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><TrashIcon className="w-5 h-5" /></button>
                   </div>
                 </div>
@@ -427,7 +427,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                        <StandardTd>
                           <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
                              <button onClick={() => setSelectedQuestionDetail(q)} className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg"><EyeIcon className="w-4 h-4" /></button>
-                             <button onClick={(e) => handleGripSingle(e, q)} className="p-2 text-[#004A74] hover:bg-gray-50 rounded-lg"><Grip size={14} /></button>
+                             <button onClick={(e) => handleGripSingle(e, q)} className="p-2 text-[#004A74] hover:bg-gray-50 rounded-lg"><Grip className="w-3.5 h-3.5" /></button>
                              <button onClick={e => handleDelete(e, q.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
                           </div>
                        </StandardTd>
@@ -453,7 +453,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
            </div>
            <div className="w-px h-5 bg-white/20" />
            <div className="flex items-center gap-2">
-              <button onClick={handleBatchDelete} className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-sm active:scale-90" title="Delete Selected"><TrashIcon className="w-4 h-4 stroke-[2.5]" /></button>
+              <button onClick={handleBatchDelete} className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-sm active:scale-90" title="Delete Selected"><Trash2 className="w-4 h-4" /></button>
               <button onClick={handleGripBatch} className="p-2 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 transition-all shadow-sm active:scale-90" title="Grip to Teaching"><Grip className="w-4 h-4" /></button>
               <button onClick={() => handleStartSimulation('FLASHCARD')} className="p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all shadow-sm active:scale-90" title="Flashcards Selected"><RectangleStackIcon className="w-4 h-4 stroke-[2.5]" /></button>
               <button onClick={() => handleStartSimulation('CBT')} className="p-2 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 transition-all shadow-sm active:scale-90" title="Exam Mode Selected"><PlayIcon className="w-4 h-4 stroke-[2.5]" /></button>
@@ -472,5 +472,6 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
     </div>
   );
 };
+
 
 export default RelatedQuestion;
