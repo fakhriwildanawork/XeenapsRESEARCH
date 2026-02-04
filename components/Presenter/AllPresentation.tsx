@@ -20,6 +20,7 @@ import {
   AdjustmentsHorizontalIcon,
   CheckIcon
 } from '@heroicons/react/24/outline';
+import { Grip } from 'lucide-react';
 import { 
   StandardTableContainer, 
   StandardTableWrapper, 
@@ -40,6 +41,7 @@ import {
 } from '../Common/ButtonComponents';
 import { TableSkeletonRows, CardGridSkeleton } from '../Common/LoadingComponents';
 import PresentationSetupModal from './PresentationSetupModal';
+import TeachingSessionPicker from '../Teaching/TeachingSessionPicker';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsAlert } from '../../utils/swalUtils';
@@ -91,7 +93,7 @@ const PresentationDetailModal: React.FC<{
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-2">
+        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
           <div className="space-y-4">
             <div className="p-6 bg-gray-50/50 rounded-3xl border border-gray-100">
               <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Title</h4>
@@ -173,6 +175,8 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
   const [showSetup, setShowSetup] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [selectedPptForPicker, setSelectedPptForPicker] = useState<PresentationItem | null>(null);
 
   const [selectedDetail, setSelectedDetail] = useState<PresentationItem | null>(() => (location.state as any)?.reopenPPT || null);
 
@@ -328,6 +332,13 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
         />
       )}
 
+      {isPickerOpen && selectedPptForPicker && (
+        <TeachingSessionPicker 
+          item={selectedPptForPicker}
+          onClose={() => { setIsPickerOpen(false); setSelectedPptForPicker(null); }}
+        />
+      )}
+
       <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shrink-0">
         <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
           <SmartSearchBox 
@@ -398,7 +409,7 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
                   <StandardTh width="300px" onClick={() => handleSort('title')} isActiveSort={sortConfig.key === 'title'}>Presentation Title {getSortIcon('title')}</StandardTh>
                   <StandardTh width="400px">Source Collections</StandardTh>
                   <StandardTh width="180px" onClick={() => handleSort('presenters')} isActiveSort={sortConfig.key === 'presenters'}>Presenter(s) {getSortIcon('presenters')}</StandardTh>
-                  <StandardTh width="120px" className="sticky right-0 bg-gray-50 z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">Action</StandardTh>
+                  <StandardTh width="150px" className="sticky right-0 bg-gray-50 z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">Action</StandardTh>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -445,13 +456,20 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
                         </ElegantTooltip>
                       </StandardTd>
                       <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] text-center overflow-visible">
-                        <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
                           <button 
                             onClick={() => setSelectedDetail(ppt)} 
                             className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-xl transition-all"
                             title="Detail View"
                           >
                             <EyeIcon className="w-4 h-4 stroke-[2.5]" />
+                          </button>
+                          <button 
+                            onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }}
+                            className="p-2 text-[#004A74] hover:bg-gray-50 rounded-xl transition-all"
+                            title="Attach to Teaching"
+                          >
+                            <Grip className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => window.open(`https://docs.google.com/presentation/d/${ppt.gSlidesId}/edit`, '_blank')} 
@@ -521,6 +539,9 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
                     <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setSelectedDetail(ppt)} className="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded-lg">
                         <EyeIcon className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }} className="p-1.5 text-[#004A74] hover:bg-gray-50 rounded-lg">
+                        <Grip className="w-4 h-4" />
                       </button>
                       <button onClick={() => window.open(`https://docs.google.com/presentation/d/${ppt.gSlidesId}/edit`, '_blank')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg">
                         <ArrowTopRightOnSquareIcon className="w-4 h-4" />

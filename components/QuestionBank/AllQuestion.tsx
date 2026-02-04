@@ -237,7 +237,7 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white animate-in fade-in duration-500 overflow-y-auto custom-scrollbar relative">
+    <div className="flex flex-col h-full bg-white animate-in fade-in duration-500 overflow-y-auto custom-scrollbar pr-1 relative">
       {showSetup && (
         <QuestionSetupModal 
           items={items} 
@@ -515,7 +515,6 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                 return (
                   <StandardItemCard key={q.id} isSelected={isSelected} onClick={() => setSelectedQuestionDetail(q)}>
                     <div className="flex items-center gap-3 mb-4" onClick={(e) => e.stopPropagation()}>
-                      {/* Fix: Line 521 - Corrected 'item.id' to 'q.id' */}
                       <button onClick={() => toggleSelect(q.id)} className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(q.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}>
                         {isSelected && <CheckIcon className="w-3 h-3 stroke-[4]" />}
                       </button>

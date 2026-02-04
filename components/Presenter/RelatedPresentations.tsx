@@ -14,7 +14,9 @@ import {
   ChevronDownIcon,
   ArrowsUpDownIcon
 } from '@heroicons/react/24/outline';
+import { Grip } from 'lucide-react';
 import PresentationSetupModal from './PresentationSetupModal';
+import TeachingSessionPicker from '../Teaching/TeachingSessionPicker';
 import { CardGridSkeleton, TableSkeletonRows } from '../Common/LoadingComponents';
 import { 
   StandardTableContainer, 
@@ -56,6 +58,8 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
   const [isLoading, setIsLoading] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [selectedPptForPicker, setSelectedPptForPicker] = useState<PresentationItem | null>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -178,6 +182,13 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
         />
       )}
 
+      {isPickerOpen && selectedPptForPicker && (
+        <TeachingSessionPicker 
+          item={selectedPptForPicker}
+          onClose={() => { setIsPickerOpen(false); setSelectedPptForPicker(null); }}
+        />
+      )}
+
       {/* HEADER AREA */}
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex flex-col gap-6 bg-white shrink-0 sticky top-0 z-40">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -255,6 +266,12 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
                      <EyeIcon className="w-5 h-5" />
                    </button>
                    <button 
+                     onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }}
+                     className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"
+                   >
+                     <Grip className="w-5 h-5" />
+                   </button>
+                   <button 
                      onClick={(e) => handleDelete(e, ppt.id)} 
                      className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"
                    >
@@ -279,7 +296,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
                   <StandardTh width="200px" onClick={() => handleSort('presenters')} isActiveSort={sortConfig.key === 'presenters'}>Presenter(s) {getSortIcon('presenters')}</StandardTh>
                   <StandardTh width="100px">Slides</StandardTh>
                   <StandardTh width="180px" onClick={() => handleSort('createdAt')} isActiveSort={sortConfig.key === 'createdAt'}>Date Created {getSortIcon('createdAt')}</StandardTh>
-                  <StandardTh width="100px" className="sticky right-0 bg-gray-50">Action</StandardTh>
+                  <StandardTh width="150px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -299,6 +316,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
                     <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
                        <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
                          <button onClick={() => openInGoogleSlides(ppt.gSlidesId)} className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg"><EyeIcon className="w-4 h-4" /></button>
+                         <button onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }} className="p-2 text-[#004A74] hover:bg-gray-50 rounded-lg"><Grip className="w-4 h-4" /></button>
                          <button onClick={(e) => handleDelete(e, ppt.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
                        </div>
                     </StandardTd>

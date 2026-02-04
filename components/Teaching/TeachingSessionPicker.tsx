@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { LibraryItem, TeachingItem } from '../../types';
+import { LibraryItem, TeachingItem, PresentationItem } from '../../types';
 import { fetchTeachingPaginated, saveTeachingItem } from '../../services/TeachingService';
 import { 
   X, 
@@ -23,7 +23,7 @@ import { TableSkeletonRows } from '../Common/LoadingComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
 
 interface TeachingSessionPickerProps {
-  item: LibraryItem;
+  item: LibraryItem | PresentationItem;
   onClose: () => void;
 }
 
@@ -60,16 +60,24 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
     showXeenapsToast('info', `Attaching to ${session.courseTitle || session.label}...`);
     
     try {
-      const currentRefs = Array.isArray(session.referenceLinks) ? session.referenceLinks : [];
-      if (currentRefs.some(r => r.id === item.id)) {
+      const isPresentation = 'gSlidesId' in item;
+      const targetArray = isPresentation 
+        ? (Array.isArray(session.presentationId) ? session.presentationId : [])
+        : (Array.isArray(session.referenceLinks) ? session.referenceLinks : []);
+
+      if (targetArray.some(r => r.id === item.id)) {
         showXeenapsToast('warning', 'Already attached to this session');
         setIsLinking(false);
         return;
       }
 
+      const attachment = isPresentation 
+        ? { id: item.id, title: item.title, gSlidesId: (item as PresentationItem).gSlidesId }
+        : { id: item.id, title: item.title };
+
       const updatedSession = {
         ...session,
-        referenceLinks: [...currentRefs, { id: item.id, title: item.title }],
+        [isPresentation ? 'presentationId' : 'referenceLinks']: [...targetArray, attachment],
         updatedAt: new Date().toISOString()
       };
 
@@ -103,7 +111,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
        <div className="bg-white rounded-[2rem] md:rounded-[3rem] w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] md:max-h-[85vh]">
           
           <div className="p-5 md:p-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
-             <div className="flex items-center gap-3 md:gap-4">
+             <div className="flex items-center gap-4">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-lg">
                    <BookOpenCheck className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
