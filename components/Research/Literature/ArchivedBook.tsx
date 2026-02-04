@@ -247,7 +247,7 @@ const ArchivedBook: React.FC = () => {
                  className="p-3 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"
                  title="Delete from Archive"
                >
-                 <Trash2 className="w-5 h-5" />
+                 <Trash2 size={15} />
                </button>
                <div className="flex items-center gap-3">
                   <button 
@@ -287,10 +287,12 @@ const ArchivedBook: React.FC = () => {
            </div>
 
            <div className="flex items-center gap-2">
-              <div className="hidden lg:flex bg-gray-100 p-1 rounded-xl border border-gray-100">
-                <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><LayoutGrid size={16} /></button>
-                <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><List size={16} /></button>
-              </div>
+              {!isMobile && (
+                <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-100">
+                  <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><LayoutGrid size={16} /></button>
+                  <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><List size={16} /></button>
+                </div>
+              )}
               <button 
                 onClick={() => navigate('/find-book')}
                 className="flex items-center gap-2 px-5 py-2.5 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all hover:shadow-lg shadow-md active:scale-95"
@@ -336,14 +338,48 @@ const ArchivedBook: React.FC = () => {
 
       <div className="flex-1 p-6 md:p-10 pb-20">
         {isLoading ? (
-          effectiveViewMode === 'table' ? <TableSkeletonRows count={8} /> : <CardGridSkeleton count={6} />
+          isMobile ? <CardGridSkeleton count={8} /> : <TableSkeletonRows count={8} />
         ) : serverItems.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center opacity-20 py-20">
             <Archive className="w-20 h-20 mb-4 text-[#004A74]" />
             <h3 className="text-lg font-black text-[#004A74] uppercase tracking-[0.3em]">Archive is Empty</h3>
             <p className="text-sm font-medium mt-2">Go to "Find Book" to start archiving your references.</p>
           </div>
-        ) : effectiveViewMode === 'table' ? (
+        ) : isMobile ? (
+          /* MOBILE ELEGANT LIST VIEW */
+          <div className="flex flex-col gap-4 animate-in fade-in duration-500">
+            {serverItems.map((item) => (
+              <div 
+                key={item.id}
+                onClick={() => setDetailItem(item)}
+                className={`bg-white border border-gray-100 rounded-3xl p-5 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden ${
+                  selectedIds.includes(item.id) ? 'ring-2 ring-[#004A74] bg-blue-50' : ''
+                }`}
+              >
+                <div 
+                  onClick={(e) => { e.stopPropagation(); toggleSelect(item.id); }}
+                  className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}
+                >
+                  {selectedIds.includes(item.id) && <Check size={14} strokeWidth={4} />}
+                </div>
+                <div className="w-1.5 h-12 rounded-full shrink-0 bg-[#004A74]/10" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight group-hover:text-blue-600 transition-colors">{item.title}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="px-2 py-0.5 bg-[#FED400] text-[#004A74] text-[8px] font-black uppercase rounded-md shadow-sm">{item.label}</span>
+                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{formatDateTime(item.createdAt)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setDetailItem(item)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><Eye size={16} /></button>
+                  {item.isbn && <button onClick={() => handleAddToLibrary(item)} className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><LibraryIcon size={16} /></button>}
+                  <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><Trash2 size={16} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* DESKTOP TABLE VIEW */
           <StandardTableContainer>
             <StandardTableWrapper>
               <thead>
@@ -354,7 +390,7 @@ const ArchivedBook: React.FC = () => {
                   <StandardTh onClick={() => handleSort('title')} isActiveSort={sortConfig.key === 'title'}>Title {getSortIcon('title')}</StandardTh>
                   <StandardTh onClick={() => handleSort('label')} isActiveSort={sortConfig.key === 'label'}>Label {getSortIcon('label')}</StandardTh>
                   <StandardTh width="400px">Harvard Citation</StandardTh>
-                  <StandardTh onClick={() => handleSort('createdAt')} isActiveSort={sortConfig.key === 'createdAt'}>Saved At {getSortIcon('createdAt')}</StandardTh>
+                  <StandardTh onClick={() => handleSort('createdAt')} isActiveSort={sortConfig.key === 'createdAt'}>Saved {getSortIcon('createdAt')}</StandardTh>
                   <StandardTh width="150px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                 </tr>
               </thead>
@@ -408,61 +444,6 @@ const ArchivedBook: React.FC = () => {
               onPageChange={setCurrentPage} 
             />
           </StandardTableContainer>
-        ) : (
-          <div className="flex flex-col h-full">
-            <StandardGridContainer>
-              {serverItems.map(item => (
-                <StandardItemCard 
-                  key={item.id}
-                  isSelected={selectedIds.includes(item.id)}
-                  onClick={() => setDetailItem(item)}
-                  className="cursor-pointer"
-                >
-                  <div className="absolute top-4 right-4 flex gap-1.5 z-10" onClick={e => handleToggleFavorite(e, item)}>
-                    <Star size={18} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
-                  </div>
-
-                  <div className="flex items-center gap-3 mb-4" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => toggleSelect(item.id)} className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}>
-                      {selectedIds.includes(item.id) && <Check size={12} strokeWidth={4} />}
-                    </button>
-                    <span className="px-3 py-1 bg-[#004A74]/5 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">
-                      {item.label}
-                    </span>
-                  </div>
-
-                  <h3 className="text-sm font-black text-[#004A74] leading-tight mb-4 uppercase line-clamp-3 flex-1">
-                    {item.title}
-                  </h3>
-
-                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-6">
-                     <p className="text-[10px] text-gray-500 font-bold leading-relaxed italic line-clamp-3">
-                       {item.citationHarvard}
-                     </p>
-                  </div>
-
-                  <div className="flex items-center justify-between text-gray-400 pt-4 border-t border-gray-50">
-                    <span className="text-[9px] font-bold uppercase tracking-tight">{formatDateTime(item.createdAt)}</span>
-                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => window.open(item.url, '_blank')} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><ExternalLink size={14} /></button>
-                      {item.isbn && <button onClick={() => handleAddToLibrary(item)} className="p-1.5 text-[#004A74] hover:bg-[#FED400]/20 rounded-lg transition-all"><LibraryIcon size={14} /></button>}
-                      <button onClick={(e) => handleDelete(e, item.id)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={14} /></button>
-                    </div>
-                  </div>
-                </StandardItemCard>
-              ))}
-            </StandardGridContainer>
-            
-            <div className="mt-8">
-              <StandardTableFooter 
-                totalItems={totalItems} 
-                currentPage={currentPage} 
-                itemsPerPage={itemsPerPage} 
-                totalPages={Math.ceil(totalItems / itemsPerPage)} 
-                onPageChange={setCurrentPage} 
-              />
-            </div>
-          </div>
         )}
       </div>
 

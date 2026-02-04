@@ -14,6 +14,7 @@ import {
   Info,
   Calendar,
   Loader2,
+  LibraryBig, 
   Library as LibraryIcon
 } from 'lucide-react';
 import { LiteratureArticle } from '../../../types';
@@ -118,7 +119,7 @@ const FindArticle: React.FC = () => {
             className="flex items-center gap-2 px-6 py-3 bg-gray-50 text-[#004A74] rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-[#FED400]/20 transition-all shadow-sm group"
           >
             <Archive className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            My Archive
+            Article Archive
           </button>
         </div>
 
@@ -257,10 +258,10 @@ const FindArticle: React.FC = () => {
 
                <div className="p-6 bg-blue-50/30 rounded-3xl border border-blue-100/50 space-y-4">
                   <div className="flex items-center gap-2 text-[10px] font-black text-[#004A74] uppercase tracking-[0.2em]">
-                     <Info className="w-4 h-4" /> Global Database Source
+                     <Info className="w-4 h-4" /> Validity Warning
                   </div>
                   <p className="text-xs text-gray-500 leading-relaxed font-medium">
-                    This article is sourced from the OpenAlex repository. You can access the full publication, methodology, and findings by visiting the original source link or DOI provided below.
+                    This article may be irrelevant or invalid. You can access the full publication, methodology, and findings by visiting the original source link or DOI provided below.
                   </p>
                </div>
 
@@ -286,7 +287,7 @@ const FindArticle: React.FC = () => {
                       onClick={() => handleAddToLibrary(previewItem)}
                       className="px-8 py-4 bg-[#FED400] text-[#004A74] rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#FED400]/10 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                     >
-                      <LibraryIcon className="w-4 h-4" /> Add to Library
+                      <LibraryBig className="w-4 h-4" /> Add to Library
                     </button>
                  )}
                  <button 
