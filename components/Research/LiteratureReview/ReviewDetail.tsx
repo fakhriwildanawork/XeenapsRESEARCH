@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate } from 'react-router-dom';
 import { ReviewItem, ReviewContent, ReviewMatrixRow, LibraryItem } from '../../../types';
-import { fetchReviewsPaginated, fetchReviewContent, saveReview, runMatrixExtraction, runReviewSynthesis, translateReviewRowContent } from '../../../services/ReviewService';
+/* Added missing deleteReview import from ReviewService */
+import { fetchReviewsPaginated, fetchReviewContent, saveReview, deleteReview, runMatrixExtraction, runReviewSynthesis, translateReviewRowContent } from '../../../services/ReviewService';
 import { 
   ArrowLeft, 
   Sparkles, 
@@ -226,6 +226,22 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!review || isBusy) return;
+    const confirmed = await showXeenapsDeleteConfirm(1);
+    if (confirmed) {
+      setIsBusy(true);
+      showXeenapsToast('info', 'Purging review project...');
+      if (await deleteReview(review.id)) {
+        showXeenapsToast('success', 'Project removed from cloud');
+        navigate('/research/literature-review');
+      } else {
+        showXeenapsToast('error', 'Deletion failed');
+        setIsBusy(false);
+      }
+    }
+  };
+
   if (!review && !isLoading) return null;
 
   return (
@@ -258,6 +274,14 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
               className={`p-2.5 rounded-xl border transition-all ${review?.isFavorite ? 'bg-yellow-50 border-yellow-200 text-[#FED400]' : 'bg-white border-gray-100 text-gray-300'}`}
             >
               <Star size={18} fill={review?.isFavorite ? "currentColor" : "none"} />
+            </button>
+            <button 
+              onClick={handleDeleteProject}
+              disabled={isBusy}
+              className="p-2.5 bg-white text-red-300 hover:text-red-500 hover:bg-red-50 border border-gray-100 rounded-xl transition-all shadow-sm active:scale-90 disabled:opacity-30"
+              title="Delete Project Permanently"
+            >
+              <Trash2 size={18} />
             </button>
             <div className="w-10 h-10 flex items-center justify-center">
                {(isBusy || translatingSynthesis) && <Loader2 size={20} className="animate-spin text-[#004A74]" />}
