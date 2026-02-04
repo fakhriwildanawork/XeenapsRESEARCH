@@ -13,7 +13,10 @@ import {
   ChevronUpIcon,
   ArrowPathIcon,
   PaperAirplaneIcon,
-  TrashIcon
+  TrashIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { showXeenapsToast } from '../../utils/toastUtils';
@@ -29,6 +32,8 @@ interface ConsultationResultViewProps {
 const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack }) => {
   const [answerContent, setAnswerContent] = useState<ConsultationAnswerContent | null>(initialAnswer || null);
   const [localQuestion, setLocalQuestion] = useState(consultation.question);
+  const [tempQuestion, setTempQuestion] = useState(consultation.question);
+  const [isEditing, setIsEditing] = useState(false);
   const [showReasoning, setShowReasoning] = useState(true);
   const [isFavorite, setIsFavorite] = useState(consultation.isFavorite || false);
   const [isLoading, setIsLoading] = useState(!initialAnswer);
@@ -55,23 +60,56 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
-  }, [localQuestion]);
+  }, [localQuestion, tempQuestion, isEditing]);
+
+  const handleStartEdit = () => {
+    setTempQuestion(localQuestion);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setTempQuestion(localQuestion);
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = () => {
+    const newQuestion = tempQuestion.trim();
+    if (!newQuestion) return;
+
+    // Optimistic Update
+    setLocalQuestion(newQuestion);
+    setIsEditing(false);
+
+    // Silent Background Sync
+    const updatedItem = {
+      ...consultation,
+      question: newQuestion,
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Firing sync without waiting/toast for "silent" feel
+    if (answerContent) {
+      saveConsultation(updatedItem, answerContent);
+    }
+  };
 
   const handleReConsult = async () => {
-    if (!localQuestion.trim() || isThinking) return;
+    // Gunakan localQuestion yang sudah terupdate (versi terbaru hasil edit)
+    const targetQuestion = isEditing ? tempQuestion : localQuestion;
+    if (!targetQuestion.trim() || isThinking) return;
 
     setIsThinking(true);
     showXeenapsToast('info', 'Re-architecting knowledge synthesis...');
 
     try {
-      const result = await callAiConsult(collection.id, localQuestion);
+      const result = await callAiConsult(collection.id, targetQuestion);
       if (result) {
         setAnswerContent(result);
         
         // Update Registry & Shard (Total Rewrite Logic)
         const updatedItem: ConsultationItem = {
           ...consultation,
-          question: localQuestion,
+          question: targetQuestion,
           updatedAt: new Date().toISOString()
         };
 
@@ -110,8 +148,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
 
   const formatDisplayDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    return d.toLocaleDateString();
   };
 
   return (
@@ -163,32 +200,65 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             </div>
 
             {/* EDITABLE QUESTION DISPLAY */}
-            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border-2 border-gray-200 shadow-sm relative overflow-hidden group/question focus-within:border-[#004A74]/30 transition-all">
+            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group/question transition-all">
                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FED400]" />
                <div className="flex items-center justify-between mb-4">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                      <CpuChipIcon className="w-3 h-3" /> Inquiry Context (Editable)
                   </p>
-                  {localQuestion !== consultation.question && (
-                    <span className="text-[8px] font-black text-[#FED400] bg-[#004A74] px-2 py-0.5 rounded-full uppercase animate-pulse">Modified</span>
-                  )}
+                  
+                  {/* EDIT BUTTONS */}
+                  <div className="flex items-center gap-2">
+                     {!isEditing ? (
+                       <button 
+                         onClick={handleStartEdit}
+                         className="p-1.5 text-gray-400 hover:text-[#004A74] hover:bg-gray-100 rounded-lg transition-all"
+                         title="Edit Question"
+                       >
+                         <PencilIcon className="w-4 h-4" />
+                       </button>
+                     ) : (
+                       <div className="flex items-center gap-1 animate-in fade-in zoom-in-95">
+                         <button 
+                           onClick={handleSaveEdit}
+                           className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all shadow-sm"
+                           title="Save Changes"
+                         >
+                           <CheckIcon className="w-4 h-4 stroke-[3]" />
+                         </button>
+                         <button 
+                           onClick={handleCancelEdit}
+                           className="p-1.5 bg-gray-100 text-gray-400 rounded-lg hover:bg-gray-200 transition-all"
+                           title="Cancel"
+                         >
+                           <XMarkIcon className="w-4 h-4" />
+                         </button>
+                       </div>
+                     )}
+                  </div>
                </div>
                
                <div className="space-y-6">
-                  <textarea 
-                    ref={textareaRef}
-                    className="w-full bg-transparent border-none outline-none text-lg md:text-xl font-bold text-[#004A74] leading-relaxed italic placeholder:text-gray-200 resize-none overflow-hidden"
-                    value={localQuestion}
-                    onChange={(e) => setLocalQuestion(e.target.value)}
-                    placeholder="Enter your inquiry for analysis..."
-                    disabled={isThinking}
-                    rows={1}
-                  />
+                  {isEditing ? (
+                    <textarea 
+                      ref={textareaRef}
+                      autoFocus
+                      className="w-full bg-gray-50 border-2 border-[#004A74]/10 p-4 rounded-2xl outline-none text-lg md:text-xl font-bold text-[#004A74] leading-relaxed italic placeholder:text-gray-200 resize-none overflow-hidden"
+                      value={tempQuestion}
+                      onChange={(e) => setTempQuestion(e.target.value)}
+                      placeholder="Enter your inquiry for analysis..."
+                      rows={1}
+                    />
+                  ) : (
+                    <p className="text-lg md:text-xl font-bold text-[#004A74] leading-relaxed italic">
+                      "{localQuestion}"
+                    </p>
+                  )}
 
                   <div className="flex justify-end pt-2">
                     <button 
                       onClick={handleReConsult}
-                      disabled={isThinking || !localQuestion.trim()}
+                      disabled={isThinking || (isEditing ? !tempQuestion.trim() : !localQuestion.trim())}
                       className="flex items-center gap-3 px-8 py-3.5 bg-[#004A74] text-[#FED400] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:grayscale"
                     >
                       {isThinking ? (
