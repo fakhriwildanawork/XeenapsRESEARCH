@@ -14,6 +14,7 @@ import {
   Info,
   Calendar,
   Loader2,
+  FileText, 
   LibraryBig, 
   Library as LibraryIcon
 } from 'lucide-react';
@@ -107,7 +108,7 @@ const FindArticle: React.FC = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-              <Search className="w-6 h-6" />
+              <FileText className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight leading-none">Find Article</h2>
@@ -213,7 +214,7 @@ const FindArticle: React.FC = () => {
                     onClick={(e) => { e.stopPropagation(); setPreviewItem(article); }}
                     className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-50 text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all active:scale-95"
                   >
-                    <BookOpen className="w-3.5 h-3.5" /> Preview
+                    <FileText className="w-3.5 h-3.5" /> Preview
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleOpenSaveModal(article); }}
@@ -235,7 +236,7 @@ const FindArticle: React.FC = () => {
             <div className="px-8 py-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-                    <BookOpen className="w-6 h-6" />
+                    <FileText className="w-6 h-6" />
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight truncate max-w-md">Article Metadata</h3>

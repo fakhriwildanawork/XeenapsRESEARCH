@@ -22,6 +22,7 @@ import {
   Info,
   BookOpen,
   Calendar,
+  LibraryBig, 
   Library as LibraryIcon
 } from 'lucide-react';
 import { ArchivedArticleItem } from '../../../types';
@@ -269,7 +270,7 @@ const ArchivedArticle: React.FC = () => {
                       onClick={() => handleAddToLibrary(detailItem)}
                       className="px-8 py-4 bg-[#FED400] text-[#004A74] rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#FED400]/10 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                     >
-                      <LibraryIcon className="w-4 h-4" /> Add to Library
+                      <LibraryBig className="w-4 h-4" /> Add to Library
                     </button>
                   )}
                   <button 
@@ -385,7 +386,7 @@ const ArchivedArticle: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                   <button onClick={() => setDetailItem(item)} className="p-2 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><Eye size={16} /></button>
-                  {item.doi && <button onClick={() => handleAddToLibrary(item)} className="p-2 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><LibraryIcon size={16} /></button>}
+                  {item.doi && <button onClick={() => handleAddToLibrary(item)} className="p-2 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><LibraryBig size={16} /></button>}
                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><Trash2 size={16} /></button>
                 </div>
               </div>
@@ -451,7 +452,7 @@ const ArchivedArticle: React.FC = () => {
                               className="p-2 text-[#004A74] hover:bg-[#FED400]/20 rounded-lg transition-all"
                               title="Add to Library"
                             >
-                              <LibraryIcon size={16} />
+                              <LibraryBig size={16} />
                             </button>
                           )}
                           <button 
@@ -487,5 +488,6 @@ const ArchivedArticle: React.FC = () => {
     </div>
   );
 };
+
 
 export default ArchivedArticle;

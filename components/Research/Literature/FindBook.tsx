@@ -9,6 +9,7 @@ import {
   Save, 
   X, 
   BookOpen,
+  Book, 
   ChevronRight,
   Info,
   Calendar,
@@ -193,7 +194,7 @@ const FindBook: React.FC = () => {
                     onClick={(e) => { e.stopPropagation(); setPreviewItem(book); }}
                     className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-50 text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all active:scale-95"
                   >
-                    <BookOpen className="w-3.5 h-3.5" /> Preview
+                    <Book className="w-3.5 h-3.5" /> Preview
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleOpenSaveModal(book); }}
@@ -214,7 +215,7 @@ const FindBook: React.FC = () => {
             <div className="px-8 py-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-                    <BookOpen className="w-6 h-6" />
+                    <Book className="w-6 h-6" />
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight truncate max-w-md">Book Metadata</h3>
