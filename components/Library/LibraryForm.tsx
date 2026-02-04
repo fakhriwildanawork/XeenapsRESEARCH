@@ -123,7 +123,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
   const lastIdentifier = useRef<string>("");
 
   // Initialize the workflow hook with 30s timeout
-  const workflow = useAsyncWorkflow(30000);
+  const workflow = useAsyncWorkflow(120000);
 
   const CATEGORY_OPTIONS = [
     "Algorithm", "Blog Post", "Book", "Book Chapter", "Business Report", "Case Report", "Case Series", 
