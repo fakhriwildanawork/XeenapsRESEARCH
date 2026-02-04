@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LibraryItem, PresentationTemplate, PresentationItem } from '../../types';
 import { createPresentationWorkflow } from '../../services/PresentationService';
+import { getCleanedProfileName } from '../../services/ProfileService';
 import { 
   XMarkIcon, 
   SparklesIcon, 
@@ -28,6 +29,7 @@ interface PresentationSetupModalProps {
 
 const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, items = [], onClose, onComplete }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [progressStage, setProgressStage] = useState('');
   const [generatedPpt, setGeneratedPpt] = useState<PresentationItem | null>(null);
   
@@ -44,7 +46,28 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
     language: 'English'
   });
 
-  const languages = ['English', 'Indonesian', 'French', 'German', 'Spanish', 'Japanese'];
+  // Sync with Profile Identity
+  useEffect(() => {
+    const fetchPresenter = async () => {
+      setIsProfileLoading(true);
+      try {
+        const name = await getCleanedProfileName();
+        setFormData(prev => ({ ...prev, presenters: [name] }));
+      } catch (e) {
+        console.error("Failed to load profile for presenter", e);
+      } finally {
+        setIsProfileLoading(false);
+      }
+    };
+    fetchPresenter();
+  }, []);
+
+  // Expanded Language List to match translation module parity
+  const languages = [
+    'English', 'Indonesian', 'Portuguese', 'Spanish', 'German', 
+    'French', 'Dutch', 'Mandarin', 'Japanese', 'Vietnamese', 
+    'Thai', 'Hindi', 'Turkish', 'Russian', 'Arabic'
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +193,7 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
             {!item && (
               <FormField label="Select Source Collections" required>
                 <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
                     <CircleStackIcon className="w-5 h-5 text-gray-300" />
                   </div>
                   <FormDropdown 
@@ -240,15 +263,19 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
               </div>
 
               <FormField label="Presented By">
-                <FormDropdown 
-                  isMulti 
-                  multiValues={formData.presenters}
-                  onAddMulti={(v) => setFormData({...formData, presenters: [...formData.presenters, v]})}
-                  onRemoveMulti={(v) => setFormData({...formData, presenters: formData.presenters.filter(p => p !== v)})}
-                  options={['Xeenaps User']}
-                  placeholder="Type presenter name..."
-                  value="" onChange={() => {}}
-                />
+                {isProfileLoading ? (
+                  <div className="h-[52px] w-full skeleton rounded-xl" />
+                ) : (
+                  <FormDropdown 
+                    isMulti 
+                    multiValues={formData.presenters}
+                    onAddMulti={(v) => setFormData({...formData, presenters: [...formData.presenters, v]})}
+                    onRemoveMulti={(v) => setFormData({...formData, presenters: formData.presenters.filter(p => p !== v)})}
+                    options={['Xeenaps User']}
+                    placeholder="Type presenter name..."
+                    value="" onChange={() => {}}
+                  />
+                )}
               </FormField>
             </div>
 
