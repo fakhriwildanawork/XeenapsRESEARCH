@@ -88,7 +88,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, onEdit, 
          </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#fcfcfc]">
+      <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
          <div className="max-w-5xl mx-auto p-6 md:p-12 space-y-12">
             
             {/* Read-Only Identity Section */}
@@ -100,14 +100,17 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, onEdit, 
                   )}
                </div>
                
-               <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Note Label / Summary Title</label>
-                  <div className="w-full px-8 py-6 bg-white border border-gray-100 rounded-[2rem] text-2xl md:text-3xl font-black text-[#004A74] uppercase tracking-tighter leading-tight shadow-sm">
-                     {note.label}
+               <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Note Label / Summary Title</label>
+                  {/* Simplified styling to avoid box-in-box conflict seen in screenshot */}
+                  <div className="w-full bg-[#004A74]/5 border-l-8 border-[#FED400] px-8 py-10 rounded-3xl">
+                     <h1 className="text-2xl md:text-4xl font-black text-[#004A74] uppercase tracking-tighter leading-tight">
+                        {note.label}
+                     </h1>
                   </div>
                </div>
 
-               <div className="flex items-center gap-6 pt-4 border-t border-gray-50 text-gray-400">
+               <div className="flex items-center gap-6 pt-4 text-gray-400">
                   <div className="flex items-center gap-2">
                      <Calendar size={14} className="text-[#FED400]" />
                      <span className="text-[10px] font-bold uppercase tracking-widest">{formatFullDate(note.createdAt)}</span>

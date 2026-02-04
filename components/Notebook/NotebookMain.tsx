@@ -160,11 +160,13 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
     return items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite);
   }, [items, selectedIds]);
 
-  // NEW: Transition handler to prevent navigation glitches
   const handleEditNoteTransition = (note: NoteItem) => {
     setSelectedNote(note);
-    setViewNote(null);
     setIsFormOpen(true);
+    // Micro-delay to ensure NoteForm mounts before NoteDetailView unmounts
+    setTimeout(() => {
+      setViewNote(null);
+    }, 50);
   };
 
   return (
@@ -326,7 +328,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                 return index > -1 ? prev.map(i => i.id === newItem.id ? newItem : i) : [newItem, ...prev];
               });
               setTotalCount(prev => prev + (items.some(i => i.id === newItem.id) ? 0 : 1));
-              // Redirect to Detail View instantly after successful save
+              // Trigger direct transition to Detail View after successful save
               setViewNote(newItem);
             }
           }} 
