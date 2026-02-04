@@ -627,6 +627,7 @@ export interface LiteratureArticle {
   authors: { name: string }[];
   year: number;
   doi: string;
+  isbn?: string;
   url: string;
   venue: string;
   citationCount: number;
@@ -638,6 +639,18 @@ export interface ArchivedArticleItem {
   title: string;
   citationHarvard: string;
   doi: string;
+  url: string;
+  info: string;
+  label: string;
+  isFavorite: boolean;
+  createdAt: string;
+}
+
+export interface ArchivedBookItem {
+  id: string;
+  title: string;
+  citationHarvard: string;
+  isbn: string;
   url: string;
   info: string;
   label: string;

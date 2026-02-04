@@ -1,6 +1,6 @@
 /**
- * XEENAPS PKM - GLOBAL LITERATURE SEARCH PROXY (OPENALEX EDITION)
- * Memproses pencarian ke OpenAlex (bypass CORS) dan terjemahan via Lingva.
+ * XEENAPS PKM - GLOBAL LITERATURE SEARCH PROXY (OPENALEX & OPEN LIBRARY EDITION)
+ * Memproses pencarian ke OpenAlex dan Open Library (bypass CORS) serta terjemahan via Lingva.
  */
 
 function handleGlobalArticleSearch(params) {
@@ -20,18 +20,15 @@ function handleGlobalArticleSearch(params) {
   }
 
   // 2. PENYUSUNAN PARAMETER OPENALEX
-  // OpenAlex lebih stabil (Rate limit lebih besar) dan tidak memerlukan API Key untuk pencarian publik.
   let limit = params.limit || 12;
   let openAlexUrl = `https://api.openalex.org/works?search=${encodeURIComponent(searchTerms)}&per_page=${limit}`;
   
-  // Append Filter Tahun (publication_year)
   if (yearStart && yearEnd) {
     openAlexUrl += `&filter=publication_year:${yearStart}-${yearEnd}`;
   } else if (yearStart) {
     openAlexUrl += `&filter=publication_year:${yearStart}-2026`;
   }
 
-  // 3. FETCH SERVER-TO-SERVER (BYPASS CORS)
   try {
     const response = UrlFetchApp.fetch(openAlexUrl, { 
       muteHttpExceptions: true,
@@ -48,8 +45,6 @@ function handleGlobalArticleSearch(params) {
 
     const result = JSON.parse(response.getContentText());
     
-    // 4. MAPPING OPENALEX TO XEENAPS SCHEMA
-    // Sesuai permintaan: Abstract dikosongkan untuk menghemat kredit & mempercepat loading.
     const mappedData = (result.results || []).map(item => ({
       paperId: item.id,
       title: item.display_name || "Untitled",
@@ -59,7 +54,7 @@ function handleGlobalArticleSearch(params) {
       url: item.doi || item.ids?.openalex || "",
       venue: item.primary_location?.source?.display_name || "Academic Source",
       citationCount: item.cited_by_count || 0,
-      abstract: "" // Dihilangkan sesuai permintaan (user cek via DOI)
+      abstract: "" 
     }));
 
     return { 
@@ -69,6 +64,57 @@ function handleGlobalArticleSearch(params) {
     };
   } catch (err) {
     return { status: 'error', message: 'Literature Search Proxy Error: ' + err.toString() };
+  }
+}
+
+/**
+ * NEW: handleGlobalBookSearch via Open Library API
+ */
+function handleGlobalBookSearch(params) {
+  const query = params.query || "";
+  const yearStart = params.yearStart;
+  const yearEnd = params.yearEnd;
+
+  // 1. Translation Engine
+  let searchTerms = query;
+  try {
+    const translated = lingvaTranslateQuery(query);
+    if (translated) searchTerms = translated;
+  } catch (e) {}
+
+  // 2. Open Library Search URL
+  let limit = params.limit || 12;
+  let olUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(searchTerms)}&limit=${limit}`;
+  
+  // Year filter is handled by Open Library via specific query params if needed, 
+  // but usually q=title+first_publish_year:[1990+TO+2000] works.
+  if (yearStart && yearEnd) {
+    olUrl += `&first_publish_year:[${yearStart}+TO+${yearEnd}]`;
+  }
+
+  try {
+    const response = UrlFetchApp.fetch(olUrl, { muteHttpExceptions: true });
+    if (response.getResponseCode() !== 200) {
+      return { status: 'error', message: 'Open Library unreachable.' };
+    }
+
+    const result = JSON.parse(response.getContentText());
+    
+    const mappedData = (result.docs || []).map(item => ({
+      paperId: item.key, // Using Open Library Key
+      title: item.title || "Untitled Book",
+      authors: (item.author_name || []).map(name => ({ name })),
+      year: item.first_publish_year || null,
+      isbn: (item.isbn || [])[0] || "",
+      url: `https://openlibrary.org${item.key}`,
+      venue: (item.publisher || [])[0] || "Global Publisher",
+      citationCount: 0, // Not provided by OL Search directly
+      abstract: ""
+    }));
+
+    return { status: 'success', data: mappedData };
+  } catch (err) {
+    return { status: 'error', message: 'Book Search Proxy Error: ' + err.toString() };
   }
 }
 

@@ -228,11 +228,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           <button 
             onClick={() => isExpanded && setFindLiteratureMenuOpen(!findLiteratureMenuOpen)}
             className={`w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 ${
-              findLiteratureMenuOpen || location.pathname === '/find-article' ? 'bg-[#FED400]/10 text-black' : 'text-black hover:bg-[#FED400]/5 hover:text-black'
+              findLiteratureMenuOpen || location.pathname === '/find-article' || location.pathname === '/find-book' ? 'bg-[#FED400]/10 text-black' : 'text-black hover:bg-[#FED400]/5 hover:text-black'
             }`}
           >
             <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
-              <FileSearch size={18} strokeWidth={location.pathname === '/find-article' ? 2.5 : 2} className="lg:w-5 lg:h-5" />
+              <FileSearch size={18} strokeWidth={location.pathname === '/find-article' || location.pathname === '/find-book' ? 2.5 : 2} className="lg:w-5 lg:h-5" />
             </div>
             <div className={`flex-1 ml-2 flex items-center justify-between overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
               <span className="text-xs md:text-sm font-semibold whitespace-nowrap">Find Literature</span>
@@ -249,13 +249,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
               <FileText size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Article</span>
             </NavLink>
-            <div 
-              className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-black/30 cursor-not-allowed transition-all text-xs md:text-sm font-medium"
-              title="Coming Soon"
+            <NavLink 
+              to="/find-book"
+              onClick={handleNavClick}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/find-book' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <Book size={14} className="mr-2 shrink-0" />
               <span className="whitespace-nowrap">Book</span>
-            </div>
+            </NavLink>
           </div>
         </div>
 

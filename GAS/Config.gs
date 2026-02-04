@@ -20,6 +20,7 @@ const CONFIG = {
     RESEARCH: '1XRmeIuj2vyXO9a0BFwODdkMNd_o7bmPIw9KHQOtFhoE',
     BRAINSTORMING: '1nMC1fO5kLdzO4W9O_sPK2tfL1K_GGQ-lE7g2Un76OrM',
     LITERATURE_ARCHIVE: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE',
+    BOOK_ARCHIVE: '1cJxS3gIYW3-WIgLs5L0mW6LKj4yAlh8kk0wJJ7nFmpE', // Shared or separate ID
     PUBLICATION: '1logOZHQgiMW4fOAViF_fYbjL0mG9RetqKDAAzAmiQ3g',
     ACTIVITIES: '1IQ8dzXKfVuAtSnXsU5Wx2JGa5Wkmw_R38HbvH1tXTRU',
     TEACHING: '18630rhA5D_JDuCMcQ5XT3pVii1VYAhC7ixUnTcN8gHU',
@@ -65,14 +66,14 @@ const CONFIG = {
     PROJECT_SOURCES: [
       'id', 'projectId', 'sourceId', 'title', 'findings', 'methodology', 'limitations', 'createdAt', 'isFavorite', 'isUsed'
     ],
-    PROJECT_SOURCES: [
-      'id', 'projectId', 'sourceId', 'title', 'findings', 'methodology', 'limitations', 'createdAt', 'isFavorite', 'isUsed'
-    ],
     BRAINSTORMING: [
       'id', 'label', 'roughIdea', 'proposedTitle', 'problemStatement', 'researchGap', 'researchQuestion', 'methodology', 'population', 'keywords', 'pillars', 'proposedAbstract', 'externalRefs', 'internalRefs', 'isFavorite', 'isUsed', 'createdAt', 'updatedAt'
     ],
     ARCHIVED_ARTICLES: [
       'id', 'title', 'citationHarvard', 'doi', 'url', 'info', 'label', 'isFavorite', 'createdAt'
+    ],
+    ARCHIVED_BOOKS: [
+      'id', 'title', 'citationHarvard', 'isbn', 'url', 'info', 'label', 'isFavorite', 'createdAt'
     ],
     PUBLICATION: [
       'id', 'title', 'authors', 'type', 'status', 'publisherName', 'researchDomain', 'affiliation', 'indexing', 'quartile', 'doi', 'issn_isbn', 'volume', 'issue', 'pages', 'year', 'submissionDate', 'acceptanceDate', 'publicationDate', 'brainstormingId', 'libraryId', 'manuscriptLink', 'abstract', 'keywords', 'remarks', 'isFavorite', 'createdAt', 'updatedAt'

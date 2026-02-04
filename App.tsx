@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -19,7 +18,9 @@ import Header from './components/Layout/Header';
 import SettingsView from './components/Settings/SettingsView';
 import UserProfileView from './components/Profile/UserProfileView';
 import FindArticle from './components/Research/Literature/FindArticle';
+import FindBook from './components/Research/Literature/FindBook';
 import ArchivedArticle from './components/Research/Literature/ArchivedArticle';
+import ArchivedBook from './components/Research/Literature/ArchivedBook';
 import NotebookMain from './components/Notebook/NotebookMain';
 import AllReview from './components/Research/LiteratureReview/AllReview';
 import ReviewDetail from './components/Research/LiteratureReview/ReviewDetail';
@@ -269,7 +270,9 @@ const App: React.FC = () => {
                 
                 <Route path="/notebook" element={<NotebookMain libraryItems={items} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/find-article" element={<FindArticle />} />
+                <Route path="/find-book" element={<FindBook />} />
                 <Route path="/archived-articles" element={<ArchivedArticle />} />
+                <Route path="/archived-books" element={<ArchivedBook />} />
                 <Route path="/sharbox" element={<SharboxMain />} />
 
                 <Route path="/research/*" element={<GapFinderModule items={items} />} />

@@ -224,6 +224,11 @@ function doGet(e) {
       return createJsonResponse(handleGlobalArticleSearch(e.parameter));
     }
 
+    // NEW: searchGlobalBooks (Proxy for Open Library)
+    if (action === 'searchGlobalBooks') {
+      return createJsonResponse(handleGlobalBookSearch(e.parameter));
+    }
+
     // NEW: getArchivedArticles (UPDATED FOR PAGINATION & SEARCH)
     if (action === 'getArchivedArticles') {
       const page = parseInt(e.parameter.page || "1");
@@ -233,6 +238,18 @@ function doGet(e) {
       const sortDir = e.parameter.sortDir || "desc";
       
       const result = getArchivedArticlesFromRegistry(page, limit, search, sortKey, sortDir);
+      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
+    }
+
+    // NEW: getArchivedBooks
+    if (action === 'getArchivedBooks') {
+      const page = parseInt(e.parameter.page || "1");
+      const limit = parseInt(e.parameter.limit || "25");
+      const search = e.parameter.search || "";
+      const sortKey = e.parameter.sortKey || "createdAt";
+      const sortDir = e.parameter.sortDir || "desc";
+      
+      const result = getArchivedBooksFromRegistry(page, limit, search, sortKey, sortDir);
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
@@ -354,6 +371,7 @@ function doPost(e) {
     if (action === 'setupConsultationDatabase') return createJsonResponse(setupConsultationDatabase());
     if (action === 'setupReviewDatabase') return createJsonResponse(setupReviewDatabase());
     if (action === 'setupTracerDatabase') return createJsonResponse(setupTracerDatabase());
+    if (action === 'setupBookArchiveDatabase') return createJsonResponse(setupBookArchiveDatabase());
     
     // NEW: Sharbox Actions
     if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(body.targetUniqueAppId, body.receiverName, body.receiverPhotoUrl, body.message, body.item, body.receiverContacts));
@@ -507,6 +525,19 @@ function doPost(e) {
     // NEW ACTION: toggleFavoriteArticle
     if (action === 'toggleFavoriteArticle') {
       return createJsonResponse(toggleFavoriteArticleInRegistry(body.id, body.status));
+    }
+
+    // NEW ACTION: saveArchivedBook
+    if (action === 'saveArchivedBook') {
+      return createJsonResponse(saveArchivedBookToRegistry(body.item));
+    }
+    // NEW ACTION: deleteArchivedBook
+    if (action === 'deleteArchivedBook') {
+      return createJsonResponse(deleteArchivedBookFromRegistry(body.id));
+    }
+    // NEW ACTION: toggleFavoriteBook
+    if (action === 'toggleFavoriteBook') {
+      return createJsonResponse(toggleFavoriteBookInRegistry(body.id, body.status));
     }
 
     // NEW ACTION: saveBrainstorming
