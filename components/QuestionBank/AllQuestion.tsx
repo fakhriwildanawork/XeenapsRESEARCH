@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { QuestionItem, LibraryItem, BloomsLevel } from '../../types';
 import { fetchAllQuestionsPaginated, deleteQuestion } from '../../services/QuestionService';
 import { 
-  Plus as PlusIcon, 
+  PlusIcon, 
   TrashIcon,
   PlayIcon,
   RectangleStackIcon,
@@ -39,7 +39,7 @@ import {
   StandardTh, 
   StandardTr, 
   StandardTd, 
-  StandardTableFooter,
+  StandardTableFooter, 
   StandardCheckbox,
   ElegantTooltip,
   StandardGridContainer,
