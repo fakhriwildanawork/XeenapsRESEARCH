@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 // @ts-ignore
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { SourceType, FileFormat, LibraryItem, LibraryType, ExtractionResult, SupportingData } from '../../types';
 import { saveLibraryItem, uploadAndStoreFile, extractFromUrl, callIdentifierSearch } from '../../services/gasService';
@@ -115,6 +115,7 @@ const AbstractEditor: React.FC<{
 
 const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [extractionStage, setExtractionStage] = useState<'IDLE' | 'READING' | 'BYPASS' | 'AI_ANALYSIS' | 'FETCHING_ID'>('IDLE');
   const [file, setFile] = useState<File | null>(null);
@@ -168,6 +169,20 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
     extractedText: '',
     supportingReferences: undefined as SupportingData | undefined
   });
+
+  // Handle Prefilled DOI from External Redirect (e.g., FindArticle)
+  useEffect(() => {
+    const prefilledDoi = (location.state as any)?.prefilledDoi;
+    if (prefilledDoi) {
+      setFormData(prev => ({
+        ...prev,
+        addMethod: 'REF',
+        doi: prefilledDoi
+      }));
+      // Clear state to prevent re-triggering on manual route changes within session
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const existingValues = useMemo(() => ({
     topics: Array.from(new Set(items.map(i => i.topic).filter(Boolean))),

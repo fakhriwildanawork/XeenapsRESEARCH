@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 // @ts-ignore - Resolving TS error for missing exported member useNavigate
 import { useNavigate } from 'react-router-dom';
@@ -12,18 +13,23 @@ import {
   ChevronRight,
   Info,
   Calendar,
-  Loader2
+  Loader2,
+  Library as LibraryIcon
 } from 'lucide-react';
 import { LiteratureArticle } from '../../../types';
-import { searchArticles, archiveArticle } from '../../../services/LiteratureService';
+import { searchArticles, archiveArticle, getSearchCache, setSearchCache } from '../../../services/LiteratureService';
 import { showXeenapsToast } from '../../../utils/toastUtils';
 
 const FindArticle: React.FC = () => {
   const navigate = useNavigate();
-  const [query, setQuery] = useState('');
-  const [yearStart, setYearStart] = useState<string>('');
-  const [yearEnd, setYearEnd] = useState<string>('');
-  const [results, setResults] = useState<LiteratureArticle[]>([]);
+  
+  // Hydrate from Service Cache
+  const cache = getSearchCache();
+  const [query, setQuery] = useState(cache.query);
+  const [yearStart, setYearStart] = useState<string>(cache.yearStart);
+  const [yearEnd, setYearEnd] = useState<string>(cache.yearEnd);
+  const [results, setResults] = useState<LiteratureArticle[]>(cache.results);
+  
   const [isSearching, setIsSearching] = useState(false);
   const [previewItem, setPreviewItem] = useState<LiteratureArticle | null>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -46,6 +52,15 @@ const FindArticle: React.FC = () => {
     const sortedData = [...data].sort((a, b) => (b.year || 0) - (a.year || 0));
     
     setResults(sortedData);
+    
+    // Update Service Cache
+    setSearchCache({
+      query,
+      yearStart,
+      yearEnd,
+      results: sortedData
+    });
+    
     setIsSearching(false);
     if (data.length === 0) {
       showXeenapsToast('info', 'No articles found. Try different keywords.');
@@ -73,6 +88,15 @@ const FindArticle: React.FC = () => {
     } else {
       showXeenapsToast('error', 'Failed to archive article');
     }
+  };
+
+  // Logic to transfer DOI to Library Form
+  const handleAddToLibrary = (item: LiteratureArticle) => {
+    if (!item.doi) {
+      showXeenapsToast('warning', 'No DOI identifier found for this item.');
+      return;
+    }
+    navigate('/add', { state: { prefilledDoi: item.doi } });
   };
 
   return (
@@ -248,19 +272,30 @@ const FindArticle: React.FC = () => {
                )}
             </div>
 
-            <div className="px-10 py-8 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/30">
+            <div className="px-10 py-8 border-t border-gray-100 flex items-center justify-between gap-3 bg-gray-50/30">
                <button 
                  onClick={() => window.open(previewItem.url || `https://doi.org/${previewItem.doi}`, '_blank')}
-                 className="px-8 py-4 text-[#004A74] bg-white border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-[#FED400]/20 transition-all flex items-center gap-2"
+                 className="px-6 py-4 text-gray-400 bg-white border border-gray-100 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-sm hover:text-[#004A74] transition-all flex items-center gap-2"
                >
-                 <ExternalLink className="w-4 h-4" /> Open Source (DOI)
+                 <ExternalLink className="w-4 h-4" /> Source Link
                </button>
-               <button 
-                 onClick={() => handleOpenSaveModal(previewItem)}
-                 className="px-8 py-4 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#004A74]/10 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-               >
-                 <Save className="w-4 h-4" /> Archive Now
-               </button>
+               
+               <div className="flex items-center gap-3">
+                 {previewItem.doi && (
+                    <button 
+                      onClick={() => handleAddToLibrary(previewItem)}
+                      className="px-8 py-4 bg-[#FED400] text-[#004A74] rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#FED400]/10 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                      <LibraryIcon className="w-4 h-4" /> Add to Library
+                    </button>
+                 )}
+                 <button 
+                   onClick={() => handleOpenSaveModal(previewItem)}
+                   className="px-8 py-4 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#004A74]/10 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                 >
+                   <Save className="w-4 h-4" /> Archive Now
+                 </button>
+               </div>
             </div>
           </div>
         </div>

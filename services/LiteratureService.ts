@@ -1,3 +1,4 @@
+
 import { LiteratureArticle, ArchivedArticleItem, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
@@ -5,6 +6,20 @@ import { GAS_WEB_APP_URL } from '../constants';
  * XEENAPS LITERATURE SEARCH SERVICE
  * Integrasi OpenAlex (Discovery via GAS Proxy) & GAS (Archiving)
  */
+
+// Client-side Session Cache (Non-persistent on F5, but survives route navigation)
+let searchCache = {
+  query: '',
+  yearStart: '',
+  yearEnd: '',
+  results: [] as LiteratureArticle[]
+};
+
+export const getSearchCache = () => searchCache;
+
+export const setSearchCache = (data: typeof searchCache) => {
+  searchCache = data;
+};
 
 export const searchArticles = async (
   query: string, 
