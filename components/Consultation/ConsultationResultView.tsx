@@ -27,9 +27,10 @@ interface ConsultationResultViewProps {
   consultation: ConsultationItem;
   initialAnswer?: ConsultationAnswerContent | null;
   onBack: () => void;
+  onUpdate?: (updated: ConsultationItem) => void;
 }
 
-const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack }) => {
+const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack, onUpdate }) => {
   const [answerContent, setAnswerContent] = useState<ConsultationAnswerContent | null>(initialAnswer || null);
   const [localQuestion, setLocalQuestion] = useState(consultation.question);
   const [tempQuestion, setTempQuestion] = useState(consultation.question);
@@ -76,25 +77,26 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     const newQuestion = tempQuestion.trim();
     if (!newQuestion) return;
 
-    // Optimistic Update
+    // Optimistic Update UI
     setLocalQuestion(newQuestion);
     setIsEditing(false);
 
-    // Silent Background Sync
+    // Notify Parent instantly (Optimistic)
     const updatedItem = {
       ...consultation,
       question: newQuestion,
       updatedAt: new Date().toISOString()
     };
-    
-    // Firing sync without waiting/toast for "silent" feel
+    onUpdate?.(updatedItem);
+
+    // Silent Background Sync
     if (answerContent) {
       saveConsultation(updatedItem, answerContent);
     }
   };
 
   const handleReConsult = async () => {
-    // Gunakan localQuestion yang sudah terupdate (versi terbaru hasil edit)
+    // Gunakan tempQuestion jika sedang editing, atau localQuestion jika sudah di save
     const targetQuestion = isEditing ? tempQuestion : localQuestion;
     if (!targetQuestion.trim() || isThinking) return;
 
@@ -106,13 +108,14 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       if (result) {
         setAnswerContent(result);
         
-        // Update Registry & Shard (Total Rewrite Logic)
+        // Update Registry & Shard
         const updatedItem: ConsultationItem = {
           ...consultation,
           question: targetQuestion,
           updatedAt: new Date().toISOString()
         };
 
+        onUpdate?.(updatedItem);
         const success = await saveConsultation(updatedItem, result);
         if (success) {
           showXeenapsToast('success', 'Synthesis Re-synchronized');
@@ -130,8 +133,13 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const toggleFavorite = () => {
     const newVal = !isFavorite;
     setIsFavorite(newVal);
+    
+    const updatedItem = { ...consultation, isFavorite: newVal };
+    onUpdate?.(updatedItem);
+    
     if (answerContent) {
-      saveConsultation({ ...consultation, isFavorite: newVal }, answerContent);
+      // Silent Background Sync
+      saveConsultation(updatedItem, answerContent);
     }
   };
 
@@ -148,7 +156,8 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
 
   const formatDisplayDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString();
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
   };
 
   return (
@@ -200,7 +209,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             </div>
 
             {/* EDITABLE QUESTION DISPLAY */}
-            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group/question transition-all">
+            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border-2 border-[#004A74]/15 shadow-sm relative overflow-hidden group/question transition-all">
                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FED400]" />
                <div className="flex items-center justify-between mb-4">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
