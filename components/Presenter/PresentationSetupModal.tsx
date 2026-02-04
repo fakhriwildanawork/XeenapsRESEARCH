@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LibraryItem, PresentationTemplate, PresentationItem } from '../../types';
 import { createPresentationWorkflow } from '../../services/PresentationService';
 import { getCleanedProfileName } from '../../services/ProfileService';
+import { fetchLibraryPaginated } from '../../services/gasService';
 import { 
   XMarkIcon, 
   SparklesIcon, 
@@ -12,8 +13,10 @@ import {
   ChevronRightIcon,
   CircleStackIcon,
   CheckBadgeIcon,
-  // Added missing PresentationChartBarIcon import
-  PresentationChartBarIcon
+  PresentationChartBarIcon,
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline';
 import { FormField, FormDropdown } from '../Common/FormComponents';
 import Swal from 'sweetalert2';
@@ -34,6 +37,13 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
   const [generatedPpt, setGeneratedPpt] = useState<PresentationItem | null>(null);
   
   const [selectedSources, setSelectedSources] = useState<LibraryItem[]>(item ? [item] : []);
+
+  // Search State
+  const [sourceSearch, setSourceSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<LibraryItem[]>([]);
+  const [isSearchingSources, setIsSearchingSources] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     title: item ? `Insights: ${item.title}` : 'Cross-Source Analysis',
@@ -64,6 +74,32 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
     };
     fetchPresenter();
   }, []);
+
+  // Handle click outside results
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearchSources = async () => {
+    if (!sourceSearch.trim()) return;
+    setIsSearchingSources(true);
+    setShowResults(true);
+    try {
+      // Fetch specifically for literature to synthesized
+      const result = await fetchLibraryPaginated(1, 20, sourceSearch, 'All', 'research');
+      setSearchResults(result.items);
+    } catch (err) {
+      showXeenapsToast('error', 'Knowledge fetch failed.');
+    } finally {
+      setIsSearchingSources(false);
+    }
+  };
 
   // Expanded Language List to match translation module parity
   const languages = [
@@ -194,34 +230,85 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
           
           <div className="space-y-6">
             {!item && (
-              <FormField label="Select Source Collections" required>
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                    <CircleStackIcon className="w-5 h-5 text-gray-300" />
+              <FormField label="Select Source Collections (Smart Search)" required>
+                <div className="space-y-4">
+                  <div className="relative group" ref={searchContainerRef}>
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                      <CircleStackIcon className="w-5 h-5 text-gray-300" />
+                    </div>
+                    <input 
+                      className="w-full pl-12 pr-14 py-4 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-sm font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all placeholder:text-gray-300"
+                      placeholder="Search literature title or topic..."
+                      value={sourceSearch}
+                      onChange={(e) => setSourceSearch(e.target.value)}
+                      onFocus={() => setShowResults(true)}
+                    />
+                    <button 
+                      type="button"
+                      onClick={handleSearchSources}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-[#004A74] text-white rounded-xl hover:bg-[#003859] transition-all shadow-sm active:scale-90 flex items-center justify-center"
+                    >
+                      {isSearchingSources ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <MagnifyingGlassIcon className="w-5 h-5 stroke-[2.5]" />}
+                    </button>
+
+                    {showResults && sourceSearch.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 z-[100] mt-2 bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                           {isSearchingSources ? (
+                             <div className="p-10 text-center flex flex-col items-center gap-3">
+                               <ArrowPathIcon className="w-8 h-8 animate-spin text-[#004A74]" />
+                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Searching Cloud...</p>
+                             </div>
+                           ) : searchResults.length === 0 ? (
+                             <div className="p-10 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">No matching literature</div>
+                           ) : (
+                             searchResults.map(src => (
+                               <button
+                                 key={src.id}
+                                 type="button"
+                                 onClick={() => {
+                                    if (selectedSources.length >= 5) {
+                                      showXeenapsToast('warning', 'Maximum 5 sources allowed.');
+                                      return;
+                                    }
+                                    if (!selectedSources.some(s => s.id === src.id)) {
+                                      setSelectedSources([...selectedSources, src]);
+                                    }
+                                    setShowResults(false);
+                                    setSourceSearch('');
+                                 }}
+                                 className="w-full text-left p-4 hover:bg-[#FED400]/10 border-b border-gray-50 last:border-0 group flex items-start gap-4 transition-all"
+                               >
+                                 <BookOpenIcon className="w-5 h-5 text-gray-300 mt-1 group-hover:text-[#004A74] transition-colors" />
+                                 <div className="min-w-0">
+                                    <p className="text-xs font-black text-[#004A74] uppercase truncate">{src.title}</p>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">{src.authors?.[0]} • {src.year} • {src.topic}</p>
+                                 </div>
+                               </button>
+                             ))
+                           )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <FormDropdown 
-                    isMulti 
-                    multiValues={selectedSources.map(s => s.title)}
-                    onAddMulti={(val) => {
-                      // LIMIT GUARD: Block selection if more than 5 sources
-                      if (selectedSources.length >= 5) {
-                        showXeenapsToast('warning', 'Maximum 5 sources allowed for deep synthesis stability.');
-                        return;
-                      }
-                      const source = items.find(it => it.title === val);
-                      if (source && !selectedSources.some(s => s.id === source.id)) {
-                        setSelectedSources([...selectedSources, source]);
-                      }
-                    }}
-                    onRemoveMulti={(val) => {
-                      setSelectedSources(selectedSources.filter(s => s.title !== val));
-                    }}
-                    options={items.map(it => it.title)}
-                    placeholder="Search source titles..."
-                    value="" onChange={() => {}}
-                  />
+
+                  {/* SELECTED BADGES */}
+                  <div className="flex flex-wrap gap-2 px-1">
+                    {selectedSources.map(s => (
+                      <div key={s.id} className="flex items-center gap-2 pl-4 pr-2 py-1.5 bg-[#004A74] text-white rounded-xl shadow-sm animate-in zoom-in-95 group">
+                         <span className="text-[10px] font-bold uppercase truncate max-w-[200px]">{s.title}</span>
+                         <button 
+                           type="button"
+                           onClick={() => setSelectedSources(selectedSources.filter(it => it.id !== s.id))}
+                           className="p-1 hover:bg-white/20 rounded-lg transition-all"
+                         >
+                           <XMarkIcon className="w-3.5 h-3.5" />
+                         </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase px-1">Selected Sources: {selectedSources.length} (Max 5)</p>
                 </div>
-                <p className="text-[9px] font-bold text-gray-400 uppercase mt-2 px-1">Selected Sources: {selectedSources.length} (Max 5)</p>
               </FormField>
             )}
 
