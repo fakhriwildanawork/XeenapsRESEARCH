@@ -5,29 +5,21 @@ import { fetchLibraryPaginated } from '../../services/gasService';
 import { shareToColleague } from '../../services/SharboxService';
 import { 
   XMarkIcon, 
-  MagnifyingGlassIcon,
-  CheckIcon,
-  UserIcon,
-  ShareIcon,
-  ArrowPathIcon,
-  ArrowLeftIcon,
-  PaperAirplaneIcon,
-  ChatBubbleBottomCenterTextIcon,
-  ShieldCheckIcon,
-  BuildingLibraryIcon,
-  AcademicCapIcon,
+  UserIcon, 
+  ShareIcon, 
+  ArrowPathIcon, 
+  ArrowLeftIcon, 
+  PaperAirplaneIcon, 
+  ChatBubbleBottomCenterTextIcon, 
+  ShieldCheckIcon, 
+  BuildingLibraryIcon, 
+  AcademicCapIcon, 
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { 
-  StandardTableContainer, 
-  StandardTableWrapper, 
-  StandardTh, 
-  StandardTr, 
-  StandardTd, 
   StandardTableFooter
 } from '../Common/TableComponents';
-import { TableSkeletonRows } from '../Common/LoadingComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { BRAND_ASSETS } from '../../assets';
 
@@ -40,7 +32,6 @@ interface SharboxWorkflowModalProps {
 }
 
 const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem, initialColleague, onClose }) => {
-  // Step Management
   const [step, setStep] = useState<WorkflowStep>(() => {
     if (initialItem && !initialColleague) return 'PICK_COLLEAGUE';
     if (!initialItem && initialColleague) return 'PICK_LIBRARY';
@@ -51,7 +42,6 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(initialItem || null);
   const [message, setMessage] = useState('');
   
-  // Data Fetching States
   const [dataList, setDataList] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,279 +71,213 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
   }, [step, currentPage, search]);
 
   useEffect(() => {
-    if (step !== 'CONFIRM') {
-      loadData();
-    }
+    if (step !== 'CONFIRM') loadData();
   }, [loadData, step]);
 
-  const handleSelectColleague = (col: ColleagueItem) => {
-    setSelectedColleague(col);
-    if (!selectedItem) {
-      setStep('PICK_LIBRARY');
-      setSearch('');
-      setCurrentPage(1);
-    } else {
-      setStep('CONFIRM');
-    }
-  };
-
-  const handleSelectItem = (item: LibraryItem) => {
-    setSelectedItem(item);
-    setStep('CONFIRM');
-  };
-
-  const handleExecuteShare = async () => {
+  const handleShare = async () => {
     if (!selectedColleague || !selectedItem) return;
     setIsSharing(true);
-    showXeenapsToast('info', `Initializing P2P Sync to ${selectedColleague.name}...`);
-    
-    const success = await shareToColleague(
-      selectedColleague.uniqueAppId, 
-      selectedColleague.name, 
-      selectedColleague.photoUrl || '', 
-      message,
-      selectedItem,
-      {
-        email: selectedColleague.email,
-        phone: selectedColleague.phone,
-        socialMedia: selectedColleague.socialMedia
-      }
-    );
-    
-    if (success) {
-      showXeenapsToast('success', 'Shared successfully');
-      onClose();
-    } else {
-      showXeenapsToast('error', 'Sharing failed. Check recipient ID.');
-    }
-    setIsSharing(false);
-  };
+    showXeenapsToast('info', 'Executing secure transmission...');
 
-  const handleBack = () => {
-    if (step === 'PICK_LIBRARY' && !initialColleague) {
-      setStep('PICK_COLLEAGUE');
-      setSearch('');
-      setCurrentPage(1);
-    } else if (step === 'CONFIRM') {
-      if (!initialItem) {
-        setStep('PICK_LIBRARY');
+    try {
+      const success = await shareToColleague(
+        selectedColleague.uniqueAppId,
+        selectedColleague.name,
+        selectedColleague.photoUrl || '',
+        message,
+        selectedItem,
+        { email: selectedColleague.email, phone: selectedColleague.phone, socialMedia: selectedColleague.socialMedia }
+      );
+
+      if (success) {
+        showXeenapsToast('success', 'Knowledge shared successfully');
+        onClose();
       } else {
-        setStep('PICK_COLLEAGUE');
+        showXeenapsToast('error', 'Transmission failed');
       }
+    } catch (e) {
+      showXeenapsToast('error', 'Connection lost');
+    } finally {
+      setIsSharing(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-in fade-in">
-      <div className="bg-white rounded-[3rem] w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-white/20">
+    <div className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
+      <div className="bg-white rounded-[3rem] w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] md:max-h-[85vh] border border-white/20">
         
         {/* HEADER */}
-        <div className="px-8 py-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-              {step === 'CONFIRM' ? <PaperAirplaneIcon className="w-6 h-6" /> : <ShareIcon className="w-6 h-6" />}
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">
-                {step === 'PICK_COLLEAGUE' ? 'Select Recipient' : 
-                 step === 'PICK_LIBRARY' ? 'Select Literature' : 'Authorize Sync'}
-              </h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Global P2P Exchange</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
-            <XMarkIcon className="w-8 h-8" />
-          </button>
+        <div className="p-6 md:p-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
+                 <ShareIcon className="w-6 h-6" />
+              </div>
+              <div>
+                 <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Sharbox Workflow</h2>
+                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                   {step === 'PICK_COLLEAGUE' ? 'Step 1: Identify Partner' : step === 'PICK_LIBRARY' ? 'Step 2: Select Knowledge' : 'Step 3: Final Authorization'}
+                 </p>
+              </div>
+           </div>
+           <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><XMarkIcon className="w-8 h-8" /></button>
         </div>
 
-        {step !== 'CONFIRM' ? (
-          <>
-            <div className="px-8 py-4 bg-white border-b border-gray-100 shrink-0 flex items-center gap-4">
-              {((step === 'PICK_LIBRARY' && !initialColleague) || (step === 'PICK_COLLEAGUE' && initialItem)) && (
-                <button onClick={handleBack} className="p-2.5 bg-gray-50 text-[#004A74] rounded-xl hover:bg-gray-100 transition-all">
-                  <ArrowLeftIcon className="w-5 h-5 stroke-[3]" />
-                </button>
-              )}
-              <SmartSearchBox 
-                value={search} 
-                onChange={setSearch} 
-                className="w-full"
-                onSearch={() => setCurrentPage(1)}
-                phrases={step === 'PICK_COLLEAGUE' ? ["Search colleague name...", "Search unique ID..."] : ["Search literature title...", "Search by topic..."]}
-              />
-            </div>
+        {/* PROGRESS BAR */}
+        <div className="w-full h-1 bg-gray-100 flex">
+           <div className={`h-full bg-[#004A74] transition-all duration-700 ${step === 'PICK_COLLEAGUE' ? 'w-1/3' : step === 'PICK_LIBRARY' ? 'w-2/3' : 'w-full'}`} />
+        </div>
 
-            <div className="flex-1 overflow-hidden p-6 flex flex-col bg-[#fcfcfc]">
-              <StandardTableContainer>
-                <StandardTableWrapper>
-                  <thead>
-                    <tr>
-                      {step === 'PICK_COLLEAGUE' ? (
-                        <>
-                          <StandardTh width="80px">Portrait</StandardTh>
-                          <StandardTh width="300px">Name & ID</StandardTh>
-                          <StandardTh width="250px">Affiliation</StandardTh>
-                        </>
-                      ) : (
-                        <>
-                          <StandardTh width="120px">Topic</StandardTh>
-                          <StandardTh width="400px">Literature Title</StandardTh>
-                          <StandardTh width="150px">Year</StandardTh>
-                        </>
-                      )}
-                      <StandardTh width="100px" className="sticky right-0 bg-gray-50">Action</StandardTh>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {isLoading ? (
-                      <TableSkeletonRows count={5} />
-                    ) : dataList.length === 0 ? (
-                      <tr><td colSpan={4} className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No results found</td></tr>
-                    ) : (
-                      dataList.map((data) => (
-                        <StandardTr key={data.id}>
+        {/* CONTENT AREA */}
+        <div className="flex-1 overflow-hidden flex flex-col bg-[#fcfcfc]">
+           {step === 'CONFIRM' ? (
+             <div className="flex-1 overflow-y-auto custom-scrollbar p-8 md:p-12 space-y-10 animate-in zoom-in-95 duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   {/* Summary Partner */}
+                   <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Receiving Partner</label>
+                      <div className="p-6 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm flex items-center gap-5">
+                         <img src={selectedColleague?.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-16 h-16 rounded-full border-2 border-[#FED400] object-cover shadow-md" alt="" />
+                         <div className="min-w-0">
+                            <h4 className="text-sm font-black text-[#004A74] uppercase truncate">{selectedColleague?.name}</h4>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase">{selectedColleague?.affiliation}</p>
+                         </div>
+                      </div>
+                   </div>
+                   {/* Summary Item */}
+                   <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Shared Asset</label>
+                      <div className="p-6 bg-[#004A74] rounded-[2.5rem] shadow-xl flex items-center gap-5 text-white">
+                         <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0"><BuildingLibraryIcon className="w-8 h-8 text-[#FED400]" /></div>
+                         <div className="min-w-0">
+                            <h4 className="text-xs font-black uppercase truncate">{selectedItem?.title}</h4>
+                            <p className="text-[9px] font-bold text-white/60 uppercase">{selectedItem?.topic} • {selectedItem?.year}</p>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="space-y-4">
+                   <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Accompanying Message (Optional)</label>
+                   <div className="relative group">
+                      <ChatBubbleBottomCenterTextIcon className="absolute left-6 top-8 w-6 h-6 text-gray-200 group-focus-within:text-[#004A74] transition-colors" />
+                      <textarea 
+                        className="w-full bg-white p-8 pl-16 border border-gray-200 rounded-[3rem] outline-none text-sm font-bold text-[#004A74] placeholder:text-gray-200 resize-none focus:ring-8 focus:ring-[#004A74]/5 transition-all min-h-[150px]"
+                        placeholder="Type your message to the colleague..."
+                        value={message}
+                        onChange={e => setMessage(e.target.value)}
+                      />
+                   </div>
+                </div>
+
+                <div className="pt-6 flex gap-4">
+                   <button onClick={() => setStep('PICK_LIBRARY')} className="px-8 py-5 bg-gray-100 text-gray-400 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-gray-200 transition-all flex items-center gap-2"><ArrowLeftIcon className="w-4 h-4" /> Back</button>
+                   <button 
+                     onClick={handleShare}
+                     disabled={isSharing}
+                     className="flex-1 py-5 bg-[#004A74] text-[#FED400] rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs shadow-2xl flex items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                   >
+                     {isSharing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <PaperAirplaneIcon className="w-5 h-5 -rotate-45" />}
+                     {isSharing ? 'TRANSMITTING...' : 'AUTHORIZE & SEND'}
+                   </button>
+                </div>
+             </div>
+           ) : (
+             /* PICKER LIST UI (COLLEAGUE OR LIBRARY) */
+             <div className="flex-1 flex flex-col overflow-hidden p-6">
+                <div className="mb-6 flex flex-col md:flex-row gap-4 items-center">
+                   <SmartSearchBox 
+                    value={search} 
+                    onChange={setSearch} 
+                    onSearch={() => setCurrentPage(1)} 
+                    className="flex-1"
+                    phrases={step === 'PICK_COLLEAGUE' ? ["Search colleague name...", "Search unique ID..."] : ["Search document title...", "Search topic..."]}
+                   />
+                   {step === 'PICK_LIBRARY' && selectedColleague && (
+                     <div className="flex items-center gap-3 px-4 py-2 bg-[#004A74] text-white rounded-xl shadow-md border border-white/10 max-w-[200px] shrink-0">
+                        <img src={selectedColleague.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-6 h-6 rounded-full border border-white/20 object-cover" alt="" />
+                        <span className="text-[9px] font-black uppercase truncate">{selectedColleague.name}</span>
+                     </div>
+                   )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1 pb-4">
+                   {isLoading ? (
+                     [...Array(6)].map((_, i) => <div key={i} className="h-20 w-full skeleton rounded-3xl" />)
+                   ) : dataList.length === 0 ? (
+                     <div className="py-20 text-center opacity-30 flex flex-col items-center">
+                        {step === 'PICK_COLLEAGUE' ? <UserIcon size={48} /> : <BuildingLibraryIcon size={48} />}
+                        <p className="text-[10px] font-black uppercase mt-4">No results found</p>
+                     </div>
+                   ) : (
+                     dataList.map((li) => (
+                       <div 
+                         key={li.id}
+                         className="bg-white border border-gray-100 rounded-3xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-[#004A74]/20 transition-all group"
+                       >
+                          {/* Left Icon/Photo */}
                           {step === 'PICK_COLLEAGUE' ? (
-                            <>
-                              <td className="px-6 py-4">
-                                <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shadow-sm mx-auto">
-                                  <img src={data.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-full h-full object-cover" alt="User" />
-                                </div>
-                              </td>
-                              <StandardTd>
-                                <p className="text-xs font-bold text-[#004A74] uppercase truncate">{data.name}</p>
-                                <p className="text-[8px] font-mono text-gray-400 uppercase">{data.uniqueAppId}</p>
-                              </StandardTd>
-                              <StandardTd className="text-[10px] font-bold text-gray-500 uppercase truncate">{data.affiliation || 'Independent'}</StandardTd>
-                              <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
-                                <button 
-                                  onClick={() => handleSelectColleague(data)}
-                                  className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2"
-                                >
-                                  Select <ChevronRightIcon className="w-3 h-3 stroke-[3]" />
-                                </button>
-                              </StandardTd>
-                            </>
+                            <img src={li.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-12 h-12 rounded-full border-2 border-gray-50 object-cover shadow-sm shrink-0" alt="" />
                           ) : (
-                            <>
-                              <StandardTd>
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{data.topic || 'General'}</span>
-                              </StandardTd>
-                              <StandardTd>
-                                <p className="text-xs font-bold text-[#004A74] uppercase line-clamp-2 leading-tight">{data.title}</p>
-                              </StandardTd>
-                              <StandardTd className="text-center font-mono text-[10px] font-black text-gray-400">{data.year || '-'}</StandardTd>
-                              <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
-                                <button 
-                                  onClick={() => handleSelectItem(data)}
-                                  className="w-full py-2 bg-[#FED400] text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#004A74] hover:text-[#FED400] transition-all flex items-center justify-center gap-2"
-                                >
-                                  Pick <ChevronRightIcon className="w-3 h-3 stroke-[3]" />
-                                </button>
-                              </StandardTd>
-                            </>
+                            <div className="w-12 h-12 bg-[#004A74]/5 text-[#004A74] rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:bg-[#004A74] group-hover:text-white transition-all">
+                               <AcademicCapIcon className="w-6 h-6" />
+                            </div>
                           )}
-                        </StandardTr>
-                      ))
-                    )}
-                  </tbody>
-                </StandardTableWrapper>
-                <StandardTableFooter 
-                  totalItems={totalCount} 
-                  currentPage={currentPage} 
-                  itemsPerPage={itemsPerPage} 
-                  totalPages={Math.ceil(totalCount / itemsPerPage)} 
-                  onPageChange={setCurrentPage} 
-                />
-              </StandardTableContainer>
-            </div>
-          </>
-        ) : (
-          /* STEP 3: CONFIRMATION FORM */
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-8 md:p-12 animate-in slide-in-from-right duration-500">
-            <div className="max-w-3xl mx-auto space-y-10 pb-10">
-              
-              {/* Recipient Profile Section */}
-              <div className="flex flex-col md:flex-row items-center gap-8 bg-gray-50 p-8 rounded-[3rem] border border-gray-100 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#004A74]/5 -translate-y-10 translate-x-10 rounded-full" />
-                
-                <div className="relative shrink-0">
-                  <div className="w-32 h-32 rounded-full border-4 border-[#FED400] overflow-hidden shadow-xl bg-white">
-                    <img src={selectedColleague?.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-full h-full object-cover" alt="Recipient" />
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 bg-[#004A74] text-white p-2 rounded-xl shadow-lg border-2 border-white">
-                    <UserIcon className="w-5 h-5" />
-                  </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                             <h4 className="text-sm font-black text-[#004A74] uppercase truncate leading-tight">{li.name || li.title}</h4>
+                             <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest truncate">{li.affiliation || li.topic}</span>
+                                {li.uniqueAppId && (
+                                   <>
+                                     <div className="w-1 h-1 rounded-full bg-gray-200" />
+                                     <span className="text-[8px] font-mono font-bold text-[#004A74] opacity-50">{li.uniqueAppId}</span>
+                                   </>
+                                )}
+                             </div>
+                          </div>
+
+                          {/* Action */}
+                          <button 
+                            onClick={() => {
+                              if (step === 'PICK_COLLEAGUE') {
+                                setSelectedColleague(li);
+                                if (initialItem) setStep('CONFIRM');
+                                else setStep('PICK_LIBRARY');
+                              } else {
+                                setSelectedItem(li);
+                                setStep('CONFIRM');
+                              }
+                              setSearch('');
+                              setCurrentPage(1);
+                            }}
+                            className="shrink-0 px-6 py-2.5 bg-gray-50 text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all border border-gray-100 flex items-center gap-2"
+                          >
+                             Select <ChevronRightIcon className="w-3 h-3 stroke-[4]" />
+                          </button>
+                       </div>
+                     ))
+                   )}
                 </div>
 
-                <div className="flex-1 text-center md:text-left space-y-3">
-                  <div>
-                    <h3 className="text-2xl font-black text-[#004A74] uppercase tracking-tight">{selectedColleague?.name}</h3>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center md:justify-start gap-2">
-                      <AcademicCapIcon className="w-4 h-4" /> {selectedColleague?.affiliation || 'Independent Scholar'}
-                    </p>
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white border border-gray-200 rounded-full shadow-sm">
-                    <ShieldCheckIcon className="w-4 h-4 text-[#004A74]" />
-                    <span className="text-[10px] font-mono font-black text-[#004A74] uppercase tracking-widest">{selectedColleague?.uniqueAppId}</span>
-                  </div>
+                <div className="shrink-0 border-t border-gray-100 pt-4 mt-2">
+                   <StandardTableFooter 
+                    totalItems={totalCount} 
+                    currentPage={currentPage} 
+                    itemsPerPage={itemsPerPage} 
+                    totalPages={Math.ceil(totalCount / itemsPerPage)} 
+                    onPageChange={setCurrentPage} 
+                   />
                 </div>
-              </div>
-
-              {/* Source Highlight Section */}
-              <div className="space-y-3">
-                <label className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 ml-4 flex items-center gap-2">
-                  <BuildingLibraryIcon className="w-3.5 h-3.5" /> Source Document Ready for Transmit
-                </label>
-                <div className="bg-white p-6 border-2 border-dashed border-gray-100 rounded-3xl flex items-center gap-4 group">
-                  <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-300 group-hover:bg-[#FED400]/20 group-hover:text-[#004A74] transition-all">
-                    <BuildingLibraryIcon className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2">{selectedItem?.title}</h4>
-                </div>
-              </div>
-
-              {/* Message Input Section */}
-              <div className="space-y-3">
-                <label className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 ml-4 flex items-center gap-2">
-                  <ChatBubbleBottomCenterTextIcon className="w-3.5 h-3.5" /> Custom Message (Optional)
-                </label>
-                <textarea 
-                  autoFocus
-                  className="w-full bg-gray-50 p-6 border border-gray-200 rounded-[2.5rem] outline-none text-sm font-medium text-[#004A74] placeholder:text-gray-300 min-h-[120px] resize-none transition-all focus:bg-white focus:ring-4 focus:ring-[#004A74]/5"
-                  placeholder="Tell your colleague why you are sharing this knowledge..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-6 flex gap-4">
-                <button 
-                  onClick={handleBack}
-                  disabled={isSharing}
-                  className="flex-1 py-5 bg-gray-50 text-gray-400 rounded-3xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all flex items-center justify-center gap-3"
-                >
-                  <ArrowLeftIcon className="w-4 h-4 stroke-[3]" /> Change Selection
-                </button>
-                <button 
-                  onClick={handleExecuteShare}
-                  disabled={isSharing}
-                  className="flex-[2] py-5 bg-[#004A74] text-[#FED400] rounded-3xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-[#004A74]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
-                >
-                  {isSharing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <PaperAirplaneIcon className="w-5 h-5 -rotate-45" />}
-                  Confirm & Transmit Knowledge
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+             </div>
+           )}
+        </div>
       </div>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
       `}</style>
     </div>
   );
