@@ -408,14 +408,6 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
     loadJsonInsights();
   }, [item]);
 
-  // SYNC TAB WITH NAVIGATION STATE (RE-HYDRATION)
-  useEffect(() => {
-    const state = location.state as any;
-    if (state?.reopenRelatedQuestion || state?.returnToRelatedQuestion) {
-      setShowQuestions(true);
-    }
-  }, [location.state]);
-
   const pubInfo: PubInfo = useMemo(() => parseJsonField(currentItem.pubInfo), [currentItem.pubInfo]);
   const identifiers: Identifiers = useMemo(() => parseJsonField(currentItem.identifiers), [currentItem.identifiers]);
   const tags = useMemo(() => parseJsonField(currentItem.tags, { keywords: [], labels: [] }), [currentItem.tags]);
@@ -568,18 +560,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const handleBack = () => {
     const state = location.state as any;
 
-    // 1. Check for internal state navigation within the same modal (Contextual Logic)
-    if (state?.returnToRelatedQuestion) {
-      setShowQuestions(true);
-      // Optional: Update location state locally without full navigation to clear return marker
-      navigate(location.pathname, { 
-        state: { ...state, returnToRelatedQuestion: undefined, reopenRelatedQuestion: state.returnToRelatedQuestion }, 
-        replace: true 
-      });
-      return;
-    }
-
-    // 1b. Check for specific module return flags (Complex Redirects)
+    // 1. Check for specific module return flags (Complex Redirects)
     if (state?.returnToTracerProject) {
       navigate(`/research/tracer/${state.returnToTracerProject}`, { 
         state: { reopenReference: state.returnToRef }, 

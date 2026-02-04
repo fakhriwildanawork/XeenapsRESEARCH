@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// @ts-ignore
-import { useLocation, useNavigate } from 'react-router-dom';
 import { QuestionItem, LibraryItem, BloomsLevel } from '../../types';
 import { fetchRelatedQuestions, deleteQuestion } from '../../services/QuestionService';
 import { 
@@ -52,8 +50,6 @@ const getBloomColor = (level: BloomsLevel) => {
 };
 
 const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
   const workflow = useAsyncWorkflow(30000);
   const { performDelete } = useOptimisticUpdate<QuestionItem>();
   
@@ -73,8 +69,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
   const [isLoading, setIsLoading] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
   const [activeSimulation, setActiveSimulation] = useState<'CBT' | 'FLASHCARD' | null>(null);
-  
-  const [selectedQuestionDetail, setSelectedQuestionDetail] = useState<QuestionItem | null>(() => (location.state as any)?.reopenRelatedQuestion || null);
+  const [selectedQuestionDetail, setSelectedQuestionDetail] = useState<QuestionItem | null>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -107,19 +102,6 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
   useEffect(() => {
     loadQuestions();
   }, [loadQuestions]);
-
-  // SYNC STATE WITH NAVIGATION (RE-HYDRATION)
-  useEffect(() => {
-    const state = location.state as any;
-    if (state?.reopenRelatedQuestion && state.reopenRelatedQuestion.collectionId === collection.id) {
-      setSelectedQuestionDetail(state.reopenRelatedQuestion);
-      // Optional: small delay before cleaning up to ensure component ready
-      const timer = setTimeout(() => {
-        navigate(location.pathname, { replace: true, state: { ...state, reopenRelatedQuestion: undefined } });
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [location.state, navigate, location.pathname, collection.id]);
 
   const handleSearchTrigger = () => {
     setCurrentPage(1);
@@ -216,18 +198,10 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
           collection={collection}
           onClose={() => setSelectedQuestionDetail(null)}
           onViewSource={() => {
-            // Navigate back to Library Main with item open and contextual return marker
-            navigate('/', { 
-              state: { 
-                openItem: collection, 
-                returnToRelatedQuestion: selectedQuestionDetail 
-              },
-              replace: true
-            });
-            // Switch view internally for UX
             setSelectedQuestionDetail(null);
             onBack();
           }}
+          showSourceInfo={false}
         />
       )}
 

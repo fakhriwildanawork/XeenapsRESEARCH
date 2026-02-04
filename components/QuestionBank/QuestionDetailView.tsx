@@ -18,9 +18,16 @@ interface QuestionDetailViewProps {
   collection: LibraryItem;
   onClose: () => void;
   onViewSource: () => void;
+  showSourceInfo?: boolean;
 }
 
-const QuestionDetailView: React.FC<QuestionDetailViewProps> = ({ question, collection, onClose, onViewSource }) => {
+const QuestionDetailView: React.FC<QuestionDetailViewProps> = ({ 
+  question, 
+  collection, 
+  onClose, 
+  onViewSource,
+  showSourceInfo = true
+}) => {
   const getBloomColor = (level: BloomsLevel) => {
     if (level.includes('C1') || level.includes('C2')) return 'bg-green-500';
     if (level.includes('C3') || level.includes('C4')) return 'bg-[#004A74]';
@@ -141,25 +148,27 @@ const QuestionDetailView: React.FC<QuestionDetailViewProps> = ({ question, colle
               </div>
 
               {/* Source Link Section */}
-              <div className="w-full md:w-80 shrink-0">
-                <div className="flex items-center gap-2 mb-4">
-                   <CheckBadgeIcon className="w-4 h-4 text-[#FED400]" />
-                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FED400]/60">Collection Root</span>
-                </div>
-                <button 
-                  onClick={onViewSource}
-                  className="w-full p-6 bg-white/10 hover:bg-[#FED400] group/src rounded-3xl border border-white/10 transition-all duration-500 text-left relative overflow-hidden"
-                >
-                  <div className="relative z-10">
-                    <p className="text-[8px] font-black text-white/40 group-hover/src:text-[#004A74]/50 uppercase tracking-widest mb-1">Source Title</p>
-                    <h4 className="text-xs font-black text-white group-hover/src:text-[#004A74] uppercase line-clamp-3 leading-tight">{collection.title}</h4>
-                    <div className="mt-4 flex items-center gap-2 text-[#FED400] group-hover/src:text-[#004A74] transition-colors">
-                       <span className="text-[9px] font-black uppercase tracking-widest">Go to Details</span>
-                       <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 stroke-[3]" />
-                    </div>
+              {showSourceInfo && (
+                <div className="w-full md:w-80 shrink-0 animate-in fade-in slide-in-from-right-2 duration-500">
+                  <div className="flex items-center gap-2 mb-4">
+                     <CheckBadgeIcon className="w-4 h-4 text-[#FED400]" />
+                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FED400]/60">Collection Root</span>
                   </div>
-                </button>
-              </div>
+                  <button 
+                    onClick={onViewSource}
+                    className="w-full p-6 bg-white/10 hover:bg-[#FED400] group/src rounded-3xl border border-white/10 transition-all duration-500 text-left relative overflow-hidden"
+                  >
+                    <div className="relative z-10">
+                      <p className="text-[8px] font-black text-white/40 group-hover/src:text-[#004A74]/50 uppercase tracking-widest mb-1">Source Title</p>
+                      <h4 className="text-xs font-black text-white group-hover/src:text-[#004A74] uppercase line-clamp-3 leading-tight">{collection.title}</h4>
+                      <div className="mt-4 flex items-center gap-2 text-[#FED400] group-hover/src:text-[#004A74] transition-colors">
+                         <span className="text-[9px] font-black uppercase tracking-widest">Go to Details</span>
+                         <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 stroke-[3]" />
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
