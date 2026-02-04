@@ -293,10 +293,11 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><ClipboardList size={16} /> Comparative Analysis Matrix</h3>
                <button 
                  onClick={() => setIsReviewSelectorOpen(true)}
-                 disabled={isBusy || isLoading}
-                 className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-100 text-[#004A74] rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
+                 disabled={isBusy || isLoading || content.matrix.length >= 10}
+                 className={`flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-100 text-[#004A74] rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all shadow-sm ${content.matrix.length >= 10 ? 'opacity-30 grayscale cursor-not-allowed' : 'hover:bg-gray-50 active:scale-95'}`}
+                 title={content.matrix.length >= 10 ? 'Maximum 10 sources allowed' : 'Add Sources'}
                >
-                 <Plus size={14} /> Add Sources
+                 <Plus size={14} /> Add Sources {content.matrix.length > 0 && `(${content.matrix.length}/10)`}
                </button>
             </div>
 
@@ -535,6 +536,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
         <ReviewSourceSelectorModal 
           onClose={() => setIsReviewSelectorOpen(false)}
           onConfirm={handleStartExtraction}
+          currentMatrixCount={content.matrix.length}
         />
       )}
 

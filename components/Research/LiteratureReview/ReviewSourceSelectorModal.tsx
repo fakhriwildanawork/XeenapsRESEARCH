@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { LibraryItem, LibraryType } from '../../../types';
 import { fetchLibraryPaginated } from '../../../services/gasService';
@@ -17,9 +18,10 @@ import { CardGridSkeleton } from '../../Common/LoadingComponents';
 interface ReviewSourceSelectorModalProps {
   onClose: () => void;
   onConfirm: (selected: LibraryItem[]) => void;
+  currentMatrixCount: number;
 }
 
-const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ onClose, onConfirm }) => {
+const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ onClose, onConfirm, currentMatrixCount }) => {
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +31,10 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
   const [selected, setSelected] = useState<LibraryItem[]>([]);
 
   const itemsPerPage = 10;
+  const GLOBAL_MAX = 10;
+  const SESSION_MAX = 3;
+  const remainingTotalSlots = GLOBAL_MAX - currentMatrixCount;
+  const effectiveSessionMax = Math.min(SESSION_MAX, remainingTotalSlots);
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,7 +57,8 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
     if (isAlreadySelected) {
       setSelected(selected.filter(s => s.id !== item.id));
     } else {
-      if (selected.length >= 3) return; // STRICT LIMIT: 3 Items
+      // Logic: Max per session (3) OR remaining total slots in matrix (10 - current)
+      if (selected.length >= effectiveSessionMax) return;
       setSelected([...selected, item]);
     }
   };
@@ -72,7 +79,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
       <div className="bg-white rounded-[3rem] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border border-white/20">
         
         {/* Ramped Down Header */}
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/30">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-md">
               <BookOpenIcon className="w-6 h-6" />
@@ -111,7 +118,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
               ) : (
                 items.map((item) => {
                   const isSelected = selected.some(s => s.id === item.id);
-                  const isFull = !isSelected && selected.length >= 3;
+                  const isFull = !isSelected && selected.length >= effectiveSessionMax;
                   
                   return (
                     <div 
@@ -164,11 +171,14 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
             
             <div className="flex items-center gap-3">
               <div className="flex -space-x-1.5">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className={`w-3 h-3 rounded-full border-2 transition-all ${i < selected.length ? 'bg-[#FED400] border-[#FED400] shadow-sm' : 'bg-white border-gray-200'}`} />
+                {[...Array(SESSION_MAX)].map((_, i) => (
+                  <div key={i} className={`w-3 h-3 rounded-full border-2 transition-all ${i < selected.length ? 'bg-[#FED400] border-[#FED400] shadow-sm' : i >= effectiveSessionMax ? 'bg-red-200 border-red-200' : 'bg-white border-gray-200'}`} />
                 ))}
               </div>
-              <span className="text-[10px] font-black text-[#004A74] uppercase tracking-widest">{selected.length}/3 Selected</span>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-[#004A74] uppercase tracking-widest">{selected.length}/{effectiveSessionMax} Session Slots</span>
+                <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Global Capacity: {currentMatrixCount + selected.length}/{GLOBAL_MAX}</span>
+              </div>
             </div>
           </div>
 
