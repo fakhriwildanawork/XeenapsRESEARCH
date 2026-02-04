@@ -174,7 +174,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
   };
 
   return (
-    <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-y-auto custom-scrollbar relative">
+    <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-y-auto custom-scrollbar pr-1 relative">
       {showSetup && (
         <PresentationSetupModal 
           item={collection} 
@@ -193,8 +193,8 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
         />
       )}
 
-      {/* HEADER AREA */}
-      <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex flex-col gap-6 bg-white shrink-0 sticky top-0 z-40">
+      {/* HEADER AREA - Unfixed flow */}
+      <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex flex-col gap-6 bg-white shrink-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button 
@@ -231,120 +231,111 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
         </div>
       </div>
 
-      <div className="p-6 md:p-10 pb-32 flex-1">
-        {isLoading ? (
-          isMobile ? <CardGridSkeleton count={4} /> : <div className="mt-4"><TableSkeletonRows count={8} /></div>
-        ) : presentations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
-            <PresentationChartBarIcon className="w-20 h-20 mb-4 text-[#004A74]" />
-            <h3 className="text-lg font-black text-[#004A74] uppercase tracking-widest">No Presentations Found</h3>
-            <p className="text-sm font-medium text-gray-500 mt-2">Transform your collection into visual synthesis.</p>
-          </div>
-        ) : isMobile ? (
-          /* ELEGANT MOBILE LIST VIEW */
-          <div className="flex flex-col gap-4 animate-in fade-in duration-500">
-            {presentations.map((ppt) => (
-              <div 
-                key={ppt.id} 
-                onClick={() => openInGoogleSlides(ppt.gSlidesId)} 
-                className={`bg-white border border-gray-100 rounded-3xl p-5 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden ${
-                  selectedIds.includes(ppt.id) ? 'ring-2 ring-[#004A74] bg-blue-50' : ''
-                }`}
-              >
+      {/* CONTENT FLOW */}
+      <div className="flex-1 px-6 md:px-10 mt-4">
+        <div className="py-6 md:py-10 pb-32">
+          {isLoading ? (
+            isMobile ? <CardGridSkeleton count={4} /> : <div className="mt-4"><TableSkeletonRows count={8} /></div>
+          ) : presentations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+              <PresentationChartBarIcon className="w-20 h-20 mb-4 text-[#004A74]" />
+              <h3 className="text-lg font-black text-[#004A74] uppercase tracking-widest">No Presentations Found</h3>
+              <p className="text-sm font-medium text-gray-500 mt-2">Transform your collection into visual synthesis.</p>
+            </div>
+          ) : isMobile ? (
+            /* ELEGANT MOBILE LIST VIEW */
+            <div className="flex flex-col gap-4 animate-in fade-in duration-500">
+              {presentations.map((ppt) => (
                 <div 
-                  onClick={(e) => { e.stopPropagation(); toggleSelectItem(ppt.id); }}
-                  className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(ppt.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}
+                  key={ppt.id} 
+                  onClick={() => openInGoogleSlides(ppt.gSlidesId)} 
+                  className={`bg-white border border-gray-100 rounded-3xl p-5 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden ${
+                    selectedIds.includes(ppt.id) ? 'ring-2 ring-[#004A74] bg-blue-50' : ''
+                  }`}
                 >
-                  {selectedIds.includes(ppt.id) && <CheckIcon className="w-3 h-3" strokeWidth={2.5} />}
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); toggleSelectItem(ppt.id); }}
+                    className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(ppt.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}
+                  >
+                    {selectedIds.includes(ppt.id) && <CheckIcon className="w-3 h-3" strokeWidth={2.5} />}
+                  </div>
+                  <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: ppt.themeConfig.primaryColor }} />
+                  <div className="flex-1 min-w-0">
+                     <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight">{ppt.title}</h4>
+                     <p className="text-[10px] font-bold text-gray-500 italic truncate mt-0.5">{ppt.presenters.join(', ')}</p>
+                     <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
+                        <CalendarDaysIcon className="w-3 h-3" /> {formatPresentationDate(ppt.createdAt)}
+                     </div>
+                  </div>
+                  <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                     <button 
+                       onClick={() => openInGoogleSlides(ppt.gSlidesId)} 
+                       className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"
+                     >
+                       <EyeIcon className="w-5 h-5" />
+                     </button>
+                     <button 
+                       onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }}
+                       className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"
+                     >
+                       <Grip className="w-5 h-5" />
+                     </button>
+                     <button 
+                       onClick={(e) => handleDelete(e, ppt.id)} 
+                       className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"
+                     >
+                       <TrashIcon className="w-5 h-5" />
+                     </button>
+                  </div>
                 </div>
-                <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: ppt.themeConfig.primaryColor }} />
-                <div className="flex-1 min-w-0">
-                   <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight">{ppt.title}</h4>
-                   <p className="text-[10px] font-bold text-gray-500 italic truncate mt-0.5">{ppt.presenters.join(', ')}</p>
-                   <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
-                      <CalendarDaysIcon className="w-3 h-3" /> {formatPresentationDate(ppt.createdAt)}
-                   </div>
-                </div>
-                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                   <button 
-                     onClick={() => openInGoogleSlides(ppt.gSlidesId)} 
-                     className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"
-                   >
-                     <EyeIcon className="w-5 h-5" />
-                   </button>
-                   <button 
-                     onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }}
-                     className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"
-                   >
-                     <Grip className="w-5 h-5" />
-                   </button>
-                   <button 
-                     onClick={(e) => handleDelete(e, ppt.id)} 
-                     className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"
-                   >
-                     <TrashIcon className="w-5 h-5" />
-                   </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          /* PERMANENT DESKTOP TABLE VIEW */
-          <StandardTableContainer>
-            <StandardTableWrapper>
-              <thead>
-                <tr>
-                  <StandardTh width="60px">
-                    <div className="flex items-center justify-center">
-                      <StandardCheckbox onChange={toggleSelectAll} checked={presentations.length > 0 && selectedIds.length === presentations.length} />
-                    </div>
-                  </StandardTh>
-                  <StandardTh width="300px" onClick={() => handleSort('title')} isActiveSort={sortConfig.key === 'title'}>Title {getSortIcon('title')}</StandardTh>
-                  <StandardTh width="200px" onClick={() => handleSort('presenters')} isActiveSort={sortConfig.key === 'presenters'}>Presenter(s) {getSortIcon('presenters')}</StandardTh>
-                  <StandardTh width="100px">Slides</StandardTh>
-                  <StandardTh width="180px" onClick={() => handleSort('createdAt')} isActiveSort={sortConfig.key === 'createdAt'}>Date Created {getSortIcon('createdAt')}</StandardTh>
-                  <StandardTh width="150px" className="sticky right-0 bg-gray-50">Action</StandardTh>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {presentations.map((ppt) => (
-                  <StandardTr key={ppt.id} onClick={() => toggleSelectItem(ppt.id)} className="cursor-pointer">
-                    <td className="px-6 py-4 text-center" onClick={e => e.stopPropagation()}>
-                      <StandardCheckbox checked={selectedIds.includes(ppt.id)} readOnly />
-                    </td>
-                    <StandardTd>
-                      <ElegantTooltip text={ppt.title}>
-                        <p className="text-sm font-bold text-[#004A74] uppercase line-clamp-1">{ppt.title}</p>
-                      </ElegantTooltip>
-                    </StandardTd>
-                    <StandardTd className="text-xs text-gray-500 font-semibold">{ppt.presenters.join(', ')}</StandardTd>
-                    <StandardTd className="text-center"><span className="px-3 py-1 bg-gray-50 rounded-lg font-black text-[#004A74] text-[10px]">{ppt.slidesCount}</span></StandardTd>
-                    <StandardTd className="text-xs text-gray-400 font-medium text-center">{formatPresentationDate(ppt.createdAt)}</StandardTd>
-                    <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
-                       <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
-                         <button onClick={() => openInGoogleSlides(ppt.gSlidesId)} className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg"><EyeIcon className="w-4 h-4" /></button>
-                         <button onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }} className="p-2 text-[#004A74] hover:bg-gray-50 rounded-lg"><Grip className="w-4 h-4" /></button>
-                         <button onClick={(e) => handleDelete(e, ppt.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
-                       </div>
-                    </StandardTd>
-                  </StandardTr>
-                ))}
-              </tbody>
-            </StandardTableWrapper>
-          </StandardTableContainer>
-        )}
-        
-        {totalCount > itemsPerPage && (
-          <div className="mt-8 bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
-            <StandardTableFooter 
-              totalItems={totalCount} 
-              currentPage={currentPage} 
-              itemsPerPage={itemsPerPage} 
-              totalPages={Math.ceil(totalCount / itemsPerPage)} 
-              onPageChange={setCurrentPage} 
-            />
-          </div>
-        )}
+              ))}
+            </div>
+          ) : (
+            /* PERMANENT DESKTOP TABLE VIEW */
+            <StandardTableContainer>
+              <StandardTableWrapper>
+                <thead>
+                  <tr>
+                    <StandardTh width="60px">
+                      <div className="flex items-center justify-center">
+                        <StandardCheckbox onChange={toggleSelectAll} checked={presentations.length > 0 && selectedIds.length === presentations.length} />
+                      </div>
+                    </StandardTh>
+                    <StandardTh width="300px" onClick={() => handleSort('title')} isActiveSort={sortConfig.key === 'title'}>Title {getSortIcon('title')}</StandardTh>
+                    <StandardTh width="200px" onClick={() => handleSort('presenters')} isActiveSort={sortConfig.key === 'presenters'}>Presenter(s) {getSortIcon('presenters')}</StandardTh>
+                    <StandardTh width="100px">Slides</StandardTh>
+                    <StandardTh width="180px" onClick={() => handleSort('createdAt')} isActiveSort={sortConfig.key === 'createdAt'}>Date Created {getSortIcon('createdAt')}</StandardTh>
+                    <StandardTh width="150px" className="sticky right-0 bg-gray-50">Action</StandardTh>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {presentations.map((ppt) => (
+                    <StandardTr key={ppt.id} onClick={() => toggleSelectItem(ppt.id)} className="cursor-pointer">
+                      <td className="px-6 py-4 text-center" onClick={e => e.stopPropagation()}>
+                        <StandardCheckbox checked={selectedIds.includes(ppt.id)} readOnly />
+                      </td>
+                      <StandardTd>
+                        <ElegantTooltip text={ppt.title}>
+                          <p className="text-sm font-bold text-[#004A74] uppercase line-clamp-1">{ppt.title}</p>
+                        </ElegantTooltip>
+                      </StandardTd>
+                      <StandardTd className="text-xs text-gray-500 font-semibold">{ppt.presenters.join(', ')}</StandardTd>
+                      <StandardTd className="text-center"><span className="px-3 py-1 bg-gray-50 rounded-lg font-black text-[#004A74] text-[10px]">{ppt.slidesCount}</span></StandardTd>
+                      <StandardTd className="text-xs text-gray-400 font-medium text-center">{formatPresentationDate(ppt.createdAt)}</StandardTd>
+                      <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
+                         <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                           <button onClick={() => openInGoogleSlides(ppt.gSlidesId)} className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg"><EyeIcon className="w-4 h-4" /></button>
+                           <button onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }} className="p-2 text-[#004A74] hover:bg-gray-50 rounded-lg"><Grip className="w-4 h-4" /></button>
+                           <button onClick={(e) => handleDelete(e, ppt.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
+                         </div>
+                      </StandardTd>
+                    </StandardTr>
+                  ))}
+                </tbody>
+              </StandardTableWrapper>
+            </StandardTableContainer>
+          )}
+        </div>
       </div>
 
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${selectedIds.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
