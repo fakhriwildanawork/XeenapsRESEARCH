@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -20,7 +21,8 @@ import {
   AdjustmentsHorizontalIcon,
   CheckIcon
 } from '@heroicons/react/24/outline';
-import { Grip } from 'lucide-react';
+// Added Trash2 to the imports from lucide-react
+import { Grip, Calendar, Trash2 } from 'lucide-react';
 import { 
   StandardTableContainer, 
   StandardTableWrapper, 
@@ -155,7 +157,7 @@ const PresentationDetailModal: React.FC<{
             className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-md"
             title="Delete Permanently"
           >
-            <TrashIcon className="w-6 h-6" />
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
@@ -439,7 +441,7 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
                 ) : (
                   presentations.map((ppt) => (
                     <StandardTr key={ppt.id} className="cursor-pointer" onClick={() => setSelectedDetail(ppt)}>
-                      <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={e => e.stopPropagation()}>
                         <StandardCheckbox checked={selectedIds.includes(ppt.id)} onChange={() => toggleSelectItem(ppt.id)} />
                       </td>
                       <td className="px-4 py-4 text-xs font-medium text-gray-400 whitespace-nowrap text-center">
@@ -523,46 +525,52 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
               <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No presentations found</p>
             </div>
           ) : (
-            <StandardGridContainer>
+            <div className="flex flex-col gap-4 animate-in fade-in duration-500">
               {presentations.map((ppt) => (
-                <StandardItemCard key={ppt.id} isSelected={selectedIds.includes(ppt.id)} onClick={() => setSelectedDetail(ppt)}>
-                  <div className="flex items-center gap-3 mb-4" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => toggleSelectItem(ppt.id)} className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${selectedIds.includes(ppt.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'}`}>
-                      {selectedIds.includes(ppt.id) && <CheckIcon className="w-3 h-3 stroke-[4]" />}
+                <div 
+                  key={ppt.id} 
+                  onClick={() => setSelectedDetail(ppt)} 
+                  className={`bg-white border border-gray-100 rounded-3xl p-5 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden ${
+                    selectedIds.includes(ppt.id) ? 'ring-2 ring-[#004A74] bg-blue-50' : ''
+                  }`}
+                >
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); toggleSelectItem(ppt.id); }}
+                    className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(ppt.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}
+                  >
+                    {selectedIds.includes(ppt.id) && <CheckIcon size={12} strokeWidth={4} />}
+                  </div>
+                  <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: ppt.themeConfig.primaryColor }} />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight">{ppt.title}</h4>
+                    <p className="text-[10px] font-bold text-gray-500 italic truncate mt-0.5">{(ppt.presenters || []).join(', ')}</p>
+                    <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
+                        <Calendar size={12} className="w-3 h-3" /> {formatDateTime(ppt.createdAt)}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                    <button 
+                      onClick={() => setSelectedDetail(ppt)} 
+                      className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"
+                    >
+                      <EyeIcon className="w-5 h-5" />
                     </button>
-                    <span className="text-[8px] font-black uppercase tracking-widest bg-[#004A74] text-white px-2 py-0.5 rounded-full">
-                      {ppt.slidesCount} SLIDES
-                    </span>
+                    <button 
+                      onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }}
+                      className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"
+                    >
+                      <Grip className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(ppt.id)} 
+                      className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"
+                    >
+                      <TrashIcon className="w-5 h-5" />
+                    </button>
                   </div>
-
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-1 h-12 rounded-full shrink-0" style={{ backgroundColor: ppt.themeConfig.primaryColor }} />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-[#004A74] leading-tight line-clamp-2 uppercase">{ppt.title}</h3>
-                    </div>
-                  </div>
-
-                  <p className="text-xs font-medium text-gray-500 italic mb-1 line-clamp-1">{(ppt.presenters || []).join(', ')}</p>
-                  <p className="text-[10px] text-gray-400 line-clamp-2 mb-4 leading-relaxed">{getSourceTitles(ppt.collectionIds)}</p>
-
-                  <div className="h-px bg-gray-50 mb-3" />
-                  <div className="flex items-center justify-between text-gray-400">
-                    <span className="text-[9px] font-bold uppercase tracking-tight">{formatDateTime(ppt.createdAt)}</span>
-                    <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => setSelectedDetail(ppt)} className="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded-lg">
-                        <EyeIcon className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => { setSelectedPptForPicker(ppt); setIsPickerOpen(true); }} className="p-1.5 text-[#004A74] hover:bg-gray-50 rounded-lg">
-                        <Grip className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => window.open(`https://docs.google.com/presentation/d/${ppt.gSlidesId}/edit`, '_blank')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg">
-                        <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </StandardItemCard>
+                </div>
               ))}
-            </StandardGridContainer>
+            </div>
           )}
           {totalCount > itemsPerPage && (
             <div className="pt-8">

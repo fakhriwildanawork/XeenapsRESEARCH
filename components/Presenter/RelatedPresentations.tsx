@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { PresentationItem, LibraryItem } from '../../types';
 import { fetchRelatedPresentations, deletePresentation } from '../../services/PresentationService';
@@ -12,9 +13,11 @@ import {
   EyeIcon,
   ChevronUpIcon,
   ChevronDownIcon,
-  ArrowsUpDownIcon
+  ArrowsUpDownIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline';
-import { Grip } from 'lucide-react';
+// Added Trash2 to the imports from lucide-react
+import { Grip, Trash2 } from 'lucide-react';
 import PresentationSetupModal from './PresentationSetupModal';
 import TeachingSessionPicker from '../Teaching/TeachingSessionPicker';
 import { CardGridSkeleton, TableSkeletonRows } from '../Common/LoadingComponents';
@@ -250,6 +253,12 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
                   selectedIds.includes(ppt.id) ? 'ring-2 ring-[#004A74] bg-blue-50' : ''
                 }`}
               >
+                <div 
+                  onClick={(e) => { e.stopPropagation(); toggleSelectItem(ppt.id); }}
+                  className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(ppt.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}
+                >
+                  {selectedIds.includes(ppt.id) && <CheckIcon size={12} strokeWidth={4} />}
+                </div>
                 <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: ppt.themeConfig.primaryColor }} />
                 <div className="flex-1 min-w-0">
                    <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight">{ppt.title}</h4>
@@ -302,7 +311,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
               <tbody className="divide-y divide-gray-50">
                 {presentations.map((ppt) => (
                   <StandardTr key={ppt.id} onClick={() => toggleSelectItem(ppt.id)} className="cursor-pointer">
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-6 py-4 text-center" onClick={e => e.stopPropagation()}>
                       <StandardCheckbox checked={selectedIds.includes(ppt.id)} readOnly />
                     </td>
                     <StandardTd>
@@ -350,10 +359,10 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
            <div className="flex items-center gap-2">
               <button 
                 onClick={handleBatchDelete}
-                className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-sm active:scale-90"
+                className="p-2 bg-red-50 text-white rounded-full hover:bg-red-600 transition-all shadow-sm active:scale-90"
                 title="Delete Selected"
               >
-                <TrashIcon className="w-4 h-4 stroke-[2.5]" />
+                <Trash2 size={16} className="w-4 h-4 stroke-[2.5]" />
               </button>
            </div>
            <div className="w-px h-5 bg-white/20" />
