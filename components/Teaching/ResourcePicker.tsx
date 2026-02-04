@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { LibraryItem, PresentationItem, QuestionItem, LibraryType, BloomsLevel } from '../../types';
-import { fetchLibraryPaginated } from '../../services/gasService';
+import { fetchLibrary, fetchLibraryPaginated } from '../../services/gasService';
 import { fetchPresentationsPaginated } from '../../services/PresentationService';
 import { fetchAllQuestionsPaginated } from '../../services/QuestionService';
 import { 
@@ -32,17 +32,26 @@ interface ResourcePickerProps {
 
 const ResourcePicker: React.FC<ResourcePickerProps> = ({ type, onClose, onSelect }) => {
   const [items, setItems] = useState<any[]>([]);
+  const [libraryLookup, setLibraryLookup] = useState<Record<string, string>>({});
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Fetch library data for lookup if we are picking questions
+      if (type === 'QUESTION' && Object.keys(libraryLookup).length === 0) {
+        const libs = await fetchLibrary();
+        const lookup: Record<string, string> = {};
+        libs.forEach(l => lookup[l.id] = l.title);
+        setLibraryLookup(lookup);
+      }
+
       if (type === 'LIBRARY') {
         const res = await fetchLibraryPaginated(currentPage, itemsPerPage, appliedSearch, 'All', '', 'createdAt', 'desc');
         setItems(res.items);
@@ -61,7 +70,7 @@ const ResourcePicker: React.FC<ResourcePickerProps> = ({ type, onClose, onSelect
     } finally {
       setIsLoading(false);
     }
-  }, [type, currentPage, appliedSearch]);
+  }, [type, currentPage, appliedSearch, libraryLookup]);
 
   useEffect(() => {
     loadData();
@@ -172,7 +181,7 @@ const ResourcePicker: React.FC<ResourcePickerProps> = ({ type, onClose, onSelect
                                 <div className="flex items-center gap-1">
                                    <User size={10} />
                                    <span className="text-[9px] font-bold uppercase truncate max-w-[150px]">
-                                      {item.authors ? item.authors.join(', ') : (item.presenters ? item.presenters.join(', ') : 'AI Generated')}
+                                      {item.authors ? item.authors.join(', ') : (item.presenters ? item.presenters.join(', ') : (libraryLookup[item.collectionId] || 'AI Generated'))}
                                    </span>
                                 </div>
                                 <div className="w-1 h-1 rounded-full bg-gray-200" />
