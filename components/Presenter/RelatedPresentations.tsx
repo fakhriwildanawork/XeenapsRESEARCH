@@ -8,8 +8,6 @@ import {
   CalendarDaysIcon,
   UserGroupIcon,
   ArrowLeftIcon,
-  ListBulletIcon,
-  Squares2X2Icon,
   TrashIcon,
   EyeIcon,
   ChevronUpIcon,
@@ -29,11 +27,6 @@ import {
   ElegantTooltip 
 } from '../Common/TableComponents';
 import { SmartSearchBox } from '../Common/SearchComponents';
-import { 
-  StandardFilterButton,
-  StandardQuickAccessBar,
-  StandardQuickActionButton
-} from '../Common/ButtonComponents';
 import { useAsyncWorkflow } from '../../hooks/useAsyncWorkflow';
 import { useOptimisticUpdate } from '../../hooks/useOptimisticUpdate';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -57,7 +50,6 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
   
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortConfig, setSortConfig] = useState<{key: string, dir: 'asc'|'desc'}>({ key: 'createdAt', dir: 'desc' });
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -173,9 +165,6 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
     } catch { return "-"; }
   };
 
-  // effectiveViewMode is determined by screen size
-  const effectiveViewMode = isMobile ? 'mobileList' : viewMode;
-
   return (
     <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-y-auto custom-scrollbar relative">
       {showSetup && (
@@ -206,12 +195,6 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
           </div>
 
           <div className="flex items-center gap-2">
-            {!isMobile && (
-              <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100 mr-2">
-                <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><Squares2X2Icon className="w-4 h-4" /></button>
-                <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><ListBulletIcon className="w-4 h-4" /></button>
-              </div>
-            )}
             <button 
               onClick={() => setShowSetup(true)}
               className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-white rounded-2xl font-bold hover:shadow-lg hover:bg-[#003859] transition-all transform active:scale-95 shadow-lg shadow-[#004A74]/10"
@@ -238,15 +221,15 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
 
       <div className="p-6 md:p-10 pb-32 flex-1">
         {isLoading ? (
-          effectiveViewMode === 'grid' ? <CardGridSkeleton count={6} /> : <div className="mt-4"><TableSkeletonRows count={8} /></div>
+          isMobile ? <CardGridSkeleton count={4} /> : <div className="mt-4"><TableSkeletonRows count={8} /></div>
         ) : presentations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
             <PresentationChartBarIcon className="w-20 h-20 mb-4 text-[#004A74]" />
             <h3 className="text-lg font-black text-[#004A74] uppercase tracking-widest">No Presentations Found</h3>
             <p className="text-sm font-medium text-gray-500 mt-2">Transform your collection into visual synthesis.</p>
           </div>
-        ) : effectiveViewMode === 'mobileList' ? (
-          /* SPECIAL MOBILE LIST VIEW */
+        ) : isMobile ? (
+          /* ELEGANT MOBILE LIST VIEW */
           <div className="flex flex-col gap-4 animate-in fade-in duration-500">
             {presentations.map((ppt) => (
               <div 
@@ -281,59 +264,8 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
               </div>
             ))}
           </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {presentations.map((ppt) => (
-              <div 
-                key={ppt.id} 
-                onClick={() => openInGoogleSlides(ppt.gSlidesId)}
-                className={`group relative bg-white border border-gray-100 border-l-[6px] rounded-[2rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden h-full flex flex-col ${
-                  selectedIds.includes(ppt.id) ? 'ring-4 ring-[#004A74]/10 border-[#004A74]' : ''
-                }`}
-                style={{ borderLeftColor: ppt.themeConfig.primaryColor }}
-              >
-                <div 
-                  className="absolute top-0 right-0 w-32 h-32 opacity-5 translate-x-8 -translate-y-8 rounded-full"
-                  style={{ backgroundColor: ppt.themeConfig.primaryColor }}
-                />
-
-                <div className="flex items-start justify-between mb-6">
-                   <div 
-                     onClick={(e) => { e.stopPropagation(); toggleSelectItem(ppt.id); }}
-                     className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
-                       selectedIds.includes(ppt.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200'
-                     }`}
-                   >
-                     {selectedIds.includes(ppt.id) && <PlusIcon className="w-3.5 h-3.5 rotate-45 stroke-[4]" />}
-                   </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={(e) => handleDelete(e, ppt.id)} className="p-2 text-red-300 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all">
-                      <TrashIcon className="w-4 h-4" />
-                    </button>
-                    <ArrowTopRightOnSquareIcon className="w-5 h-5 text-gray-300 group-hover:text-[#004A74] transition-colors" />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-black text-[#004A74] line-clamp-2 leading-tight mb-4 uppercase flex-1">{ppt.title}</h3>
-                
-                <div className="space-y-3 mt-auto">
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <UserGroupIcon className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest line-clamp-1">{ppt.presenters.join(', ')}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <CalendarDaysIcon className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">{formatPresentationDate(ppt.createdAt)}</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-end">
-                  <span className="text-[10px] font-black text-[#004A74] uppercase tracking-tighter">{ppt.slidesCount} SLIDES</span>
-                </div>
-              </div>
-            ))}
-          </div>
         ) : (
+          /* PERMANENT DESKTOP TABLE VIEW */
           <StandardTableContainer>
             <StandardTableWrapper>
               <thead>
