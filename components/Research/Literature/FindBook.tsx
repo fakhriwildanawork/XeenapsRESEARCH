@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
+// Fix: Removed duplicate 'Book' identifier from lucide-react imports
 import { 
   Search, 
   Archive, 
@@ -14,8 +15,7 @@ import {
   Info,
   Calendar,
   Loader2,
-  Library as LibraryIcon,
-  Book
+  Library as LibraryIcon
 } from 'lucide-react';
 import { LiteratureArticle } from '../../../types';
 import { searchBooks, archiveBook, getBookSearchCache, setBookSearchCache } from '../../../services/LiteratureService';
