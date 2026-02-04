@@ -145,11 +145,13 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
       }
       
       const timer = setTimeout(() => {
+        // PRESERVE METADATA: Ambil semua state kecuali openItem
         const { openItem, ...rest } = state;
         
         // AKTIFKAN KUNCI: Beritahu logic reset untuk mengabaikan navigasi pembersihan ini
         isSanitizing.current = true;
         
+        // Simpan sisa metadata (returnToTracerProject, fromPath, dll)
         navigate(location.pathname, { replace: true, state: rest });
         setIsTransitioning(false);
       }, 800); 

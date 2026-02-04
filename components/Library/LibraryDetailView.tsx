@@ -555,30 +555,72 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
     }
   };
 
+  // SMART REFERRER-AWARE BACK LOGIC
   const handleBack = () => {
     const state = location.state as any;
+
+    // 1. Check for specific module return flags (Complex Redirects)
     if (state?.returnToTracerProject) {
       navigate(`/research/tracer/${state.returnToTracerProject}`, { 
         state: { reopenReference: state.returnToRef }, 
         replace: true 
       });
-    } else if (state?.returnToTeaching) {
+      return;
+    } 
+    
+    if (state?.returnToTeaching) {
       navigate(`/teaching/${state.returnToTeaching}`, { 
         state: { activeTab: state.activeTab || 'substance' }, 
         replace: true 
       });
-    } else if (state?.returnToAttachedQuestion) {
+      return;
+    } 
+    
+    if (state?.returnToAttachedQuestion) {
       navigate(`/teaching/${state.returnToAttachedQuestion}/questions`, { 
         state: { item: state.teachingItem }, 
         replace: true 
       });
-    } else if (state?.returnToPPT) {
+      return;
+    } 
+    
+    if (state?.returnToPPT) {
       navigate('/presentations', { state: { reopenPPT: state.returnToPPT }, replace: true });
-    } else if (state?.returnToAudit) {
-      navigate(`/research/work/${state.returnToAudit.id}`, { replace: true });
-    } else if (state?.returnToQuestion) {
+      return;
+    } 
+    
+    if (state?.returnToQuestion) {
       navigate('/questions', { state: { reopenQuestion: state.returnToQuestion }, replace: true });
+      return;
+    }
+
+    if (state?.returnToAudit) {
+      // FIX: Smart detection between Brainstorming vs Gap Finder
+      if (state.returnToAudit.roughIdea !== undefined) {
+        // This is a Brainstorming item
+        navigate(`/research/brainstorming/${state.returnToAudit.id}`, { 
+          state: { item: state.returnToAudit }, 
+          replace: true 
+        });
+      } else {
+        // This is a Gap Finder Project
+        navigate(`/research/work/${state.returnToAudit.id}`, { replace: true });
+      }
+      return;
+    }
+
+    // 2. Generic Referrer Check
+    if (state?.fromPath) {
+      navigate(state.fromPath, { replace: true, state: state.fromState });
+      return;
+    }
+
+    // 3. Fallback: Browser History or Local Close
+    // If we have a history (we didn't land here directly), try to go back
+    if (window.history.length > 1 && !isExternalTransition) {
+      navigate(-1);
     } else {
+      // Local close (useful when opened via LibraryMain.setSelectedItem)
       onClose();
     }
   };
@@ -821,14 +863,14 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
 
                     <div className="space-y-2 pt-4 border-t border-gray-100">
                       {currentItem.publisher && (
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-4">
                           <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest w-20 shrink-0 mt-0.5">Publisher</span>
                           <p className="text-[11px] font-bold text-gray-600">{currentItem.publisher}</p>
                         </div>
                       )}
                       
                       {(pubInfo.journal || pubInfo.vol || pubInfo.issue || pubInfo.pages) && (
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-4">
                           <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest w-20 shrink-0 mt-0.5">Publication</span>
                           <p className="text-[11px] font-bold text-[#004A74]">
                             {[pubInfo.journal, pubInfo.vol ? `Vol. ${pubInfo.vol}` : '', pubInfo.issue ? `No. ${pubInfo.issue}` : '', pubInfo.pages ? `pp. ${pubInfo.pages}` : ''].filter(Boolean).join(' • ')}
@@ -837,7 +879,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       )}
 
                       {Object.values(identifiers).some(v => v) && (
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-4">
                           <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest w-20 shrink-0 mt-0.5">Identifiers</span>
                           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                             {identifiers.doi && <p className="text-[9px] font-mono font-bold text-gray-400 italic">DOI: {identifiers.doi}</p>}
@@ -862,13 +904,11 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     </div>
                   )}
                 </div>
-                <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm space-y-3">
+                <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-3">
                   <h3 className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><TagIcon className="w-3 h-3" /> Labels</h3>
-                  {isLoading && !isSyncing ? <div className="h-10 w-full skeleton rounded-xl" /> : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {tags.labels?.length > 0 ? tags.labels.map((l: string) => <span key={l} className="px-2.5 py-1 bg-[#FED400]/10 border border-[#FED400]/20 rounded-lg text-[9px] font-bold text-[#004A74]">{l}</span>) : <p className="text-[9px] text-gray-300 italic">No labels.</p>}
-                    </div>
-                  )}
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.labels?.length > 0 ? tags.labels.map((l: string) => <span key={l} className="px-2.5 py-1 bg-[#FED400]/10 border border-[#FED400]/20 rounded-lg text-[9px] font-bold text-[#004A74]">{l}</span>) : <p className="text-[9px] text-gray-300 italic">No labels.</p>}
+                  </div>
                 </div>
               </section>
 
@@ -948,7 +988,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     )}
                   </div>
 
-                  <div className="bg-[#004A74]/5 p-6 rounded-[2rem] border border-[#004A74]/10 shadow-sm space-y-3 md:col-span-2">
+                  <div className="bg-[#004A74]/5 p-6 rounded-[2.5rem] border border-[#004A74]/10 shadow-sm space-y-3 md:col-span-2">
                     <SectionHeader 
                       label="Unfamiliar Terminology" 
                       icon={<ChatBubbleBottomCenterTextIcon className="w-3.5 h-3.5" />} 
