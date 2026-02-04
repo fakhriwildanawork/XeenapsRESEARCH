@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported member useNavigate
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +25,8 @@ import {
   Info,
   BookOpen,
   Calendar,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Library as LibraryIcon
 } from 'lucide-react';
 import { ArchivedArticleItem } from '../../../types';
 import { fetchArchivedArticlesPaginated, deleteArchivedArticle, toggleFavoriteArticle } from '../../../services/LiteratureService';
@@ -79,7 +81,6 @@ const ArchivedArticle: React.FC = () => {
   }, []);
 
   const loadData = useCallback(() => {
-    // Requirement 1 Fix: Ensure loading state is reset correctly on every fetch attempt
     setIsLoading(true);
     workflow.execute(
       async (signal) => {
@@ -97,7 +98,6 @@ const ArchivedArticle: React.FC = () => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-    // Fix: Using workflow.execute as stable dependency instead of workflow object to prevent infinite loop
   }, [currentPage, appliedSearch, sortConfig, itemsPerPage, workflow.execute]);
 
   useEffect(() => {
@@ -173,6 +173,14 @@ const ArchivedArticle: React.FC = () => {
       (i) => ({ ...i, isFavorite: !i.isFavorite }),
       async (updated) => await toggleFavoriteArticle(updated.id, updated.isFavorite)
     );
+  };
+
+  const handleAddToLibrary = (item: ArchivedArticleItem) => {
+    if (!item.doi) {
+      showXeenapsToast('warning', 'No DOI identifier found for this item.');
+      return;
+    }
+    navigate('/add', { state: { prefilledDoi: item.doi } });
   };
 
   const formatDateTime = (dateStr: string) => {
@@ -266,6 +274,14 @@ const ArchivedArticle: React.FC = () => {
                   >
                     <ExternalLink className="w-4 h-4" /> Open Source
                   </button>
+                  {detailItem.doi && (
+                    <button 
+                      onClick={() => handleAddToLibrary(detailItem)}
+                      className="px-8 py-4 bg-[#FED400] text-[#004A74] rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#FED400]/10 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                      <LibraryIcon className="w-4 h-4" /> Add to Library
+                    </button>
+                  )}
                   <button 
                     onClick={() => setDetailItem(null)}
                     className="px-8 py-4 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#004A74]/10 hover:scale-105 active:scale-95 transition-all"
@@ -365,7 +381,7 @@ const ArchivedArticle: React.FC = () => {
                   <StandardTh onClick={() => handleSort('label')} isActiveSort={sortConfig.key === 'label'}>Label {getSortIcon('label')}</StandardTh>
                   <StandardTh width="400px">Harvard Citation</StandardTh>
                   <StandardTh onClick={() => handleSort('createdAt')} isActiveSort={sortConfig.key === 'createdAt'}>Saved At {getSortIcon('createdAt')}</StandardTh>
-                  <StandardTh width="120px" className="sticky right-0 bg-gray-50">Action</StandardTh>
+                  <StandardTh width="150px" className="sticky right-0 bg-gray-50">Action</StandardTh>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -383,7 +399,7 @@ const ArchivedArticle: React.FC = () => {
                              <span className="text-sm font-bold text-[#004A74] uppercase line-clamp-2 leading-tight">{item.title}</span>
                           </div>
                        </ElegantTooltip>
-                    </StandardTd>
+                    </td>
                     <StandardTd>
                        <span className="px-2 py-1 bg-[#004A74]/5 border border-[#004A74]/10 rounded-lg text-[9px] font-black text-[#004A74] uppercase tracking-widest whitespace-nowrap">
                          {item.label}
@@ -406,6 +422,15 @@ const ArchivedArticle: React.FC = () => {
                           >
                              <ExternalLink size={16} />
                           </button>
+                          {item.doi && (
+                            <button 
+                              onClick={() => handleAddToLibrary(item)}
+                              className="p-2 text-[#004A74] hover:bg-[#FED400]/20 rounded-lg transition-all"
+                              title="Add to Library"
+                            >
+                              <LibraryIcon size={16} />
+                            </button>
+                          )}
                           <button 
                             onClick={(e) => handleDelete(e, item.id)}
                             className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-all"
@@ -466,12 +491,23 @@ const ArchivedArticle: React.FC = () => {
                       <button 
                         onClick={() => window.open(item.url || `https://doi.org/${item.doi}`, '_blank')}
                         className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                        title="Open Source"
                       >
                         <ExternalLink size={14} />
                       </button>
+                      {item.doi && (
+                        <button 
+                          onClick={() => handleAddToLibrary(item)}
+                          className="p-1.5 text-[#004A74] hover:bg-[#FED400]/20 rounded-lg transition-all"
+                          title="Add to Library"
+                        >
+                          <LibraryIcon size={14} />
+                        </button>
+                      )}
                       <button 
                         onClick={(e) => handleDelete(e, item.id)}
                         className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete"
                       >
                         <Trash2 size={14} />
                       </button>
