@@ -108,6 +108,12 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     }
   };
 
+  const formatDisplayDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden">
       
@@ -150,14 +156,14 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                         Topic: <span className="text-white">{collection.topic}</span>
                      </div>
                      <div className="text-white/60 text-[9px] font-bold uppercase tracking-widest">
-                        Date: <span className="text-white">{new Date(consultation.createdAt).toLocaleDateString()}</span>
+                        Date: <span className="text-white">{formatDisplayDate(consultation.createdAt)}</span>
                      </div>
                   </div>
                </div>
             </div>
 
             {/* EDITABLE QUESTION DISPLAY */}
-            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group/question">
+            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border-2 border-gray-200 shadow-sm relative overflow-hidden group/question focus-within:border-[#004A74]/30 transition-all">
                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FED400]" />
                <div className="flex items-center justify-between mb-4">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">

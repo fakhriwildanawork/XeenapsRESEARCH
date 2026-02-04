@@ -76,7 +76,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
     if (content) {
       await saveConsultation({ ...item, isFavorite: newVal }, content);
-      showXeenapsToast('success', newVal ? 'Marked as Favorite' : 'Removed from Favorites');
+      // Removed toast notification as requested
     }
   };
 
@@ -247,9 +247,6 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
                       >
                          {isSelected && <CheckIcon className="w-4 h-4 stroke-[4]" />}
                       </button>
-                      <div className="w-8 h-8 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-md">
-                         <SparklesIcon className="w-4 h-4" />
-                      </div>
                     </div>
                     
                     <div className="flex items-center gap-1">
