@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { NoteItem, NoteContent, LibraryItem } from '../../types';
 import { fetchNotesPaginated, deleteNote, saveNote } from '../../services/NoteService';
@@ -14,7 +13,8 @@ import {
   StickyNote,
   Library,
   Check,
-  MoreVertical
+  MoreVertical,
+  ArrowLeft
 } from 'lucide-react';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { StandardPrimaryButton, StandardQuickAccessBar, StandardQuickActionButton } from '../Common/ButtonComponents';
@@ -160,6 +160,13 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
     return items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite);
   }, [items, selectedIds]);
 
+  // NEW: Transition handler to prevent navigation glitches
+  const handleEditNoteTransition = (note: NoteItem) => {
+    setSelectedNote(note);
+    setViewNote(null);
+    setIsFormOpen(true);
+  };
+
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-white animate-in fade-in duration-500 pb-32 custom-scrollbar pr-1 relative">
       
@@ -167,6 +174,15 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex flex-col gap-8 shrink-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
+             {onBackToLibrary && (
+                <button 
+                  onClick={onBackToLibrary}
+                  className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90"
+                  title="Back to Collection"
+                >
+                   <ArrowLeft size={20} strokeWidth={3} />
+                </button>
+             )}
              <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
                 <StickyNote size={24} />
              </div>
@@ -248,7 +264,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                 >
                   {/* Checkbox Top Left */}
                   <div className="absolute top-6 left-6 z-10" onClick={e => toggleSelect(e, item.id)}>
-                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white' : 'bg-white border-gray-200 hover:border-[#004A74]'}`}>
+                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]'}`}>
                         {selectedIds.includes(item.id) && <Check size={14} strokeWidth={4} />}
                      </div>
                   </div>
@@ -310,6 +326,8 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                 return index > -1 ? prev.map(i => i.id === newItem.id ? newItem : i) : [newItem, ...prev];
               });
               setTotalCount(prev => prev + (items.some(i => i.id === newItem.id) ? 0 : 1));
+              // Redirect to Detail View instantly after successful save
+              setViewNote(newItem);
             }
           }} 
         />
@@ -323,7 +341,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
           onUpdate={(updated) => {
             setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
           }}
-          onEdit={() => { setSelectedNote(viewNote); setViewNote(null); setIsFormOpen(true); }}
+          onEdit={() => handleEditNoteTransition(viewNote)}
         />
       )}
     </div>
