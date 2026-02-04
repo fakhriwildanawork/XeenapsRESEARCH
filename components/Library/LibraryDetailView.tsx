@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -70,6 +71,7 @@ interface LibraryDetailViewProps {
   onRefresh?: () => Promise<void>;
   onUpdateOptimistic?: (updatedItem: LibraryItem) => void;
   onDeleteOptimistic?: (id: string) => void;
+  isLocalOverlay?: boolean;
 }
 
 /**
@@ -356,7 +358,7 @@ const ElegantList: React.FC<{ text?: any; className?: string; isLoading?: boolea
   );
 };
 
-const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, isLoading, isMobileSidebarOpen, onRefresh, onUpdateOptimistic, onDeleteOptimistic }) => {
+const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, isLoading, isMobileSidebarOpen, onRefresh, onUpdateOptimistic, onDeleteOptimistic, isLocalOverlay }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -558,6 +560,12 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
 
   // SMART REFERRER-AWARE BACK LOGIC
   const handleBack = () => {
+    // NEW: If explicit local overlay mode (like in Matrix/Lit Review Detail), just close without touching browser history
+    if (isLocalOverlay) {
+      onClose();
+      return;
+    }
+
     const state = location.state as any;
 
     // 1. Check for specific module return flags (Complex Redirects)
@@ -972,7 +980,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     )}
                   </div>
 
-                  <div className="bg-green-50 p-6 rounded-[2rem] border border-green-100/50 shadow-sm space-y-3">
+                  <div className="bg-green-50 p-6 rounded-[2.5rem] border border-green-100/50 shadow-sm space-y-4">
                     <SectionHeader 
                       label="Strengths" 
                       icon={<ClipboardDocumentCheckIcon className="w-3.5 h-3.5" />} 
@@ -986,7 +994,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     )}
                   </div>
 
-                  <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100/50 shadow-sm space-y-3">
+                  <div className="bg-red-50 p-6 rounded-[2.5rem] border border-red-100/50 shadow-sm space-y-4">
                     <SectionHeader 
                       label="Weaknesses" 
                       icon={<ExclamationTriangleIcon className="w-3.5 h-3.5" />} 
@@ -1030,7 +1038,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                           <div key={idx} className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 flex flex-col gap-4 transition-all hover:bg-white group">
                             <div className="flex gap-4">
                               <span className="shrink-0 w-7 h-7 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center shadow-sm">{idx + 1}</span>
-                              <p className="text-xs font-semibold text-[#004A74]/80 leading-relaxed flex-1" dangerouslySetInnerHTML={{ __html: ref }} />
+                              <p className="text-xs font-bold text-[#004A74]/80 leading-relaxed flex-1" dangerouslySetInnerHTML={{ __html: ref }} />
                             </div>
                             <div className="flex items-center justify-end gap-2">
                               {/* Fix: Added missing event argument to handleCopy call to fix the "Expected 2 arguments, but got 1" error. */}

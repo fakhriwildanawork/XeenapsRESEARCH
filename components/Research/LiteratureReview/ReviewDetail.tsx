@@ -544,6 +544,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
           onClose={() => setSelectedSourceForDetail(null)} 
           isLoading={false}
           isMobileSidebarOpen={isMobileSidebarOpen}
+          isLocalOverlay={true}
         />
       )}
 
