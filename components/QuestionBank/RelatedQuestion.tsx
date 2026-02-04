@@ -310,7 +310,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                   </div>
                   <div className={`w-1.5 h-12 rounded-full shrink-0 ${getBloomColor(q.bloomLevel)}`} />
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight line-clamp-1">{q.questionText}</h4>
+                    <h4 className="text-sm font-black text-[#004A74] truncate leading-tight line-clamp-1">{q.questionText}</h4>
                     <p className="text-[10px] font-bold text-gray-500 truncate mt-0.5">{q.customLabel}</p>
                     <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
                        <CheckBadgeIcon className="w-3 h-3" /> Correct: {q.correctAnswer}
