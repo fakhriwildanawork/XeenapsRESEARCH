@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported member useNavigate
 import { useNavigate } from 'react-router-dom';
@@ -14,8 +13,6 @@ import {
   ChevronUp,
   ChevronDown,
   ArrowUpDown,
-  MoreVertical,
-  CheckCircle2,
   FileText,
   Settings2 as AdjustmentsHorizontal,
   Plus,
@@ -25,7 +22,6 @@ import {
   Info,
   BookOpen,
   Calendar,
-  Link as LinkIcon,
   Library as LibraryIcon
 } from 'lucide-react';
 import { ArchivedArticleItem } from '../../../types';
@@ -58,7 +54,6 @@ const ArchivedArticle: React.FC = () => {
   const workflow = useAsyncWorkflow(30000);
   const { performUpdate, performDelete } = useOptimisticUpdate<ArchivedArticleItem>();
   
-  // States
   const [serverItems, setServerItems] = useState<ArchivedArticleItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -146,11 +141,11 @@ const ArchivedArticle: React.FC = () => {
     }
   };
 
-  const handleBatchDelete = async (selectedIdsToDel: string[]) => {
-    if (selectedIdsToDel.length === 0) return;
-    const confirmed = await showXeenapsDeleteConfirm(selectedIdsToDel.length);
+  const handleBatchDelete = async () => {
+    if (selectedIds.length === 0) return;
+    const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
     if (confirmed) {
-      const idsToDelete = [...selectedIdsToDel];
+      const idsToDelete = [...selectedIds];
       setSelectedIds([]);
       await performDelete(
         serverItems,
@@ -161,8 +156,6 @@ const ArchivedArticle: React.FC = () => {
       showXeenapsToast('success', 'Selected articles removed');
     }
   };
-
-  const handleBatchDeleteFromBar = () => handleBatchDelete(selectedIds);
 
   const handleToggleFavorite = async (e: React.MouseEvent, item: ArchivedArticleItem) => {
     e.stopPropagation();
@@ -196,7 +189,6 @@ const ArchivedArticle: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto custom-scrollbar bg-white animate-in slide-in-from-right duration-500">
-      {/* Detail Modal for Archived Items */}
       {detailItem && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-black/60 backdrop-blur-xl animate-in fade-in">
           <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl overflow-hidden relative flex flex-col max-h-[85vh] border border-white/20">
@@ -294,7 +286,6 @@ const ArchivedArticle: React.FC = () => {
         </div>
       )}
 
-      {/* Header Area */}
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 shrink-0">
         <div className="flex items-center justify-between mb-8">
            <div className="flex items-center gap-4">
@@ -338,7 +329,6 @@ const ArchivedArticle: React.FC = () => {
         </div>
       </div>
 
-      {/* MOBILE SORT & SELECT ALL BAR */}
       <div className="lg:hidden flex items-center justify-start gap-4 px-4 py-2 shrink-0 bg-gray-50/50">
         <div className="relative">
           <button onClick={() => setShowSortMenu(!showSortMenu)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${showSortMenu ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-100 text-[#004A74] shadow-sm'}`}><AdjustmentsHorizontal size={16} /><span className="text-[10px] font-black uppercase tracking-widest">Sort</span></button>
@@ -356,10 +346,9 @@ const ArchivedArticle: React.FC = () => {
       </div>
 
       <StandardQuickAccessBar isVisible={selectedIds.length > 0} selectedCount={selectedIds.length}>
-         <StandardQuickActionButton variant="danger" onClick={handleBatchDeleteFromBar} title="Mass Delete"><Trash2 size={18} /></StandardQuickActionButton>
+         <StandardQuickActionButton variant="danger" onClick={handleBatchDelete} title="Mass Delete"><Trash2 size={18} /></StandardQuickActionButton>
       </StandardQuickAccessBar>
 
-      {/* Content Area */}
       <div className="flex-1 p-6 md:p-10 pb-20">
         {isLoading ? (
           effectiveViewMode === 'table' ? <TableSkeletonRows count={8} /> : <CardGridSkeleton count={6} />
@@ -399,7 +388,7 @@ const ArchivedArticle: React.FC = () => {
                              <span className="text-sm font-bold text-[#004A74] uppercase line-clamp-2 leading-tight">{item.title}</span>
                           </div>
                        </ElegantTooltip>
-                    </td>
+                    </StandardTd>
                     <StandardTd>
                        <span className="px-2 py-1 bg-[#004A74]/5 border border-[#004A74]/10 rounded-lg text-[9px] font-black text-[#004A74] uppercase tracking-widest whitespace-nowrap">
                          {item.label}

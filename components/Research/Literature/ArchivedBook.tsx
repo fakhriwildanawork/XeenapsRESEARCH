@@ -373,7 +373,7 @@ const ArchivedBook: React.FC = () => {
                              <span className="text-sm font-bold text-[#004A74] uppercase line-clamp-2 leading-tight">{item.title}</span>
                           </div>
                        </ElegantTooltip>
-                    </td>
+                    </StandardTd>
                     <StandardTd>
                        <span className="px-2 py-1 bg-[#004A74]/5 border border-[#004A74]/10 rounded-lg text-[9px] font-black text-[#004A74] uppercase tracking-widest whitespace-nowrap">
                          {item.label}
