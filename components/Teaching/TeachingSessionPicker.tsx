@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { LibraryItem, TeachingItem, PresentationItem } from '../../types';
+import { LibraryItem, TeachingItem, PresentationItem, QuestionItem } from '../../types';
 import { fetchTeachingPaginated, saveTeachingItem } from '../../services/TeachingService';
 import { 
   X, 
@@ -23,7 +23,7 @@ import { TableSkeletonRows } from '../Common/LoadingComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
 
 interface TeachingSessionPickerProps {
-  item: LibraryItem | PresentationItem;
+  item: LibraryItem | PresentationItem | QuestionItem | QuestionItem[];
   onClose: () => void;
 }
 
@@ -57,34 +57,49 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
 
   const handleSelect = async (session: TeachingItem) => {
     setIsLinking(true);
-    showXeenapsToast('info', `Attaching to ${session.courseTitle || session.label}...`);
     
     try {
-      const isPresentation = 'gSlidesId' in item;
-      const targetArray = isPresentation 
-        ? (Array.isArray(session.presentationId) ? session.presentationId : [])
-        : (Array.isArray(session.referenceLinks) ? session.referenceLinks : []);
+      const isArray = Array.isArray(item);
+      const firstItem = isArray ? item[0] : item;
+      
+      // Deteksi tipe item secara cerdas
+      const isQuestion = 'questionText' in firstItem;
+      const isPresentation = !isQuestion && 'gSlidesId' in firstItem;
+      
+      let field: keyof TeachingItem = 'referenceLinks';
+      if (isQuestion) field = 'questionBankId';
+      else if (isPresentation) field = 'presentationId';
 
-      if (targetArray.some(r => r.id === item.id)) {
-        showXeenapsToast('warning', 'Already attached to this session');
+      const currentArray = Array.isArray(session[field]) ? (session[field] as any[]) : [];
+      const incomingItems = isArray ? item : [item];
+      
+      // Filter items yang belum ada di session
+      const newToAttach = incomingItems.filter(inc => !currentArray.some(curr => curr.id === inc.id));
+
+      if (newToAttach.length === 0) {
+        showXeenapsToast('warning', 'Selected items already attached to this session');
         setIsLinking(false);
         return;
       }
 
-      const attachment = isPresentation 
-        ? { id: item.id, title: item.title, gSlidesId: (item as PresentationItem).gSlidesId }
-        : { id: item.id, title: item.title };
+      showXeenapsToast('info', `Attaching ${newToAttach.length} item(s) to ${session.courseTitle || session.label}...`);
+
+      const formattedAttachments = newToAttach.map(it => {
+        if ('questionText' in it) return { id: it.id, label: it.customLabel, questionText: it.questionText };
+        if ('gSlidesId' in it) return { id: it.id, title: it.title, gSlidesId: it.gSlidesId };
+        return { id: it.id, title: it.title };
+      });
 
       const updatedSession = {
         ...session,
-        [isPresentation ? 'presentationId' : 'referenceLinks']: [...targetArray, attachment],
+        [field]: [...currentArray, ...formattedAttachments],
         updatedAt: new Date().toISOString()
       };
 
       const success = await saveTeachingItem(updatedSession);
       
       if (success) {
-        showXeenapsToast('success', 'Attachment success');
+        showXeenapsToast('success', `${newToAttach.length} Item(s) Anchored`);
         onClose();
       } else {
         showXeenapsToast('error', 'Attachment failed');
@@ -117,7 +132,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
                 </div>
                 <div>
                    <h2 className="text-lg md:text-xl font-black text-[#004A74] uppercase tracking-tight">Teaching Session</h2>
-                   <p className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select session to attach literature</p>
+                   <p className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select session to anchor knowledge</p>
                 </div>
              </div>
              <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">

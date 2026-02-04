@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { QuestionItem, BloomsLevel, LibraryItem } from '../../types';
 import { 
@@ -12,6 +12,8 @@ import {
   ArrowTopRightOnSquareIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
+import { Grip } from 'lucide-react';
+import TeachingSessionPicker from '../Teaching/TeachingSessionPicker';
 
 interface QuestionDetailViewProps {
   question: QuestionItem;
@@ -28,6 +30,8 @@ const QuestionDetailView: React.FC<QuestionDetailViewProps> = ({
   onViewSource,
   showSourceInfo = true
 }) => {
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+
   const getBloomColor = (level: BloomsLevel) => {
     if (level.includes('C1') || level.includes('C2')) return 'bg-green-500';
     if (level.includes('C3') || level.includes('C4')) return 'bg-[#004A74]';
@@ -39,6 +43,13 @@ const QuestionDetailView: React.FC<QuestionDetailViewProps> = ({
       className="fixed top-0 right-0 bottom-0 z-[9999] bg-white flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden transition-all duration-500 ease-in-out"
       style={{ left: 'var(--sidebar-offset, 0px)' }}
     >
+      {isPickerOpen && (
+        <TeachingSessionPicker 
+          item={question} 
+          onClose={() => setIsPickerOpen(false)} 
+        />
+      )}
+
       {/* Header - Minimal Sticky */}
       <div className="px-6 md:px-10 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 sticky top-0 z-30">
         <div className="flex items-center gap-3">
@@ -51,9 +62,18 @@ const QuestionDetailView: React.FC<QuestionDetailViewProps> = ({
           </div>
         </div>
 
-        <button onClick={onClose} className="p-2 bg-gray-50 text-gray-400 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
-          <XMarkIcon className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsPickerOpen(true)}
+            className="p-2 bg-gray-50 text-[#004A74] rounded-xl hover:bg-[#FED400] hover:text-[#004A74] transition-all shadow-sm"
+            title="Grip to Teaching"
+          >
+            <Grip className="w-5 h-5" />
+          </button>
+          <button onClick={onClose} className="p-2 bg-gray-50 text-gray-400 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Content Area */}
@@ -182,6 +202,7 @@ const QuestionDetailView: React.FC<QuestionDetailViewProps> = ({
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #004A7415; border-radius: 10px; }
       `}</style>
     </div>,

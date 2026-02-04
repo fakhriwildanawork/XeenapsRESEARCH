@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -22,9 +21,11 @@ import {
   AdjustmentsHorizontalIcon,
   CheckBadgeIcon
 } from '@heroicons/react/24/outline';
+import { Grip } from 'lucide-react';
 import QuestionSetupModal from './QuestionSetupModal';
 import CbtFocusMode from './CbtFocusMode';
 import QuestionDetailView from './QuestionDetailView';
+import TeachingSessionPicker from '../Teaching/TeachingSessionPicker';
 import { TableSkeletonRows, CardGridSkeleton } from '../Common/LoadingComponents';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
@@ -32,7 +33,9 @@ import { showXeenapsAlert } from '../../utils/swalUtils';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { 
   StandardFilterButton,
-  StandardPrimaryButton
+  StandardPrimaryButton,
+  StandardQuickAccessBar,
+  StandardQuickActionButton
 } from '../Common/ButtonComponents';
 import { 
   StandardTableContainer,
@@ -86,6 +89,10 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
   const [activeSimulation, setActiveSimulation] = useState<'CBT' | 'FLASHCARD' | null>(null);
 
   const [selectedQuestionDetail, setSelectedQuestionDetail] = useState<QuestionItem | null>(() => (location.state as any)?.reopenQuestion || null);
+  
+  // Grip / Picker state
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [itemsForPicker, setItemsForPicker] = useState<QuestionItem | QuestionItem[] | null>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -242,6 +249,19 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
     // Success toast removed for SILENT UPDATE
   };
 
+  const handleGripSingle = (e: React.MouseEvent, q: QuestionItem) => {
+    e.stopPropagation();
+    setItemsForPicker(q);
+    setIsPickerOpen(true);
+  };
+
+  const handleGripBatch = () => {
+    if (selectedIds.length === 0) return;
+    const selected = questions.filter(q => selectedIds.includes(q.id));
+    setItemsForPicker(selected);
+    setIsPickerOpen(true);
+  };
+
   const formatShortDate = (dateStr: string) => {
     if (!dateStr) return "-";
     try {
@@ -296,6 +316,17 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
               navigate('/', { state: { openItem: libItem, returnToQuestion: selectedQuestionDetail } });
             }
           }}
+        />
+      )}
+
+      {isPickerOpen && itemsForPicker && (
+        <TeachingSessionPicker 
+          item={itemsForPicker} 
+          onClose={() => {
+            setIsPickerOpen(false);
+            setItemsForPicker(null);
+            setSelectedIds([]);
+          }} 
         />
       )}
 
@@ -368,12 +399,12 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
 
         <div className="lg:hidden flex items-center justify-start gap-4 px-1 py-1 shrink-0">
           <div className="relative">
-            <button onClick={() => setShowSortMenu(!showSortMenu)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${showSortMenu ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-100 text-[#004A74] shadow-sm'}`}><AdjustmentsHorizontalIcon className="w-4 h-4 stroke-[2.5]" /><span className="text-[10px] font-black uppercase tracking-widest">Sort</span></button>
+            <button onClick={() => setShowSortMenu(!showSortMenu)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${showSortMenu ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-100 text-[#004A74] shadow-sm'}`}><AdjustmentsHorizontalIcon size={16} /><span className="text-[10px] font-black uppercase tracking-widest">Sort</span></button>
             {showSortMenu && (
               <div className="absolute left-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[60] p-2 animate-in fade-in zoom-in-95">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-3 py-2 border-b border-gray-50 mb-1">Sort By</p>
                 {['bloomLevel', 'customLabel', 'createdAt'].map((k) => (
-                  <button key={k} onClick={() => { handleSort(k); setShowSortMenu(false); }} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${sortConfig.key === k ? 'bg-[#004A74]/10 text-[#004A74]' : 'text-gray-500 hover:bg-gray-50'}`}><span>{k === 'bloomLevel' ? 'Bloom Tier' : k === 'customLabel' ? 'Label' : 'Date'}</span>{sortConfig.key === k && (sortConfig.dir === 'asc' ? <ChevronUpIcon className="w-3 h-3 stroke-[3]" /> : <ChevronDownIcon className="w-3 h-3 stroke-[3]" />)}</button>
+                  <button key={k} onClick={() => { handleSort(k); setShowSortMenu(false); }} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${sortConfig.key === k ? 'bg-[#004A74]/10 text-[#004A74]' : 'text-gray-500 hover:bg-gray-50'}`}><span>{k === 'bloomLevel' ? 'Bloom Tier' : k === 'customLabel' ? 'Label' : 'Date'}</span>{sortConfig.key === k && (sortConfig.dir === 'asc' ? <ChevronUpIcon size={12} /> : <ChevronDownIcon size={12} />)}</button>
                 ))}
               </div>
             )}
@@ -411,6 +442,13 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                 title="Delete Selected"
               >
                 <TrashIcon className="w-4 h-4 stroke-[2.5]" />
+              </button>
+              <button 
+                onClick={handleGripBatch}
+                className="p-2 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 transition-all shadow-sm active:scale-90"
+                title="Grip to Teaching"
+              >
+                <Grip className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => handleStartSimulation('FLASHCARD')}
@@ -455,7 +493,7 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                   <StandardTh width="150px" onClick={() => handleSort('customLabel')} isActiveSort={sortConfig.key === 'customLabel'}>Label {getSortIcon('customLabel')}</StandardTh>
                   <StandardTh width="400px">Question Text</StandardTh>
                   <StandardTh width="180px" onClick={() => handleSort('createdAt')} isActiveSort={sortConfig.key === 'createdAt'}>Created At {getSortIcon('createdAt')}</StandardTh>
-                  <StandardTh width="100px" className="sticky right-0 bg-gray-50 z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">Action</StandardTh>
+                  <StandardTh width="120px" className="sticky right-0 bg-gray-50 z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">Action</StandardTh>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -487,7 +525,7 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                         <StandardTd>
                            <ElegantTooltip text={getSourceTitle(q.collectionId)}>
                              <div className="flex items-center gap-2">
-                               <CircleStackIcon className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                               <CircleStackIcon size={14} className="text-gray-300 shrink-0" />
                                <p className="text-[11px] font-bold text-[#004A74] uppercase line-clamp-1 truncate">{getSourceTitle(q.collectionId)}</p>
                              </div>
                            </ElegantTooltip>
@@ -505,9 +543,10 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                         <StandardTd className="text-xs font-medium text-gray-400 text-center whitespace-nowrap">
                           {formatShortDate(q.createdAt)}
                         </StandardTd>
-                        <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] text-center">
+                        <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] text-center overflow-visible">
                           <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setSelectedQuestionDetail(q)} className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg" title="Details"><EyeIcon className="w-4 h-4" /></button>
+                            <button onClick={(e) => handleGripSingle(e, q)} className="p-2 text-[#004A74] hover:bg-gray-50 rounded-lg" title="Grip to Teaching"><Grip size={16} /></button>
                             <button onClick={() => handleDelete(q.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg" title="Delete"><TrashIcon className="w-4 h-4" /></button>
                           </div>
                         </StandardTd>
@@ -564,6 +603,7 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                     </div>
                     <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setSelectedQuestionDetail(q)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><EyeIcon className="w-5 h-5" /></button>
+                      <button onClick={(e) => handleGripSingle(e, q)} className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><Grip size={18} /></button>
                       <button onClick={() => handleDelete(q.id)} className="p-2 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><TrashIcon className="w-5 h-5" /></button>
                     </div>
                   </div>

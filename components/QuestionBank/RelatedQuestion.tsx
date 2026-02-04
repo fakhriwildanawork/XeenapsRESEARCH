@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { QuestionItem, LibraryItem, BloomsLevel } from '../../types';
 import { fetchRelatedQuestions, deleteQuestion } from '../../services/QuestionService';
@@ -18,15 +17,19 @@ import {
   ListBulletIcon,
   Squares2X2Icon
 } from '@heroicons/react/24/outline';
+import { Grip } from 'lucide-react';
 import QuestionSetupModal from './QuestionSetupModal';
 import CbtFocusMode from './CbtFocusMode';
 import QuestionDetailView from './QuestionDetailView';
+import TeachingSessionPicker from '../Teaching/TeachingSessionPicker';
 import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { 
-  StandardFilterButton 
+  StandardFilterButton,
+  StandardQuickAccessBar,
+  StandardQuickActionButton
 } from '../Common/ButtonComponents';
 import { 
   StandardTh, 
@@ -71,6 +74,10 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
   const [showSetup, setShowSetup] = useState(false);
   const [activeSimulation, setActiveSimulation] = useState<'CBT' | 'FLASHCARD' | null>(null);
   const [selectedQuestionDetail, setSelectedQuestionDetail] = useState<QuestionItem | null>(null);
+
+  // Grip / Picker state
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [itemsForPicker, setItemsForPicker] = useState<QuestionItem | QuestionItem[] | null>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -183,6 +190,19 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
     }
   };
 
+  const handleGripSingle = (e: React.MouseEvent, q: QuestionItem) => {
+    e.stopPropagation();
+    setItemsForPicker(q);
+    setIsPickerOpen(true);
+  };
+
+  const handleGripBatch = () => {
+    if (selectedIds.length === 0) return;
+    const selected = questions.filter(q => selectedIds.includes(q.id));
+    setItemsForPicker(selected);
+    setIsPickerOpen(true);
+  };
+
   const formatShortDate = (dateStr: string) => {
     if (!dateStr) return "-";
     try {
@@ -228,6 +248,17 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
             onBack();
           }}
           showSourceInfo={false}
+        />
+      )}
+
+      {isPickerOpen && itemsForPicker && (
+        <TeachingSessionPicker 
+          item={itemsForPicker} 
+          onClose={() => {
+            setIsPickerOpen(false);
+            setItemsForPicker(null);
+            setSelectedIds([]);
+          }} 
         />
       )}
 
@@ -311,7 +342,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
             <AcademicCapIcon className="w-16 h-16 md:w-20 md:h-20 mb-4 text-[#004A74]" />
             <h3 className="text-lg font-black text-[#004A74] uppercase tracking-widest">No Items Match</h3>
-            <p className="text-xs md:text-sm font-medium text-gray-500 mt-2">Try adjusting your search query or Bloom Filter.</p>
+            <p className="text-xs md:sm font-medium text-gray-500 mt-2">Try adjusting your search query or Bloom Filter.</p>
             <button onClick={() => { setAppliedSearch(''); setLocalSearch(''); setActiveBloomFilter('All'); }} className="mt-8 text-[#004A74] font-black underline uppercase tracking-widest text-[10px] md:text-xs">
               Clear All Filters
             </button>
@@ -345,6 +376,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                   </div>
                   <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                     <button onClick={() => setSelectedQuestionDetail(q)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><EyeIcon className="w-5 h-5" /></button>
+                    <button onClick={(e) => handleGripSingle(e, q)} className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><Grip size={18} /></button>
                     <button onClick={(e) => handleDelete(e, q.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><TrashIcon className="w-5 h-5" /></button>
                   </div>
                 </div>
@@ -372,7 +404,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                     <StandardTh width="450px">Question Text</StandardTh>
                     <StandardTh width="100px">Answer</StandardTh>
                     <StandardTh width="180px">Date</StandardTh>
-                    <StandardTh width="100px">Action</StandardTh>
+                    <StandardTh width="120px">Action</StandardTh>
                  </tr>
                </thead>
                <tbody className="divide-y divide-gray-50">
@@ -395,6 +427,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                        <StandardTd>
                           <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
                              <button onClick={() => setSelectedQuestionDetail(q)} className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg"><EyeIcon className="w-4 h-4" /></button>
+                             <button onClick={(e) => handleGripSingle(e, q)} className="p-2 text-[#004A74] hover:bg-gray-50 rounded-lg"><Grip size={14} /></button>
                              <button onClick={e => handleDelete(e, q.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
                           </div>
                        </StandardTd>
@@ -421,6 +454,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
            <div className="w-px h-5 bg-white/20" />
            <div className="flex items-center gap-2">
               <button onClick={handleBatchDelete} className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all shadow-sm active:scale-90" title="Delete Selected"><TrashIcon className="w-4 h-4 stroke-[2.5]" /></button>
+              <button onClick={handleGripBatch} className="p-2 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 transition-all shadow-sm active:scale-90" title="Grip to Teaching"><Grip className="w-4 h-4" /></button>
               <button onClick={() => handleStartSimulation('FLASHCARD')} className="p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all shadow-sm active:scale-90" title="Flashcards Selected"><RectangleStackIcon className="w-4 h-4 stroke-[2.5]" /></button>
               <button onClick={() => handleStartSimulation('CBT')} className="p-2 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 transition-all shadow-sm active:scale-90" title="Exam Mode Selected"><PlayIcon className="w-4 h-4 stroke-[2.5]" /></button>
            </div>
