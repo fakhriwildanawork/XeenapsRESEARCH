@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { QuestionItem } from '../../types';
 import { 
@@ -39,6 +38,9 @@ const CbtFocusMode: React.FC<CbtFocusModeProps> = ({ questions, mode, onClose })
       setCurrentIndex(currentIndex + 1);
       setShowFeedback(false);
       setIsFlipped(false);
+    } else {
+      // Last question reached, close the mode
+      onClose();
     }
   };
 
@@ -246,8 +248,12 @@ const CbtFocusMode: React.FC<CbtFocusModeProps> = ({ questions, mode, onClose })
            <p className="text-[9px] font-black text-[#004A74] uppercase tracking-widest">{currentIndex + 1} / {questions.length}</p>
         </div>
 
-        <button onClick={nextQuestion} disabled={currentIndex === questions.length - 1} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#004A74] text-white rounded-lg text-[9px] font-black uppercase shadow-md hover:scale-105 transition-all shrink-0">
-          <span className="hidden sm:inline">Next</span> <ChevronRightIcon className="w-3 h-3 stroke-[3]" />
+        <button 
+          onClick={nextQuestion} 
+          className="flex items-center gap-1.5 px-4 py-1.5 bg-[#004A74] text-white rounded-lg text-[9px] font-black uppercase shadow-md hover:scale-105 transition-all shrink-0"
+        >
+          <span className="hidden sm:inline">{currentIndex === questions.length - 1 ? 'Finish' : 'Next'}</span> 
+          <ChevronRightIcon className="w-3 h-3 stroke-[3]" />
         </button>
       </div>
 
