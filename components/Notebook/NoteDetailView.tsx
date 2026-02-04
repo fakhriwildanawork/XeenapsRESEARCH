@@ -193,7 +193,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
           )
         };
       });
-      // Content updated from state above
+      // Final content sync after upload
       const finalContent = {
         ...content,
         attachments: [{
@@ -207,6 +207,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
       };
       performSync(localNote, finalContent);
     } else {
+      // Silent rollback
       setContent(prev => {
         if (!prev) return null;
         return { ...prev, attachments: prev.attachments.filter(at => at.fileId !== `pending_${tempId}`) };
@@ -268,12 +269,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
             </div>
          </div>
          <div className="flex items-center gap-3">
-            {isSyncing && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-full border border-gray-100 animate-pulse">
-                <Loader2 size={10} className="animate-spin text-[#004A74]" />
-                <span className="text-[8px] font-black text-[#004A74] uppercase">Cloud Syncing</span>
-              </div>
-            )}
+            {/* isSyncing visual indicators removed for silent UX experience as requested */}
             <button onClick={onClose} className="p-2.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all active:scale-90">
                <X size={24} />
             </button>

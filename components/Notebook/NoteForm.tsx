@@ -171,7 +171,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
           )
         }));
       } else {
-        showXeenapsToast('error', `Failed to upload ${file.name}`);
+        // Silent rollback on error
         setContent(prev => ({
           ...prev,
           attachments: prev.attachments.filter(at => at.fileId !== `pending_${tempId}`)
@@ -198,42 +198,25 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
     e.preventDefault();
     if (!metadata.label.trim()) return;
 
-    setIsSubmitting(true);
+    // --- OPTIMISTIC UI: Close and Notify Parent Instantly ---
+    onComplete();
     
-    // WAIT FOR ANY IN-FLIGHT UPLOADS
-    if (uploadPromises.current.size > 0) {
-      Swal.fire({ 
-        title: 'Finalizing Attachments...', 
-        text: 'Waiting for background synchronization to complete',
-        allowOutsideClick: false, 
-        didOpen: () => Swal.showLoading(), 
-        ...XEENAPS_SWAL_CONFIG 
-      });
-      await Promise.all(uploadPromises.current.values());
-    }
+    // START SILENT BACKGROUND PROCESS
+    (async () => {
+      if (uploadPromises.current.size > 0) {
+        await Promise.all(uploadPromises.current.values());
+      }
 
-    Swal.fire({ title: 'Architecting Cloud Note...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
-    
-    // Refresh content state after all promises resolved
-    const finalContent = { ...content };
-
-    // Resolve Collection Title if exists
-    let finalMetadata = { ...metadata };
-    if (finalMetadata.collectionId && libraryItems.length > 0) {
-      const col = libraryItems.find(it => it.id === finalMetadata.collectionId);
-      if (col) finalMetadata.collectionTitle = col.title;
-    }
-    
-    const success = await saveNote(finalMetadata, finalContent);
-    Swal.close();
-    
-    if (success) {
-      showXeenapsToast('success', 'Note synchronized');
-      onComplete();
-    } else {
-      showXeenapsToast('error', 'Cloud sync failed');
-    }
-    setIsSubmitting(false);
+      const finalContent = { ...content };
+      let finalMetadata = { ...metadata };
+      if (finalMetadata.collectionId && libraryItems.length > 0) {
+        const col = libraryItems.find(it => it.id === finalMetadata.collectionId);
+        if (col) finalMetadata.collectionTitle = col.title;
+      }
+      
+      // Silent sync to cloud
+      await saveNote(finalMetadata, finalContent);
+    })();
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -321,7 +304,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
                                 }}
                               />
                             ) : (
-                               <div className="flex items-center gap-2">
+                               <div className="flex items-center justify-between pr-2">
                                   <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{at.type}</span>
                                   {isPending && <span className="text-[7px] font-black text-[#FED400] bg-[#004A74] px-1.5 py-0.5 rounded-full animate-pulse">Syncing</span>}
                                </div>

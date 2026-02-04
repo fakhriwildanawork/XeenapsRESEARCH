@@ -80,6 +80,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
 
   const handleToggleFavorite = async (e: React.MouseEvent, note: NoteItem) => {
     e.stopPropagation();
+    // Silent Optimistic Update
     await performUpdate(
       items,
       setItems,
@@ -89,7 +90,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
         return await saveNote(updated, { description: "", attachments: [] });
       }
     );
-    showXeenapsToast('success', !note.isFavorite ? 'Marked as Favorite' : 'Removed from Favorites');
+    // Feedback toast dihapus sesuai permintaan agar benar-benar silent
   };
 
   const handleBatchFavorite = async () => {
@@ -105,17 +106,18 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
       (i) => ({ ...i, isFavorite: newValue }),
       async (updated) => await saveNote(updated, { description: "", attachments: [] })
     );
-    showXeenapsToast('success', `Bulk ${newValue ? 'Favorite' : 'Unfavorite'} complete`);
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      // Optimistic delete UI
+      setItems(prev => prev.filter(i => i.id !== id));
+      // Silent background sync
       const success = await deleteNote(id);
-      if (success) {
-        showXeenapsToast('success', 'Note purged successfully');
-        loadData();
+      if (!success) {
+        loadData(); // Rollback jika gagal
       }
     }
   };
@@ -123,11 +125,13 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
   const handleMassDelete = async () => {
     const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
     if (confirmed) {
-      for (const id of selectedIds) {
+      const idsToPurge = [...selectedIds];
+      setSelectedIds([]);
+      setItems(prev => prev.filter(i => !idsToPurge.includes(i.id)));
+      
+      for (const id of idsToPurge) {
         await deleteNote(id);
       }
-      showXeenapsToast('success', `${selectedIds.length} Notes purged`);
-      setSelectedIds([]);
       loadData();
     }
   };
@@ -256,12 +260,9 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                      <Star size={20} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
                   </div>
 
+                  {/* Label Header Refined: Sparks & Label removed for cleaner look */}
                   <div className="mt-8 mb-4">
-                     <div className="flex items-center gap-1.5 mb-2">
-                        <Sparkles size={12} className="text-[#FED400]" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-[#004A74]/40">Knowledge Anchor</span>
-                     </div>
-                     <h3 className="text-base font-black text-[#004A74] leading-tight uppercase line-clamp-2">{item.label}</h3>
+                     <h3 className="text-base font-black text-[#004A74] uppercase leading-tight line-clamp-2">{item.label}</h3>
                   </div>
 
                   {collectionTitle && (
