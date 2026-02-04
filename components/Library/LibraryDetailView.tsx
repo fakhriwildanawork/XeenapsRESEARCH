@@ -32,7 +32,9 @@ import {
   TrashIcon,
   CheckIcon,
   LanguageIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  // Fix: Added missing import for BuildingLibraryIcon
+  BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 import { 
   BookmarkIcon as BookmarkSolid, 
@@ -1095,6 +1097,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
 
       {/* FOOTER */}
       <footer className="py-20 text-center opacity-20">
+         {/* Fix: Added missing import for BuildingLibraryIcon */}
          <BuildingLibraryIcon className="w-12 h-12 mx-auto mb-4 text-[#004A74]" />
          <p className="text-[8px] font-black uppercase tracking-[0.8em]">XEENAPS TRANSIT ARCHIVE</p>
       </footer>

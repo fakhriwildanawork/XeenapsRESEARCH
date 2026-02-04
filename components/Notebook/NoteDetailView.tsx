@@ -15,7 +15,9 @@ import {
   Globe,
   FileIcon,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  // Fix: Added missing import for BookOpen
+  BookOpen
 } from 'lucide-react';
 
 interface NoteDetailViewProps {
@@ -144,6 +146,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
                   >
                      <div className="flex items-center gap-5 min-w-0">
                         <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#004A74] shadow-sm group-hover:bg-[#004A74] group-hover:text-[#FED400] transition-all">
+                           {/* Fix: Added missing import for BookOpen */}
                            <BookOpen size={28} />
                         </div>
                         <div className="min-w-0 flex-1">
