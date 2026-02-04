@@ -182,30 +182,33 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
                <div className="flex-1 flex flex-col min-h-0">
                   <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
                     {isLoading ? (
-                      [...Array(4)].map((_, i) => <div key={i} className="h-32 w-full skeleton rounded-3xl" />)
+                      [...Array(4)].map((_, i) => <div key={i} className="h-24 w-full skeleton rounded-3xl" />)
                     ) : projects.length === 0 ? (
                       <div className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No results</div>
                     ) : (
                       projects.map(p => (
-                        <div key={p.id} className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm space-y-4">
-                           <div className="flex justify-between items-start">
-                              <span className="px-2 py-0.5 bg-[#004A74]/5 text-[#004A74] text-[8px] font-black uppercase rounded-md">{p.label}</span>
-                              <div className="flex items-center gap-1.5 text-gray-400">
-                                <Calendar size={10} />
-                                <span className="text-[8px] font-bold uppercase">{p.startDate || '-'}</span>
+                        <div key={p.id} className="bg-white border border-gray-100 rounded-3xl p-4 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden">
+                           <div className="w-1.5 h-12 rounded-full shrink-0 bg-[#004A74]" />
+                           <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="px-2 py-0.5 bg-[#004A74]/5 text-[#004A74] text-[7px] font-black uppercase rounded-md">{p.label}</span>
+                                <div className="flex items-center gap-1 text-gray-400">
+                                  <Calendar size={10} />
+                                  <span className="text-[7px] font-bold uppercase">{p.startDate || '-'}</span>
+                                </div>
                               </div>
-                           </div>
-                           <h4 className="text-sm font-black text-[#004A74] leading-tight uppercase line-clamp-2">{p.title || p.label}</h4>
-                           <div className="flex items-center gap-2 text-gray-400">
-                              <User size={10} />
-                              <span className="text-[9px] font-bold uppercase truncate">{Array.isArray(p.authors) ? p.authors[0] : 'N/A'}</span>
+                              <h4 className="text-sm font-black text-[#004A74] leading-tight uppercase truncate">{p.title || p.label}</h4>
+                              <div className="flex items-center gap-2 text-gray-400 mt-1">
+                                 <User size={10} />
+                                 <span className="text-[8px] font-bold uppercase truncate">{Array.isArray(p.authors) ? p.authors[0] : 'N/A'}</span>
+                              </div>
                            </div>
                            <button 
                              disabled={isLinking}
                              onClick={() => handleSelect(p)}
-                             className="w-full py-3 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-2"
+                             className="shrink-0 px-4 py-2.5 bg-gray-50 text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all flex items-center justify-center gap-2 border border-gray-100"
                            >
-                              {isLinking ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} strokeWidth={3} />} Select Project
+                              {isLinking ? <Loader2 size={12} className="animate-spin" /> : 'Select'}
                            </button>
                         </div>
                       ))
