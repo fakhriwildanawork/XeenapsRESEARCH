@@ -79,6 +79,10 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
   
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(() => !!(location.state as any)?.openItem);
+  
+  // LOGIC LOCKS: Mencegah tabrakan render saat sanitasi state
+  const isSanitizing = useRef(false);
+  const prevPathname = useRef(location.pathname);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -97,29 +101,34 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
     }
   }, [globalSearch]);
 
-  // RESET VIEW LOGIC: Reset Detail View and Scroll when navigating without item payload
+  // RESET VIEW LOGIC: Diperbaiki agar tidak menutup modal saat pembersihan state internal
   useEffect(() => {
     const state = location.state as any;
-    // FIX: Only close the detail view if there is no openItem AND we are not in the middle of re-hydration transition.
-    // This prevents the race condition when the sanitization navigate (replace: true) is called.
-    if (!state?.openItem && !isTransitioning) {
+    const pathChanged = prevPathname.current !== location.pathname;
+
+    if (pathChanged) {
+      // Navigasi ke halaman lain (Dashboard, Settings, dll)
       setSelectedItem(null);
       if (containerRef.current) {
         containerRef.current.scrollTop = 0;
       }
+    } 
+    else if (!state?.openItem && !isSanitizing.current && !isTransitioning) {
+      // Hanya reset jika state kosong DAN bukan karena proses sanitasi internal (e.g. tombol Back)
+      setSelectedItem(null);
     }
+    
+    prevPathname.current = location.pathname;
   }, [location.pathname, location.key, isTransitioning]);
 
-  // DATA RE-HYDRATION LOGIC: Ensure partial items from navigation are filled with full metadata
+  // DATA RE-HYDRATION LOGIC: Dilengkapi dengan mekanisme 'Lock' sanitasi
   useEffect(() => {
     const state = location.state as any;
     if (state?.openItem) {
       const partialItem = state.openItem;
-      // Look for the full object in already loaded items or server items
       const fullItem = items.find(i => i.id === partialItem.id) || 
                        serverItems.find(i => i.id === partialItem.id);
       
-      // IMPROVED: Merge data to ensure supportingReferences from partialItem are not lost if serverItem is lagging
       if (fullItem) {
         setSelectedItem({ ...partialItem, ...fullItem });
       } else {
@@ -128,12 +137,23 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
       
       const timer = setTimeout(() => {
         const { openItem, ...rest } = state;
-        // This navigation triggers location.key change, which hits RESET VIEW LOGIC above
+        
+        // AKTIFKAN LOCK: Beritahu logic reset untuk mengabaikan navigasi 'replace' ini
+        isSanitizing.current = true;
+        
         navigate(location.pathname, { replace: true, state: rest });
         setIsTransitioning(false);
+
+        // Lepaskan lock setelah render cycle navigasi selesai
+        setTimeout(() => {
+          isSanitizing.current = false;
+        }, 150);
       }, 800); 
       
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        isSanitizing.current = false;
+      };
     }
   }, [location.state, navigate, location.pathname, items, serverItems]);
 
@@ -155,7 +175,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
 
   const handleSearchTrigger = () => { setAppliedSearch(localSearch); setCurrentPage(1); };
   
-  // Fix: Corrected typo 'key0f' to 'keyof' in handleSort parameter
   const handleSort = (key: keyof LibraryItem) => {
     let direction: 'asc' | 'desc' | null = 'asc';
     if (sortConfig.key === key) {
@@ -166,7 +185,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
     setCurrentPage(1); 
   };
 
-  // Fix: Corrected typo 'key0f' to 'keyof' in getSortIcon parameter
   const getSortIcon = (key: keyof LibraryItem) => {
     if (sortConfig.key !== key) return <ArrowsUpDownIcon className="w-3 h-3 text-gray-300" />;
     if (sortConfig.direction === 'asc') return <ChevronUpIcon className="w-3 h-3 text-[#004A74]" />;
@@ -225,7 +243,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
     } catch { return '-'; }
   };
 
-  // Fix: Corrected typo 'key0f' to 'keyof' in tableColumns type definition
   const tableColumns: { key: keyof LibraryItem; label: string; width?: string }[] = [
     { key: 'title', label: 'Title', width: '300px' },
     { key: 'authors', label: 'Author(s)', width: '200px' },
@@ -285,7 +302,6 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
               <div className="absolute left-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[60] p-2 animate-in fade-in zoom-in-95">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-3 py-2 border-b border-gray-50 mb-1">Sort By</p>
                 {['title', 'authors', 'publisher', 'year', 'category', 'topic', 'subTopic', 'createdAt'].map((k) => (
-                  // Fix: Corrected typo 'key0f' to 'keyof' in sort menu click handler
                   <button key={k} onClick={() => { handleSort(k as keyof LibraryItem); setShowSortMenu(false); }} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${sortConfig.key === k ? 'bg-[#004A74]/10 text-[#004A74]' : 'text-gray-500 hover:bg-gray-50'}`}><span>{k}</span>{sortConfig.key === k && (sortConfig.direction === 'asc' ? <ChevronUpIcon className="w-3 h-3 stroke-[3]" /> : <ChevronDownIcon className="w-3 h-3 stroke-[3]" />)}</button>
                 ))}
               </div>
