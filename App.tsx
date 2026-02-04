@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -277,7 +278,7 @@ const App: React.FC = () => {
 
                 <Route path="/research/*" element={<GapFinderModule items={items} />} />
                 <Route path="/research/literature-review" element={<AllReview />} />
-                <Route path="/research/literature-review/:id" element={<ReviewDetail libraryItems={items} />} />
+                <Route path="/research/literature-review/:id" element={<ReviewDetail libraryItems={items} isMobileSidebarOpen={isMobileSidebarOpen} />} />
                 <Route path="/research/tracer" element={<TracerMain />} />
                 <Route path="/research/tracer/:id" element={<TracerDetail libraryItems={items} />} />
                 

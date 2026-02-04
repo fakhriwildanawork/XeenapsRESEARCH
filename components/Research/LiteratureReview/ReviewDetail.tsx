@@ -28,6 +28,7 @@ import ReviewSourceSelectorModal from './ReviewSourceSelectorModal';
 import { showXeenapsToast } from '../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../utils/confirmUtils';
 import { fetchFileContent } from '../../../services/gasService';
+import LibraryDetailView from '../../Library/LibraryDetailView';
 
 const LANG_OPTIONS = [
   { label: "English", code: "en" },
@@ -47,7 +48,12 @@ const LANG_OPTIONS = [
   { label: "Arabic", code: "ar" }
 ];
 
-const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems }) => {
+interface ReviewDetailProps {
+  libraryItems: LibraryItem[];
+  isMobileSidebarOpen?: boolean;
+}
+
+const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSidebarOpen }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
@@ -61,6 +67,9 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [translatingSynthesis, setTranslatingSynthesis] = useState(false);
   const [openTranslationMenu, setOpenTranslationMenu] = useState<string | null>(null);
+
+  // New state for seamless source detail overlay
+  const [selectedSourceForDetail, setSelectedSourceForDetail] = useState<LibraryItem | null>(null);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -213,7 +222,7 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const handleOpenSource = (libId: string) => {
     const lib = libraryItems.find(it => it.id === libId);
     if (lib) {
-      navigate('/', { state: { openItem: lib } });
+      setSelectedSourceForDetail(lib);
     }
   };
 
@@ -529,8 +538,17 @@ const ReviewDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         />
       )}
 
+      {selectedSourceForDetail && (
+        <LibraryDetailView 
+          item={selectedSourceForDetail} 
+          onClose={() => setSelectedSourceForDetail(null)} 
+          isLoading={false}
+          isMobileSidebarOpen={isMobileSidebarOpen}
+        />
+      )}
+
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
         
