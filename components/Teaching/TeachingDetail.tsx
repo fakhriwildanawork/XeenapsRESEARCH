@@ -222,26 +222,33 @@ const TeachingDetail: React.FC = () => {
     setIsPickerOpen(true);
   };
 
-  const handleResourceSelect = (data: any) => {
-    if (!item) return;
+  const handleResourceSelect = (data: any[]) => {
+    if (!item || !Array.isArray(data)) return;
+    
     if (pickerType === 'LIBRARY') {
       const current = item.referenceLinks || [];
-      if (!current.some(r => r.id === data.id)) {
-        handleFieldChange('referenceLinks', [...current, { id: data.id, title: data.title }]);
+      const newItems = data.filter(res => !current.some(r => r.id === res.id))
+                           .map(res => ({ id: res.id, title: res.title }));
+      if (newItems.length > 0) {
+        handleFieldChange('referenceLinks', [...current, ...newItems]);
       }
     } else if (pickerType === 'PRESENTATION') {
       const current = item.presentationId || [];
-      if (!current.some(p => p.id === data.id)) {
-        handleFieldChange('presentationId', [...current, { id: data.id, title: data.title, gSlidesId: data.gSlidesId }]);
+      const newItems = data.filter(res => !current.some(p => p.id === res.id))
+                           .map(res => ({ id: res.id, title: res.title, gSlidesId: res.gSlidesId }));
+      if (newItems.length > 0) {
+        handleFieldChange('presentationId', [...current, ...newItems]);
       }
     } else if (pickerType === 'QUESTION') {
       const current = item.questionBankId || [];
-      if (!current.some(q => q.id === data.id)) {
-        handleFieldChange('questionBankId', [...current, { 
-          id: data.id, 
-          label: data.customLabel || '', 
-          questionText: data.questionText 
-        }]);
+      const newItems = data.filter(res => !current.some(q => q.id === res.id))
+                           .map(res => ({ 
+                             id: res.id, 
+                             label: res.customLabel || '', 
+                             questionText: res.questionText 
+                           }));
+      if (newItems.length > 0) {
+        handleFieldChange('questionBankId', [...current, ...newItems]);
       }
     }
     setIsPickerOpen(false);

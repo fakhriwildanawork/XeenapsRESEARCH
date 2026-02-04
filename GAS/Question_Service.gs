@@ -1,4 +1,3 @@
-
 /**
  * XEENAPS PKM - AI QUESTION BANK SERVICE
  */
@@ -90,6 +89,7 @@ function getAllQuestionsFromRegistry(page = 1, limit = 20, search = "", bloomFil
     const optionsIdx = headers.indexOf('options');
     const bloomIdx = headers.indexOf('bloomLevel');
     const createdIdx = headers.indexOf('createdAt');
+    const colIdIdx = headers.indexOf('collectionId');
     const sortIdx = headers.indexOf(sortKey);
     
     const jsonFields = ['options', 'reasoningDistractors'];
@@ -100,17 +100,18 @@ function getAllQuestionsFromRegistry(page = 1, limit = 20, search = "", bloomFil
       // Bloom Level Filter
       if (bloomFilter !== "All" && row[bloomIdx] !== bloomFilter) return false;
 
-      // Smart Search Filter (Label, Question, Answer)
+      // Smart Search Filter (Label, Question, Answer, CollectionID)
       if (searchLower) {
         const labelMatch = String(row[labelIdx]).toLowerCase().includes(searchLower);
         const questionMatch = String(row[textIdx]).toLowerCase().includes(searchLower);
+        const sourceMatch = colIdIdx !== -1 ? String(row[colIdIdx]).toLowerCase().includes(searchLower) : false;
         let optionsMatch = false;
         try {
           const opts = JSON.parse(row[optionsIdx] || '[]');
           optionsMatch = opts.some(o => String(o.text).toLowerCase().includes(searchLower));
         } catch (e) {}
         
-        if (!labelMatch && !questionMatch && !optionsMatch) return false;
+        if (!labelMatch && !questionMatch && !optionsMatch && !sourceMatch) return false;
       }
 
       // Date Range Filter
@@ -216,10 +217,11 @@ function getQuestionsFromRegistry(collectionId, page = 1, limit = 20, search = "
       // Bloom Level Filter
       if (bloomFilter !== "All" && row[bloomIdx] !== bloomFilter) return false;
 
-      // Smart Search Filter (Label, Question, Answer)
+      // Smart Search Filter (Label, Question, Answer, CollectionID)
       if (searchLower) {
         const labelMatch = String(row[labelIdx]).toLowerCase().includes(searchLower);
         const questionMatch = String(row[textIdx]).toLowerCase().includes(searchLower);
+        const sourceMatch = colIdIdx !== -1 ? String(row[colIdIdx]).toLowerCase().includes(searchLower) : false;
         // Deep search in options array
         let optionsMatch = false;
         try {
@@ -227,7 +229,7 @@ function getQuestionsFromRegistry(collectionId, page = 1, limit = 20, search = "
           optionsMatch = opts.some(o => String(o.text).toLowerCase().includes(searchLower));
         } catch (e) {}
         
-        if (!labelMatch && !questionMatch && !optionsMatch) return false;
+        if (!labelMatch && !questionMatch && !optionsMatch && !sourceMatch) return false;
       }
 
       return true;
