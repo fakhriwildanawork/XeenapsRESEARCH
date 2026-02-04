@@ -14,8 +14,7 @@ import {
   StickyNote,
   Library,
   Check,
-  MoreVertical,
-  Edit2
+  MoreVertical
 } from 'lucide-react';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { StandardPrimaryButton, StandardQuickAccessBar, StandardQuickActionButton } from '../Common/ButtonComponents';
@@ -90,7 +89,6 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
         return await saveNote(updated, { description: "", attachments: [] });
       }
     );
-    // Feedback toast dihapus sesuai permintaan agar benar-benar silent
   };
 
   const handleBatchFavorite = async () => {
@@ -260,7 +258,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                      <Star size={20} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
                   </div>
 
-                  {/* Label Header Refined: Sparks & Label removed for cleaner look */}
+                  {/* Label Header Refined: Sparks & Label & Edit Pencil removed for cleaner look */}
                   <div className="mt-8 mb-4">
                      <h3 className="text-base font-black text-[#004A74] uppercase leading-tight line-clamp-2">{item.label}</h3>
                   </div>
@@ -278,8 +276,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                         <span className="text-[8px] font-black uppercase tracking-tighter">{formatShortDate(item.createdAt)}</span>
                      </div>
                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => { e.stopPropagation(); setSelectedNote(item); setIsFormOpen(true); }} className="p-2 text-gray-400 hover:text-[#004A74] hover:bg-gray-50 rounded-lg transition-all"><Edit2 size={14} /></button>
-                        <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={14} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(e, item.id); }} className="p-2 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={14} /></button>
                      </div>
                   </div>
                 </div>
@@ -305,7 +302,16 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
           collectionId={collectionId}
           libraryItems={libraryItems}
           onClose={() => setIsFormOpen(false)} 
-          onComplete={() => { setIsFormOpen(false); loadData(); }} 
+          onComplete={(newItem) => { 
+            setIsFormOpen(false); 
+            if (newItem) {
+              setItems(prev => {
+                const index = prev.findIndex(i => i.id === newItem.id);
+                return index > -1 ? prev.map(i => i.id === newItem.id ? newItem : i) : [newItem, ...prev];
+              });
+              setTotalCount(prev => prev + (items.some(i => i.id === newItem.id) ? 0 : 1));
+            }
+          }} 
         />
       )}
 
@@ -314,6 +320,9 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
           note={viewNote}
           isMobileSidebarOpen={isMobileSidebarOpen}
           onClose={() => setViewNote(null)}
+          onUpdate={(updated) => {
+            setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
+          }}
           onEdit={() => { setSelectedNote(viewNote); setViewNote(null); setIsFormOpen(true); }}
         />
       )}

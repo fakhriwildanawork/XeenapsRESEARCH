@@ -28,7 +28,7 @@ interface NoteFormProps {
   note?: NoteItem;
   collectionId?: string;
   onClose: () => void;
-  onComplete: () => void;
+  onComplete: (item: NoteItem) => void;
   libraryItems?: LibraryItem[];
 }
 
@@ -91,6 +91,7 @@ const RichEditor: React.FC<{ value: string; onChange: (v: string) => void }> = (
 const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComplete, libraryItems = [] }) => {
   const [isLoading, setIsLoading] = useState(!!note);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingUploadsCount, setPendingUploadsCount] = useState(0);
   
   const [metadata, setMetadata] = useState<NoteItem>(note || {
     id: crypto.randomUUID(),
@@ -150,6 +151,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
     };
 
     setContent(prev => ({ ...prev, attachments: [...prev.attachments, placeholder] }));
+    setPendingUploadsCount(prev => prev + 1);
 
     // START PARALLEL SYNC
     const uploadPromise = uploadNoteAttachment(file).then(result => {
@@ -177,6 +179,10 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
           attachments: prev.attachments.filter(at => at.fileId !== `pending_${tempId}`)
         }));
       }
+      setPendingUploadsCount(prev => Math.max(0, prev - 1));
+      uploadPromises.current.delete(tempId);
+    }).catch(() => {
+      setPendingUploadsCount(prev => Math.max(0, prev - 1));
       uploadPromises.current.delete(tempId);
     });
 
@@ -196,24 +202,23 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!metadata.label.trim()) return;
+    if (!metadata.label.trim() || pendingUploadsCount > 0) return;
 
-    // --- OPTIMISTIC UI: Close and Notify Parent Instantly ---
-    onComplete();
+    // --- OPTIMISTIC UI: Close and Notify Parent Instantly with updated metadata ---
+    const finalContent = { ...content };
+    let finalMetadata = { ...metadata, updatedAt: new Date().toISOString() };
+    if (finalMetadata.collectionId && libraryItems.length > 0) {
+      const col = libraryItems.find(it => it.id === finalMetadata.collectionId);
+      if (col) finalMetadata.collectionTitle = col.title;
+    }
+    
+    onComplete(finalMetadata);
     
     // START SILENT BACKGROUND PROCESS
     (async () => {
       if (uploadPromises.current.size > 0) {
         await Promise.all(uploadPromises.current.values());
       }
-
-      const finalContent = { ...content };
-      let finalMetadata = { ...metadata };
-      if (finalMetadata.collectionId && libraryItems.length > 0) {
-        const col = libraryItems.find(it => it.id === finalMetadata.collectionId);
-        if (col) finalMetadata.collectionTitle = col.title;
-      }
-      
       // Silent sync to cloud
       await saveNote(finalMetadata, finalContent);
     })();
@@ -272,13 +277,18 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
 
                     return (
                       <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4 group animate-in slide-in-from-bottom-2 relative overflow-hidden">
-                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#004A74]/30 shadow-sm overflow-hidden shrink-0">
+                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#004A74]/30 shadow-sm overflow-hidden shrink-0 relative">
                             {isImage ? (
                                <img src={at.url} className="w-full h-full object-cover" />
                             ) : at.type === 'LINK' ? (
                                <Globe size={18} />
                             ) : (
                                <FileIcon size={18} />
+                            )}
+                            {isPending && (
+                              <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
+                                <Loader2 size={16} className="text-[#004A74] animate-spin" />
+                              </div>
                             )}
                         </div>
                         <div className="flex-1 min-w-0 space-y-1">
@@ -306,7 +316,6 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
                             ) : (
                                <div className="flex items-center justify-between pr-2">
                                   <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{at.type}</span>
-                                  {isPending && <span className="text-[7px] font-black text-[#FED400] bg-[#004A74] px-1.5 py-0.5 rounded-full animate-pulse">Syncing</span>}
                                </div>
                             )}
                         </div>
@@ -328,8 +337,8 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
            <div className="pt-10 flex justify-end">
               <button 
                 type="submit" 
-                disabled={isSubmitting || !metadata.label.trim()}
-                className={`w-full md:w-auto px-12 py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all flex items-center justify-center gap-3 ${isSubmitting ? 'opacity-50' : 'hover:scale-105 active:scale-95'}`}
+                disabled={isSubmitting || !metadata.label.trim() || pendingUploadsCount > 0}
+                className={`w-full md:w-auto px-12 py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all flex items-center justify-center gap-3 ${isSubmitting || pendingUploadsCount > 0 ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
               >
                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                  {isSubmitting ? 'SYNCHRONIZING...' : 'AUTHORIZE & SAVE'}

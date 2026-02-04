@@ -9,24 +9,25 @@ import {
   ExternalLink, 
   FileIcon, 
   Globe, 
-  ArrowLeft,
-  Calendar,
-  Sparkles,
-  Library,
-  Trash2,
-  Plus,
-  Bold,
-  Italic,
-  Paperclip,
-  Image as ImageIcon,
-  Loader2,
-  Eye,
-  Link as LinkIcon
+  ArrowLeft, 
+  Calendar, 
+  Sparkles, 
+  Library, 
+  Trash2, 
+  Plus, 
+  Bold, 
+  Italic, 
+  Paperclip, 
+  Image as ImageIcon, 
+  Loader2, 
+  Eye, 
+  Link as LinkIcon 
 } from 'lucide-react';
 
 interface NoteDetailViewProps {
   note: NoteItem;
   onClose: () => void;
+  onUpdate?: (updatedNote: NoteItem) => void;
   onEdit?: () => void; 
   isMobileSidebarOpen?: boolean;
 }
@@ -90,7 +91,7 @@ const InlineRichEditor: React.FC<{ value: string; onChange: (v: string) => void 
   );
 };
 
-const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobileSidebarOpen }) => {
+const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, onUpdate, onEdit, isMobileSidebarOpen }) => {
   const [localNote, setLocalNote] = useState<NoteItem>(note);
   const [content, setContent] = useState<NoteContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -121,6 +122,9 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
   };
 
   const scheduleSync = (updatedMetadata: NoteItem, updatedContent: NoteContent) => {
+    // Notify Main UI instantly
+    if (onUpdate) onUpdate(updatedMetadata);
+
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       performSync(updatedMetadata, updatedContent);
@@ -182,29 +186,15 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
         ? `https://lh3.googleusercontent.com/d/${result.fileId}`
         : `https://drive.google.com/file/d/${result.fileId}/view`;
 
-      setContent(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          attachments: prev.attachments.map(at => 
-            at.fileId === `pending_${tempId}` 
-              ? { ...at, fileId: result.fileId, nodeUrl: result.nodeUrl, url: finalUrl } 
-              : at
-          )
-        };
-      });
-      // Final content sync after upload
-      const finalContent = {
-        ...content,
-        attachments: [{
-          type: 'FILE' as const,
-          label: file.name,
-          fileId: result.fileId,
-          nodeUrl: result.nodeUrl,
-          mimeType: result.mimeType,
-          url: finalUrl
-        }, ...content.attachments]
-      };
+      const finalAttachments = content.attachments.map(at => 
+        at.fileId === `pending_${tempId}` 
+          ? { ...at, fileId: result.fileId, nodeUrl: result.nodeUrl, url: finalUrl } 
+          : at
+      );
+
+      setContent(prev => prev ? { ...prev, attachments: finalAttachments } : null);
+      
+      const finalContent = { ...content, attachments: finalAttachments };
       performSync(localNote, finalContent);
     } else {
       // Silent rollback
@@ -269,7 +259,6 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
             </div>
          </div>
          <div className="flex items-center gap-3">
-            {/* isSyncing visual indicators removed for silent UX experience as requested */}
             <button onClick={onClose} className="p-2.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all active:scale-90">
                <X size={24} />
             </button>
