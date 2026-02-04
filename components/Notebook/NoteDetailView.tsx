@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { NoteItem, NoteContent, NoteAttachment, LibraryItem } from '../../types';
+import { NoteItem, NoteContent, NoteAttachment } from '../../types';
 import { fetchNoteContent } from '../../services/NoteService';
-// @ts-ignore
-import { useNavigate } from 'react-router-dom';
 import { 
   X, 
   Clock, 
@@ -13,11 +11,7 @@ import {
   Paperclip, 
   Eye, 
   Globe,
-  FileIcon,
-  ChevronRight,
-  ExternalLink,
-  // Fix: Added missing import for BookOpen
-  BookOpen
+  FileIcon
 } from 'lucide-react';
 
 interface NoteDetailViewProps {
@@ -25,16 +19,11 @@ interface NoteDetailViewProps {
   onClose: () => void;
   onUpdate?: (updatedNote: NoteItem) => void;
   isMobileSidebarOpen?: boolean;
-  libraryItems?: LibraryItem[];
 }
 
-const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobileSidebarOpen, libraryItems = [] }) => {
-  const navigate = useNavigate();
+const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobileSidebarOpen }) => {
   const [content, setContent] = useState<NoteContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Find source collection object for navigation
-  const sourceItem = libraryItems.find(it => it.id === note.collectionId);
 
   useEffect(() => {
     const load = async () => {
@@ -50,19 +39,6 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
     };
     load();
   }, [note]);
-
-  const handleGoToSource = () => {
-    if (sourceItem) {
-      // Navigate to Library (root path) and request to open the item, 
-      // passing the current note in state so we can return here instantly later
-      navigate('/', { 
-        state: { 
-          openItem: sourceItem, 
-          returnToNote: note 
-        } 
-      });
-    }
-  };
 
   const formatFullDate = (dateStr: string) => {
     try {
@@ -115,57 +91,33 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
                
                <div className="space-y-4">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Note Label / Summary Title</label>
-                  {/* Clean styling to avoid nested box conflict: Pure typography with yellow accent line */}
-                  <div className="w-full border-l-[10px] border-[#FED400] pl-8 py-4">
-                     <h1 className="text-2xl md:text-5xl font-black text-[#004A74] uppercase tracking-tighter leading-[1.1] mb-2">
+                  {/* Visual Fix: Simplified layout to avoid box-in-box conflict */}
+                  <div className="w-full border-l-8 border-[#FED400] pl-6 py-2">
+                     <h1 className="text-2xl md:text-5xl font-black text-[#004A74] uppercase tracking-tighter leading-tight">
                         {note.label}
                      </h1>
-                     <div className="flex items-center gap-6 text-gray-400">
-                        <div className="flex items-center gap-2">
-                           <Calendar size={14} className="text-[#FED400]" />
-                           <span className="text-[10px] font-bold uppercase tracking-widest">{formatFullDate(note.createdAt)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <Clock size={14} />
-                           <span className="text-[10px] font-bold uppercase tracking-widest">Last Synced: {new Date(note.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                     </div>
+                  </div>
+               </div>
+
+               <div className="flex items-center gap-6 pt-4 text-gray-400">
+                  <div className="flex items-center gap-2">
+                     <Calendar size={14} className="text-[#FED400]" />
+                     <span className="text-[10px] font-bold uppercase tracking-widest">{formatFullDate(note.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <Clock size={14} />
+                     <span className="text-[10px] font-bold uppercase tracking-widest">Last Synced: {new Date(note.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                </div>
             </header>
 
-            {/* NEW: SOURCE COLLECTION CARD - Shown if opened from main Notebook flow */}
-            {sourceItem && (
-               <section className="space-y-4 animate-in slide-in-from-left-4 duration-500">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 ml-1 flex items-center gap-2">
-                    <Library size={14} /> Knowledge Source Foundation
-                  </h3>
-                  <button 
-                    onClick={handleGoToSource}
-                    className="w-full bg-gray-50 border border-gray-100 p-6 rounded-[2.5rem] flex items-center justify-between group hover:border-[#004A74]/20 hover:bg-white hover:shadow-xl transition-all duration-500 text-left"
-                  >
-                     <div className="flex items-center gap-5 min-w-0">
-                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#004A74] shadow-sm group-hover:bg-[#004A74] group-hover:text-[#FED400] transition-all">
-                           {/* Fix: Added missing import for BookOpen */}
-                           <BookOpen size={28} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                           <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Related Collection</p>
-                           <h4 className="text-sm md:text-base font-black text-[#004A74] uppercase truncate leading-tight group-hover:text-blue-600 transition-colors">{sourceItem.title}</h4>
-                           <p className="text-[9px] font-bold text-gray-400 uppercase mt-1 tracking-tighter">{sourceItem.authors[0]} • {sourceItem.year} • {sourceItem.topic}</p>
-                        </div>
-                     </div>
-                     <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl group-hover:bg-[#FED400] group-hover:border-[#FED400] transition-all shadow-sm">
-                        <span className="text-[9px] font-black text-[#004A74] uppercase tracking-widest">View Source</span>
-                        <ChevronRight size={14} strokeWidth={3} className="text-[#004A74]" />
-                     </div>
-                  </button>
-               </section>
-            )}
-
             {isLoading ? (
               <div className="space-y-6">
                  <div className="h-[400px] w-full skeleton rounded-[3rem]" />
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="h-24 skeleton rounded-2xl" />
+                    <div className="h-24 skeleton rounded-2xl" />
+                 </div>
               </div>
             ) : (
               <div className="space-y-12 animate-in fade-in duration-700">
@@ -176,7 +128,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobile
                        <Sparkles size={14} className="text-[#FED400]" />
                        <span className="text-[10px] font-black uppercase tracking-[0.4em]">Synthesis Content</span>
                     </div>
-                    <div className="bg-white p-8 md:p-12 border border-gray-100 rounded-[3rem] shadow-xl relative min-h-[400px] overflow-hidden">
+                    <div className="bg-white p-8 md:p-12 border border-gray-100 rounded-[3rem] shadow-xl relative min-h-[400px]">
                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#FED400]/5 -translate-y-24 translate-x-24 rounded-full" />
                        <div 
                          className="text-sm md:text-lg leading-[1.8] text-[#004A74] font-medium relative z-10 note-body-output"

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
+// Fix: Added missing SupportingData import from types to resolve the error on line 413
 import { LibraryItem, PubInfo, Identifiers, SupportingData } from '../../types';
 import { 
   XMarkIcon, 
@@ -32,9 +33,7 @@ import {
   TrashIcon,
   CheckIcon,
   LanguageIcon,
-  ChatBubbleLeftRightIcon,
-  // Fix: Added missing import for BuildingLibraryIcon
-  BuildingLibraryIcon
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { 
   BookmarkIcon as BookmarkSolid, 
@@ -561,15 +560,6 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const handleBack = () => {
     const state = location.state as any;
 
-    // --- NEW: RETURN TO NOTE RE-HYDRATION ---
-    if (state?.returnToNote) {
-       navigate('/notebook', { 
-         state: { reopenNote: state.returnToNote }, 
-         replace: true 
-       });
-       return;
-    }
-
     // 1. Check for specific module return flags (Complex Redirects)
     if (state?.returnToTracerProject) {
       navigate(`/research/tracer/${state.returnToTracerProject}`, { 
@@ -1095,12 +1085,22 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         )}
       </div>
 
-      {/* FOOTER */}
-      <footer className="py-20 text-center opacity-20">
-         {/* Fix: Added missing import for BuildingLibraryIcon */}
-         <BuildingLibraryIcon className="w-12 h-12 mx-auto mb-4 text-[#004A74]" />
-         <p className="text-[8px] font-black uppercase tracking-[0.8em]">XEENAPS TRANSIT ARCHIVE</p>
-      </footer>
+      {showTips && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-[#004A74] text-white p-8 md:p-12 rounded-[3rem] max-w-lg shadow-2xl relative border border-white/10">
+            <button onClick={() => setShowTips(false)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all"><XMarkIcon className="w-6 h-6" /></button>
+            <LightBulbIcon className="w-10 h-10 text-[#FED400] mb-6 drop-shadow-[0_0_10px_rgba(254,212,0,0.5)]" />
+            <h3 className="text-xl font-black mb-4 uppercase tracking-widest">Knowledge Anchor Tips</h3>
+            <p className="text-sm font-medium italic leading-relaxed opacity-90 border-l-2 border-[#FED400] pl-4">"{currentItem.quickTipsForYou || 'Generate AI insights to unlock specific tips for this collection.'}"</p>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #004A7430; border-radius: 10px; }
+      `}</style>
     </div>
   );
 }; 

@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// @ts-ignore
-import { useLocation, useNavigate } from 'react-router-dom';
 import { NoteItem, NoteContent, LibraryItem } from '../../types';
 import { fetchNotesPaginated, deleteNote, saveNote } from '../../services/NoteService';
 import { 
@@ -39,8 +37,6 @@ interface NotebookMainProps {
 
 const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collectionId = "", onBackToLibrary, isMobileSidebarOpen }) => {
   const workflow = useAsyncWorkflow(30000);
-  const location = useLocation();
-  const navigate = useNavigate();
   const { performUpdate, performDelete } = useOptimisticUpdate<NoteItem>();
   
   const [items, setItems] = useState<NoteItem[]>([]);
@@ -56,16 +52,6 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
   const [viewNote, setViewNote] = useState<NoteItem | null>(null);
 
   const itemsPerPage = 12;
-
-  // --- STATE RECOVERY LOGIC: Instantly reopen note if returned from Library ---
-  useEffect(() => {
-    const state = location.state as any;
-    if (state?.reopenNote) {
-      setViewNote(state.reopenNote);
-      // Clean up state immediately after recovery
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location.state, navigate, location.pathname]);
 
   const loadData = useCallback(() => {
     workflow.execute(
@@ -351,7 +337,6 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
       {viewNote && (
         <NoteDetailView 
           note={viewNote}
-          libraryItems={libraryItems}
           isMobileSidebarOpen={isMobileSidebarOpen}
           onClose={() => setViewNote(null)}
           onUpdate={(updated) => {
