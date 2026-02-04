@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -116,11 +117,31 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [currentPage, appliedSearch, activeBloomFilter, startDate, endDate, itemsPerPage, sortConfig]);
+  }, [currentPage, appliedSearch, activeBloomFilter, startDate, endDate, itemsPerPage, sortConfig, workflow.execute]);
 
   useEffect(() => {
     loadQuestions();
   }, [loadQuestions]);
+
+  // --- GLOBAL SYNC LISTENER ---
+  useEffect(() => {
+    const handleGlobalUpdate = (e: any) => {
+      const updatedQ = e.detail as QuestionItem;
+      setQuestions(prev => {
+        const index = prev.findIndex(q => q.id === updatedQ.id);
+        return index > -1 ? prev.map(q => q.id === updatedQ.id ? updatedQ : q) : [updatedQ, ...prev];
+      });
+    };
+    const handleGlobalDelete = (e: any) => {
+      setQuestions(prev => prev.filter(q => q.id !== e.detail));
+    };
+    window.addEventListener('xeenaps-question-updated', handleGlobalUpdate);
+    window.addEventListener('xeenaps-question-deleted', handleGlobalDelete);
+    return () => {
+      window.removeEventListener('xeenaps-question-updated', handleGlobalUpdate);
+      window.removeEventListener('xeenaps-question-deleted', handleGlobalDelete);
+    };
+  }, []);
 
   useEffect(() => {
     const state = location.state as any;
@@ -184,15 +205,19 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
   const handleDelete = async (id: string) => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      // OPTIMISTIC DELETE
       await performDelete(
         questions,
         setQuestions,
         [id],
         async (qid) => await deleteQuestion(qid),
-        () => showXeenapsToast('error', 'Sync failed. Item restored.')
+        () => {
+          showXeenapsAlert({ icon: 'error', title: 'DELETE FAILED', text: 'Server error occurred.' });
+        }
       );
-      setSelectedIds(prev => prev.filter(i => i !== id));
-      showXeenapsToast('success', 'Question removed.');
+
+      if (selectedQuestionDetail?.id === id) setSelectedQuestionDetail(null);
+      // Success toast removed for SILENT UPDATE
     }
   };
 
@@ -203,16 +228,18 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
     
     const idsToDelete = [...selectedIds];
     setSelectedIds([]);
+
+    // OPTIMISTIC DELETE
     await performDelete(
       questions,
       setQuestions,
       idsToDelete,
       async (id) => await deleteQuestion(id),
       () => {
-        showXeenapsToast('error', 'Bulk sync failed. Items restored.');
+        showXeenapsAlert({ icon: 'error', title: 'SYNC FAILED', text: 'Server error occurred during deletion.' });
       }
     );
-    showXeenapsToast('success', 'Bulk deletion processed.');
+    // Success toast removed for SILENT UPDATE
   };
 
   const formatShortDate = (dateStr: string) => {

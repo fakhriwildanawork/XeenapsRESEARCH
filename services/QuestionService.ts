@@ -77,7 +77,15 @@ export const generateQuestionsWorkflow = async (
       })
     });
     const result = await res.json();
-    return result.status === 'success' ? result.data : null;
+    
+    if (result.status === 'success' && Array.isArray(result.data)) {
+      // SILENT BROADCAST FOR EACH GENERATED QUESTION
+      result.data.forEach((q: QuestionItem) => {
+        window.dispatchEvent(new CustomEvent('xeenaps-question-updated', { detail: q }));
+      });
+      return result.data;
+    }
+    return null;
   } catch (error) {
     console.error("Question Generation Error:", error);
     return null;
@@ -85,7 +93,7 @@ export const generateQuestionsWorkflow = async (
 };
 
 /**
- * NEW: Save or Update a single question record (Manual Entry)
+ * NEW: Save or Update a single question record (Manual Entry) with SILENT BROADCAST
  */
 export const saveQuestionRecord = async (item: QuestionItem): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
@@ -95,13 +103,24 @@ export const saveQuestionRecord = async (item: QuestionItem): Promise<boolean> =
       body: JSON.stringify({ action: 'saveQuestion', item })
     });
     const result = await res.json();
-    return result.status === 'success';
+    
+    if (result.status === 'success') {
+      window.dispatchEvent(new CustomEvent('xeenaps-question-updated', { detail: item }));
+      return true;
+    }
+    return false;
   } catch (e) {
     return false;
   }
 };
 
+/**
+ * Delete Question with SILENT BROADCAST
+ */
 export const deleteQuestion = async (id: string): Promise<boolean> => {
+  // SILENT BROADCAST FOR REAL-TIME SYNC & CASCADE CLEANUP
+  window.dispatchEvent(new CustomEvent('xeenaps-question-deleted', { detail: id }));
+
   try {
     const res = await fetch(GAS_WEB_APP_URL!, {
       method: 'POST',

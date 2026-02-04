@@ -159,6 +159,18 @@ const App: React.FC = () => {
       })));
     };
 
+    // 7. Question Listeners (CASCADE CLEANUP LOGIC)
+    const handleQuestionDelete = (e: any) => {
+      const deletedId = e.detail;
+      // Real-time cleanup of question references in Teaching Sessions
+      setTeachingItems(prev => prev.map(session => ({
+        ...session,
+        questionBankId: Array.isArray(session.questionBankId)
+          ? session.questionBankId.filter(q => q.id !== deletedId)
+          : []
+      })));
+    };
+
     window.addEventListener('xeenaps-library-updated', handleLibraryUpdate);
     window.addEventListener('xeenaps-library-deleted', handleLibraryDelete);
     window.addEventListener('xeenaps-teaching-updated', handleTeachingUpdate);
@@ -170,6 +182,7 @@ const App: React.FC = () => {
     window.addEventListener('xeenaps-publication-updated', handlePublicationUpdate);
     window.addEventListener('xeenaps-publication-deleted', handlePublicationDelete);
     window.addEventListener('xeenaps-presentation-deleted', handlePresentationDelete);
+    window.addEventListener('xeenaps-question-deleted', handleQuestionDelete);
 
     return () => {
       window.removeEventListener('xeenaps-library-updated', handleLibraryUpdate);
@@ -183,6 +196,7 @@ const App: React.FC = () => {
       window.removeEventListener('xeenaps-publication-updated', handlePublicationUpdate);
       window.removeEventListener('xeenaps-publication-deleted', handlePublicationDelete);
       window.removeEventListener('xeenaps-presentation-deleted', handlePresentationDelete);
+      window.removeEventListener('xeenaps-question-deleted', handleQuestionDelete);
     };
   }, []);
 

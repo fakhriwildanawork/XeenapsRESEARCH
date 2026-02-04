@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { QuestionItem, LibraryItem, BloomsLevel } from '../../types';
 import { fetchRelatedQuestions, deleteQuestion } from '../../services/QuestionService';
@@ -97,11 +98,34 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
       () => setIsLoading(false),
       () => setIsLoading(false)
     );
-  }, [collection.id, currentPage, appliedSearch, activeBloomFilter, itemsPerPage]);
+  }, [collection.id, currentPage, appliedSearch, activeBloomFilter, itemsPerPage, workflow.execute]);
 
   useEffect(() => {
     loadQuestions();
   }, [loadQuestions]);
+
+  // --- GLOBAL SYNC LISTENER ---
+  useEffect(() => {
+    const handleGlobalUpdate = (e: any) => {
+      const updatedQ = e.detail as QuestionItem;
+      // Only care if it belongs to this collection
+      if (updatedQ.collectionId === collection.id) {
+        setQuestions(prev => {
+          const index = prev.findIndex(q => q.id === updatedQ.id);
+          return index > -1 ? prev.map(q => q.id === updatedQ.id ? updatedQ : q) : [updatedQ, ...prev];
+        });
+      }
+    };
+    const handleGlobalDelete = (e: any) => {
+      setQuestions(prev => prev.filter(q => q.id !== e.detail));
+    };
+    window.addEventListener('xeenaps-question-updated', handleGlobalUpdate);
+    window.addEventListener('xeenaps-question-deleted', handleGlobalDelete);
+    return () => {
+      window.removeEventListener('xeenaps-question-updated', handleGlobalUpdate);
+      window.removeEventListener('xeenaps-question-deleted', handleGlobalDelete);
+    };
+  }, [collection.id]);
 
   const handleSearchTrigger = () => {
     setCurrentPage(1);
@@ -128,6 +152,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      // OPTIMISTIC DELETE
       await performDelete(
         questions,
         setQuestions,
@@ -136,7 +161,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
         () => showXeenapsToast('error', 'Sync failed. Item restored.')
       );
       setSelectedIds(prev => prev.filter(i => i !== id));
-      showXeenapsToast('success', 'Question removed.');
+      // Success toast removed for SILENT UPDATE
     }
   };
 
@@ -146,6 +171,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
     if (confirmed) {
       const idsToDelete = [...selectedIds];
       setSelectedIds([]);
+      // OPTIMISTIC DELETE
       await performDelete(
         questions,
         setQuestions,
@@ -153,7 +179,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
         async (id) => await deleteQuestion(id),
         () => showXeenapsToast('error', 'Bulk sync failed. Items restored.')
       );
-      showXeenapsToast('success', 'Bulk deletion processed.');
+      // Success toast removed for SILENT UPDATE
     }
   };
 
@@ -404,9 +430,10 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
       </div>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #004A7420; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #004A7430; }
       `}</style>
     </div>
   );
