@@ -18,14 +18,18 @@ import {
   TextSearch,
   BrainCog,
   BookUp,
-  School,
+  Grip,
   Footprints,
   ListTodo,
   NotebookPen,
   CircleUserRound,
   BookOpen,
   Users,
-  FileUser
+  FileUser,
+  Award,
+  Youtube,
+  FileText,
+  Book
 } from 'lucide-react';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
 
@@ -38,6 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
   const [isHoverExpanded, setIsHoverExpanded] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [researchMenuOpen, setResearchMenuOpen] = useState(false);
+  const [findLiteratureMenuOpen, setFindLiteratureMenuOpen] = useState(false);
   const location = useLocation();
 
   const navItemsBlock1 = [
@@ -46,13 +51,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
     { name: 'Library', path: '/', icon: LibraryBig },
     { name: 'Favorite', path: '/favorite', icon: Star },
     { name: 'Bookmark', path: '/bookmark', icon: Bookmark },
-    { name: 'Find Article', path: '/find-article', icon: FileSearch },
-    { name: 'Literature Review', path: '/research/literature-review', icon: BookOpen },
   ];
 
   const navItemsBlock2 = [
-    { name: 'Teaching', path: '/teaching', icon: School },
-    { name: 'Activities', path: '/activities', icon: Footprints },
+    { name: 'Teaching', path: '/teaching', icon: Grip },
+    { name: 'Activities', path: '/activities', icon: Award },
     { name: 'Presentation', path: '/presentations', icon: Presentation },
     { name: 'Question Bank', path: '/questions', icon: ListTodo },
     { name: 'Notebook', path: '/notebook', icon: NotebookPen },
@@ -60,6 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
     { name: 'Colleague', path: '/colleagues', icon: Users },
     { name: 'CV Generator', path: '/cv-architect', icon: FileUser },
     { name: 'Profile', path: '/profile', icon: CircleUserRound },
+    { name: 'Tutorial', path: '#', icon: Youtube, inactive: false, isExternal: true },
   ];
 
   // Combined state: expanded if hovered on desktop, or if it's open on mobile
@@ -137,6 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         setIsHoverExpanded(false);
         setSettingsMenuOpen(false);
         setResearchMenuOpen(false);
+        setFindLiteratureMenuOpen(false);
       }}
     >
       {/* Top: Logo Section */}
@@ -173,7 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
 
       {/* Menu Area */}
       <nav className="flex-1 mt-4 lg:mt-6 px-2 space-y-1 lg:space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
-        {/* Block 1: Items 1-6 */}
+        {/* Block 1: Items 1-5 */}
         {navItemsBlock1.map((item) => {
           const isActive = location.pathname === item.path;
 
@@ -218,16 +223,70 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           );
         })}
 
+        {/* Find Literature Dropdown */}
+        <div className="relative" onMouseEnter={() => isExpanded && setFindLiteratureMenuOpen(true)}>
+          <button 
+            onClick={() => isExpanded && setFindLiteratureMenuOpen(!findLiteratureMenuOpen)}
+            className={`w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 ${
+              findLiteratureMenuOpen || location.pathname === '/find-article' ? 'bg-[#FED400]/10 text-black' : 'text-black hover:bg-[#FED400]/5 hover:text-black'
+            }`}
+          >
+            <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
+              <FileSearch size={18} strokeWidth={location.pathname === '/find-article' ? 2.5 : 2} className="lg:w-5 lg:h-5" />
+            </div>
+            <div className={`flex-1 ml-2 flex items-center justify-between overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
+              <span className="text-xs md:text-sm font-semibold whitespace-nowrap">Find Literature</span>
+              <ChevronDown size={14} className={`transition-transform duration-300 ${findLiteratureMenuOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </button>
+
+          <div className={`overflow-hidden transition-all duration-500 ease-in-out space-y-1 mt-1 ${findLiteratureMenuOpen && isExpanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 invisible'}`}>
+            <NavLink 
+              to="/find-article"
+              onClick={handleNavClick}
+              className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/find-article' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
+            >
+              <FileText size={14} className="mr-2 shrink-0" />
+              <span className="whitespace-nowrap">Article</span>
+            </NavLink>
+            <div 
+              className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-black/30 cursor-not-allowed transition-all text-xs md:text-sm font-medium"
+              title="Coming Soon"
+            >
+              <Book size={14} className="mr-2 shrink-0" />
+              <span className="whitespace-nowrap">Book</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Literature Review Link */}
+        <NavLink
+          to="/research/literature-review"
+          onClick={handleNavClick}
+          className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
+            location.pathname === '/research/literature-review' 
+              ? 'bg-[#FED400] text-black shadow-md' 
+              : 'text-black hover:bg-[#FED400]/5 hover:text-black'
+          }`}
+        >
+          <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
+            <BookOpen size={18} strokeWidth={location.pathname === '/research/literature-review' ? 2.5 : 2} className="lg:w-5 lg:h-5" />
+          </div>
+          <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
+            <span className="text-xs md:text-sm font-semibold whitespace-nowrap">Literature Review</span>
+          </div>
+        </NavLink>
+
         {/* 7. Research Dropdown */}
         <div className="relative" onMouseEnter={() => isExpanded && setResearchMenuOpen(true)}>
           <button 
             onClick={() => isExpanded && setResearchMenuOpen(!researchMenuOpen)}
             className={`w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 ${
-              researchMenuOpen || location.pathname.startsWith('/research') ? 'bg-[#FED400]/10 text-black' : 'text-black hover:bg-[#FED400]/5 hover:text-black'
+              researchMenuOpen || location.pathname.startsWith('/research') && location.pathname !== '/research/literature-review' ? 'bg-[#FED400]/10 text-black' : 'text-black hover:bg-[#FED400]/5 hover:text-black'
             }`}
           >
             <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
-              <Search size={18} strokeWidth={location.pathname.startsWith('/research') ? 2.5 : 2} className="lg:w-5 lg:h-5" />
+              <Search size={18} strokeWidth={location.pathname.startsWith('/research') && location.pathname !== '/research/literature-review' ? 2.5 : 2} className="lg:w-5 lg:h-5" />
             </div>
             <div className={`flex-1 ml-2 flex items-center justify-between overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
               <span className="text-xs md:text-sm font-semibold whitespace-nowrap">Research</span>
@@ -271,9 +330,58 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           </div>
         </div>
 
-        {/* Block 2: Items 8-16 */}
+        {/* Block 2: Items 8-16 + Tutorial */}
         {navItemsBlock2.map((item) => {
           const isActive = location.pathname.startsWith(item.path) && (item.path !== '/' || location.pathname === '/');
+          
+          if ((item as any).inactive) {
+            return (
+              <div
+                key={item.name}
+                className="relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 overflow-hidden text-black/30 cursor-not-allowed"
+                title="Coming Soon"
+              >
+                <div className="shrink-0 flex items-center justify-center w-7 md:w-8">
+                  <item.icon size={18} strokeWidth={2} className="lg:w-5 lg:h-5" />
+                </div>
+                <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
+                  <span className="text-xs md:text-sm font-semibold whitespace-nowrap">{item.name}</span>
+                </div>
+              </div>
+            );
+          }
+
+          if ((item as any).isExternal) {
+            return (
+              <button
+                key={item.name}
+                onClick={async () => {
+                  handleNavClick();
+                  const spreadsheetUrl = SPREADSHEET_CONFIG.TUTORIAL_CSV;
+                  try {
+                    const response = await fetch(spreadsheetUrl);
+                    const csvData = await response.text();
+                    const firstLine = csvData.split('\n')[0];
+                    const targetLink = firstLine.split(',')[0].replace(/"/g, '').trim();
+                    if (targetLink && targetLink.startsWith('http')) {
+                      window.open(targetLink, '_blank', 'noopener,noreferrer');
+                    }
+                  } catch (e) {
+                    console.error('Failed to fetch tutorial link', e);
+                  }
+                }}
+                className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden text-black hover:bg-[#FED400]/5 hover:text-black`}
+              >
+                <div className="shrink-0 flex items-center justify-center w-7 md:w-8 group-hover:scale-110 transition-transform duration-300">
+                  <item.icon size={18} strokeWidth={2} className="lg:w-5 lg:h-5" />
+                </div>
+                <div className={`ml-2 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'}`}>
+                  <span className="text-xs md:text-sm font-semibold whitespace-nowrap">{item.name}</span>
+                </div>
+              </button>
+            );
+          }
+
           return (
             <NavLink
               key={item.name}
