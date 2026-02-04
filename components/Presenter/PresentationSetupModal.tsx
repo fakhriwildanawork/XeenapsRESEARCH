@@ -38,7 +38,7 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
   const [formData, setFormData] = useState({
     title: item ? `Insights: ${item.title}` : 'Cross-Source Analysis',
     context: '',
-    presenters: ['Xeenaps User'],
+    presenters: [] as string[], // Changed from ['Xeenaps User'] to empty to allow instant profile sync
     slidesCount: 8,
     primaryColor: '#004A74',
     secondaryColor: '#FED400',
@@ -52,7 +52,10 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
       setIsProfileLoading(true);
       try {
         const name = await getCleanedProfileName();
-        setFormData(prev => ({ ...prev, presenters: [name] }));
+        // Only set if name is valid and not the generic fallback
+        if (name && name !== "Xeenaps User") {
+          setFormData(prev => ({ ...prev, presenters: [name] }));
+        }
       } catch (e) {
         console.error("Failed to load profile for presenter", e);
       } finally {
@@ -82,7 +85,7 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
       const result = await createPresentationWorkflow(selectedSources, {
         title: formData.title,
         context: formData.context,
-        presenters: formData.presenters,
+        presenters: formData.presenters.length > 0 ? formData.presenters : ['Xeenaps User'],
         theme: {
           primaryColor: formData.primaryColor,
           secondaryColor: formData.secondaryColor,
@@ -271,7 +274,7 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
                     multiValues={formData.presenters}
                     onAddMulti={(v) => setFormData({...formData, presenters: [...formData.presenters, v]})}
                     onRemoveMulti={(v) => setFormData({...formData, presenters: formData.presenters.filter(p => p !== v)})}
-                    options={['Xeenaps User']}
+                    options={[]} // Explicitly removed 'Xeenaps User' fallback
                     placeholder="Type presenter name..."
                     value="" onChange={() => {}}
                   />
