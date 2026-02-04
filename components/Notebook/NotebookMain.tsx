@@ -14,7 +14,8 @@ import {
   Library,
   Check,
   MoreVertical,
-  ArrowLeft
+  ArrowLeft,
+  Pencil
 } from 'lucide-react';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { StandardPrimaryButton, StandardQuickAccessBar, StandardQuickActionButton } from '../Common/ButtonComponents';
@@ -160,13 +161,10 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
     return items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite);
   }, [items, selectedIds]);
 
-  const handleEditNoteTransition = (note: NoteItem) => {
+  const handleEditDirect = (e: React.MouseEvent, note: NoteItem) => {
+    e.stopPropagation();
     setSelectedNote(note);
     setIsFormOpen(true);
-    // Micro-delay to ensure NoteForm mounts before NoteDetailView unmounts
-    setTimeout(() => {
-      setViewNote(null);
-    }, 50);
   };
 
   return (
@@ -294,6 +292,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                         <span className="text-[8px] font-black uppercase tracking-tighter">{formatShortDate(item.createdAt)}</span>
                      </div>
                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => handleEditDirect(e, item)} className="p-2 text-blue-200 hover:text-[#004A74] hover:bg-blue-50 rounded-lg transition-all"><Pencil size={14} /></button>
                         <button onClick={(e) => { e.stopPropagation(); handleDelete(e, item.id); }} className="p-2 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={14} /></button>
                      </div>
                   </div>
@@ -343,12 +342,10 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
           onUpdate={(updated) => {
             setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
           }}
-          onEdit={() => handleEditNoteTransition(viewNote)}
         />
       )}
     </div>
   );
 };
-
 
 export default NotebookMain;

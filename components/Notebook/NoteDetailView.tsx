@@ -10,7 +10,6 @@ import {
   Library, 
   Paperclip, 
   Eye, 
-  Pencil,
   Globe,
   FileIcon
 } from 'lucide-react';
@@ -19,11 +18,10 @@ interface NoteDetailViewProps {
   note: NoteItem;
   onClose: () => void;
   onUpdate?: (updatedNote: NoteItem) => void;
-  onEdit?: () => void; 
   isMobileSidebarOpen?: boolean;
 }
 
-const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, onEdit, isMobileSidebarOpen }) => {
+const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, isMobileSidebarOpen }) => {
   const [content, setContent] = useState<NoteContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -73,15 +71,6 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, onEdit, 
             </div>
          </div>
          <div className="flex items-center gap-3">
-            {onEdit && (
-              <button 
-                onClick={onEdit}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#FED400] text-[#004A74] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:scale-105 active:scale-95 transition-all"
-              >
-                <Pencil size={14} strokeWidth={3} />
-                <span className="hidden sm:inline">Edit Note</span>
-              </button>
-            )}
             <button onClick={onClose} className="p-2.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all active:scale-90">
                <X size={24} />
             </button>
@@ -92,7 +81,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, onEdit, 
          <div className="max-w-5xl mx-auto p-6 md:p-12 space-y-12">
             
             {/* Read-Only Identity Section */}
-            <header className="space-y-6">
+            <header className="space-y-8">
                <div className="flex flex-wrap gap-2">
                   <span className="px-3 py-1 bg-[#004A74] text-white text-[8px] font-black uppercase tracking-widest rounded-full">Knowledge Anchor</span>
                   {note.collectionId && (
@@ -102,9 +91,9 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, onEdit, 
                
                <div className="space-y-4">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Note Label / Summary Title</label>
-                  {/* Simplified styling to avoid box-in-box conflict seen in screenshot */}
-                  <div className="w-full bg-[#004A74]/5 border-l-8 border-[#FED400] px-8 py-10 rounded-3xl">
-                     <h1 className="text-2xl md:text-4xl font-black text-[#004A74] uppercase tracking-tighter leading-tight">
+                  {/* Visual Fix: Simplified layout to avoid box-in-box conflict */}
+                  <div className="w-full border-l-8 border-[#FED400] pl-6 py-2">
+                     <h1 className="text-2xl md:text-5xl font-black text-[#004A74] uppercase tracking-tighter leading-tight">
                         {note.label}
                      </h1>
                   </div>
@@ -219,6 +208,5 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, onClose, onEdit, 
     </div>
   );
 };
-
 
 export default NoteDetailView;
