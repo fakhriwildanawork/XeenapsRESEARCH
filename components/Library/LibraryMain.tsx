@@ -101,7 +101,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
     }
   }, [globalSearch]);
 
-  // RESET VIEW LOGIC: Diperbaiki agar tidak menutup modal saat pembersihan state internal
+  // RESET VIEW LOGIC: Diperbaiki agar deterministik dan mengabaikan navigasi sanitasi
   useEffect(() => {
     const state = location.state as any;
     const pathChanged = prevPathname.current !== location.pathname;
@@ -113,15 +113,24 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
         containerRef.current.scrollTop = 0;
       }
     } 
-    else if (!state?.openItem && !isSanitizing.current && !isTransitioning) {
-      // Hanya reset jika state kosong DAN bukan karena proses sanitasi internal (e.g. tombol Back)
-      setSelectedItem(null);
+    else {
+      // Path masih sama, periksa apakah ada item di state atau sedang dalam proses sanitasi
+      if (!state?.openItem && !isTransitioning) {
+        if (isSanitizing.current) {
+          // Navigasi ini adalah hasil dari pembersihan state internal (sanitasi)
+          // Berhasil dibersihkan, lepaskan kunci untuk navigasi berikutnya
+          isSanitizing.current = false;
+        } else {
+          // Tidak ada item di state dan tidak sedang sanitasi, berarti user ingin menutup modal (e.g. Back button)
+          setSelectedItem(null);
+        }
+      }
     }
     
     prevPathname.current = location.pathname;
   }, [location.pathname, location.key, isTransitioning]);
 
-  // DATA RE-HYDRATION LOGIC: Dilengkapi dengan mekanisme 'Lock' sanitasi
+  // DATA RE-HYDRATION LOGIC: Mengaktifkan kunci sanitasi sebelum navigasi 'replace'
   useEffect(() => {
     const state = location.state as any;
     if (state?.openItem) {
@@ -138,21 +147,15 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
       const timer = setTimeout(() => {
         const { openItem, ...rest } = state;
         
-        // AKTIFKAN LOCK: Beritahu logic reset untuk mengabaikan navigasi 'replace' ini
+        // AKTIFKAN KUNCI: Beritahu logic reset untuk mengabaikan navigasi pembersihan ini
         isSanitizing.current = true;
         
         navigate(location.pathname, { replace: true, state: rest });
         setIsTransitioning(false);
-
-        // Lepaskan lock setelah render cycle navigasi selesai
-        setTimeout(() => {
-          isSanitizing.current = false;
-        }, 150);
       }, 800); 
       
       return () => {
         clearTimeout(timer);
-        isSanitizing.current = false;
       };
     }
   }, [location.state, navigate, location.pathname, items, serverItems]);
@@ -326,7 +329,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {isDataLoading ? <TableSkeletonRows count={8} /> : serverItems.length === 0 ? <tr><td colSpan={tableColumns.length + 1} className="px-6 py-24 text-center"><div className="flex flex-col items-center justify-center space-y-2"><div className="p-4 bg-gray-50 rounded-full"><PlusIcon className="w-8 h-8 text-gray-300" /></div><p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No Collection Found</p></div></td></tr> : serverItems.map((item) => (
+                {isDataLoading ? <TableSkeletonRows count={8} /> : serverItems.length === 0 ? <tr key="empty"><td colSpan={tableColumns.length + 1} className="px-6 py-24 text-center"><div className="flex flex-col items-center justify-center space-y-2"><div className="p-4 bg-gray-50 rounded-full"><PlusIcon className="w-8 h-8 text-gray-300" /></div><p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No Collection Found</p></div></td></tr> : serverItems.map((item) => (
                   <StandardTr key={item.id} className="cursor-pointer" onClick={() => setSelectedItem(item)}>
                     <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={(e) => e.stopPropagation()}><StandardCheckbox checked={selectedIds.includes(item.id)} onChange={() => toggleSelectItem(item.id)} /></td>
                     
