@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LibraryItem, PubInfo, Identifiers } from '../../types';
+// Fix: Added missing SupportingData import from types to resolve the error on line 413
+import { LibraryItem, PubInfo, Identifiers, SupportingData } from '../../types';
 import { 
   XMarkIcon, 
   ArrowLeftIcon,
@@ -410,7 +411,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const pubInfo: PubInfo = useMemo(() => parseJsonField(currentItem.pubInfo), [currentItem.pubInfo]);
   const identifiers: Identifiers = useMemo(() => parseJsonField(currentItem.identifiers), [currentItem.identifiers]);
   const tags = useMemo(() => parseJsonField(currentItem.tags, { keywords: [], labels: [] }), [currentItem.tags]);
-  const supportingData = useMemo(() => parseJsonField(currentItem.supportingReferences, { references: [], videoUrl: null }), [currentItem.supportingReferences]);
+  const supportingData: SupportingData = useMemo(() => parseJsonField(currentItem.supportingReferences, { references: [], videoUrl: null }), [currentItem.supportingReferences]);
   
   const displayDate = formatDate(currentItem.fullDate || currentItem.year);
   const authorsText = Array.isArray(currentItem.authors) ? currentItem.authors.join(', ') : (currentItem.authors || 'Unknown');
@@ -595,16 +596,27 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
     }
 
     if (state?.returnToAudit) {
-      // FIX: Smart detection between Brainstorming vs Gap Finder
-      if (state.returnToAudit.roughIdea !== undefined) {
+      const audit = state.returnToAudit;
+      // FIX: Smart detection of where to return within the audit system
+      if (audit.roughIdea !== undefined) {
         // This is a Brainstorming item
-        navigate(`/research/brainstorming/${state.returnToAudit.id}`, { 
-          state: { item: state.returnToAudit }, 
+        navigate(`/research/brainstorming/${audit.id}`, { 
+          state: { item: audit }, 
           replace: true 
         });
+      } else if (audit.gSlidesId !== undefined || audit.templateName !== undefined) {
+        // IMPROVED: Explicit check for Presentation items from AllPresentation
+        // This fixes the issue where it mistakenly goes to Gap Finder (War Room)
+        navigate('/presentations', { 
+          state: { reopenPPT: audit }, 
+          replace: true 
+        });
+      } else if (audit.projectName !== undefined) {
+        // This is a Gap Finder Project (War Room)
+        navigate(`/research/work/${audit.id}`, { replace: true });
       } else {
-        // This is a Gap Finder Project
-        navigate(`/research/work/${state.returnToAudit.id}`, { replace: true });
+        // Fallback for unknown audit context
+        onClose();
       }
       return;
     }
@@ -1015,11 +1027,9 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                         const urlMatch = ref.match(/https?:\/\/[^\s<]+/);
                         const url = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : null;
                         return (
-                          <div key={idx} className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 flex flex-col gap-3 transition-all hover:scale-[1.02] hover:shadow-md hover:bg-white group">
-                            <div className="flex gap-3">
-                              <span className="shrink-0 w-6 h-6 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center shadow-sm">
-                                {idx + 1}
-                              </span>
+                          <div key={idx} className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 flex flex-col gap-4 transition-all hover:bg-white group">
+                            <div className="flex gap-4">
+                              <span className="shrink-0 w-7 h-7 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center shadow-sm">{idx + 1}</span>
                               <p className="text-xs font-semibold text-[#004A74]/80 leading-relaxed flex-1" dangerouslySetInnerHTML={{ __html: ref }} />
                             </div>
                             <div className="flex items-center justify-end gap-2">
@@ -1047,9 +1057,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                 </div>
 
                 <div className="bg-[#004A74] p-6 rounded-[2.5rem] shadow-xl space-y-4 flex flex-col">
-                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2">
-                    <VideoCameraIcon className="w-3.5 h-3.5" /> Video Recommendation
-                  </h3>
+                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2"><VideoCameraIcon className="w-3.5 h-3.5" /> Video Recommendation</h3>
                   <div className="1-flex flex-col justify-center">
                     {isLoading && !isSyncing ? <div className="aspect-video w-full skeleton rounded-2xl" /> : (
                       supportingData.videoUrl ? (
@@ -1063,9 +1071,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                         </div>
                       )
                     )}
-                    <p className="mt-4 text-[10px] text-[#FED400]/80 font-bold italic text-center px-4 leading-relaxed">
-                      "This video may irrelevant, please watch it thoroughly."
-                    </p>
+                    <p className="mt-4 text-[10px] text-[#FED400]/80 font-bold italic text-center px-4 leading-relaxed">"This video may irrelevant, please watch it thoroughly."</p>
                   </div>
                 </div>
               </section>
