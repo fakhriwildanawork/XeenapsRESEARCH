@@ -124,7 +124,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
        {isLinking && (
          <div className="fixed inset-0 z-[9999] bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
            <div className="flex flex-col items-center gap-4">
-             <Loader2 size={12} h-12 text-[#004A74] animate-spin />
+             <Loader2 size={48} className="text-[#004A74] animate-spin" />
              <p className="text-sm font-black text-[#004A74] uppercase tracking-[0.2em] animate-pulse">Please wait...</p>
            </div>
          </div>
