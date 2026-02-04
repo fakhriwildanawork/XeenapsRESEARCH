@@ -35,8 +35,15 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -121,55 +128,100 @@ const TracerProjectPicker: React.FC<TracerProjectPickerProps> = ({ item, onClose
           </div>
 
           <div className="flex-1 overflow-hidden p-4 md:p-6 flex flex-col bg-[#fcfcfc]">
-             <StandardTableContainer>
-                <StandardTableWrapper>
-                   <thead>
-                      <tr>
-                         <StandardTh width="100px">Label</StandardTh>
-                         <StandardTh width="280px">Research</StandardTh>
-                         <StandardTh width="160px">Author(s)</StandardTh>
-                         <StandardTh width="90px" className="sticky right-0 bg-gray-50">Action</StandardTh>
-                      </tr>
-                   </thead>
-                   <tbody className="divide-y divide-gray-50">
-                      {isLoading ? (
-                         <TableSkeletonRows count={5} />
-                      ) : projects.length === 0 ? (
-                         <tr><td colSpan={4} className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No active tracer projects</td></tr>
-                      ) : (
-                         projects.map(p => (
-                             <StandardTr key={p.id}>
-                               <StandardTd>
-                                  <span className="text-[9px] font-black bg-[#004A74]/5 text-[#004A74] px-2 py-0.5 rounded-md uppercase">{p.label}</span>
-                               </StandardTd>
-                               <StandardTd>
-                                  <p className="text-xs font-bold text-[#004A74] uppercase line-clamp-1">{p.title || p.label}</p>
-                               </StandardTd>
-                               <StandardTd className="text-[10px] font-bold text-gray-400 uppercase truncate">
-                                  {Array.isArray(p.authors) ? p.authors.join(', ') : 'N/A'}
+             {!isMobile ? (
+               <StandardTableContainer>
+                  <StandardTableWrapper>
+                    <thead>
+                        <tr>
+                          <StandardTh width="100px">Label</StandardTh>
+                          <StandardTh width="280px">Research</StandardTh>
+                          <StandardTh width="160px">Author(s)</StandardTh>
+                          <StandardTh width="90px" className="sticky right-0 bg-gray-50">Action</StandardTh>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                        {isLoading ? (
+                          <TableSkeletonRows count={5} />
+                        ) : projects.length === 0 ? (
+                          <tr><td colSpan={4} className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No active tracer projects</td></tr>
+                        ) : (
+                          projects.map(p => (
+                              <StandardTr key={p.id}>
+                                <StandardTd>
+                                    <span className="text-[9px] font-black bg-[#004A74]/5 text-[#004A74] px-2 py-0.5 rounded-md uppercase">{p.label}</span>
                                 </StandardTd>
-                               <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
-                                  <button 
-                                    disabled={isLinking}
-                                    onClick={() => handleSelect(p)}
-                                    className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
-                                  >
-                                     {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} strokeWidth={4} />} Select
-                                  </button>
-                               </StandardTd>
-                             </StandardTr>
-                         ))
-                      )}
-                   </tbody>
-                </StandardTableWrapper>
-                <StandardTableFooter 
-                  totalItems={totalCount} 
-                  currentPage={currentPage} 
-                  itemsPerPage={itemsPerPage} 
-                  totalPages={Math.ceil(totalCount / itemsPerPage)} 
-                  onPageChange={setCurrentPage} 
-                />
-             </StandardTableContainer>
+                                <StandardTd>
+                                    <p className="text-xs font-bold text-[#004A74] uppercase line-clamp-1">{p.title || p.label}</p>
+                                </StandardTd>
+                                <StandardTd className="text-[10px] font-bold text-gray-400 uppercase truncate">
+                                    {Array.isArray(p.authors) ? p.authors.join(', ') : 'N/A'}
+                                  </StandardTd>
+                                <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
+                                    <button 
+                                      disabled={isLinking}
+                                      onClick={() => handleSelect(p)}
+                                      className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+                                    >
+                                      {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} strokeWidth={4} />} Select
+                                    </button>
+                                </StandardTd>
+                              </StandardTr>
+                          ))
+                        )}
+                    </tbody>
+                  </StandardTableWrapper>
+                  <StandardTableFooter 
+                    totalItems={totalCount} 
+                    currentPage={currentPage} 
+                    itemsPerPage={itemsPerPage} 
+                    totalPages={Math.ceil(totalCount / itemsPerPage)} 
+                    onPageChange={setCurrentPage} 
+                  />
+               </StandardTableContainer>
+             ) : (
+               <div className="flex-1 flex flex-col min-h-0">
+                  <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+                    {isLoading ? (
+                      [...Array(4)].map((_, i) => <div key={i} className="h-32 w-full skeleton rounded-3xl" />)
+                    ) : projects.length === 0 ? (
+                      <div className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No results</div>
+                    ) : (
+                      projects.map(p => (
+                        <div key={p.id} className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm space-y-4">
+                           <div className="flex justify-between items-start">
+                              <span className="px-2 py-0.5 bg-[#004A74]/5 text-[#004A74] text-[8px] font-black uppercase rounded-md">{p.label}</span>
+                              <div className="flex items-center gap-1.5 text-gray-400">
+                                <Calendar size={10} />
+                                <span className="text-[8px] font-bold uppercase">{p.startDate || '-'}</span>
+                              </div>
+                           </div>
+                           <h4 className="text-sm font-black text-[#004A74] leading-tight uppercase line-clamp-2">{p.title || p.label}</h4>
+                           <div className="flex items-center gap-2 text-gray-400">
+                              <User size={10} />
+                              <span className="text-[9px] font-bold uppercase truncate">{Array.isArray(p.authors) ? p.authors[0] : 'N/A'}</span>
+                           </div>
+                           <button 
+                             disabled={isLinking}
+                             onClick={() => handleSelect(p)}
+                             className="w-full py-3 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-2"
+                           >
+                              {isLinking ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} strokeWidth={3} />} Select Project
+                           </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-100 shrink-0">
+                    <StandardTableFooter 
+                      totalItems={totalCount} 
+                      currentPage={currentPage} 
+                      itemsPerPage={itemsPerPage} 
+                      totalPages={Math.ceil(totalCount / itemsPerPage)} 
+                      onPageChange={setCurrentPage} 
+                    />
+                  </div>
+               </div>
+             )}
           </div>
        </div>
     </div>

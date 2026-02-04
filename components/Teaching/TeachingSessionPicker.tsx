@@ -35,8 +35,15 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -117,7 +124,7 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
        {isLinking && (
          <div className="fixed inset-0 z-[9999] bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
            <div className="flex flex-col items-center gap-4">
-             <Loader2 className="w-12 h-12 text-[#004A74] animate-spin" />
+             <Loader2 size={12} h-12 text-[#004A74] animate-spin />
              <p className="text-sm font-black text-[#004A74] uppercase tracking-[0.2em] animate-pulse">Please wait...</p>
            </div>
          </div>
@@ -154,54 +161,102 @@ const TeachingSessionPicker: React.FC<TeachingSessionPickerProps> = ({ item, onC
           </div>
 
           <div className="flex-1 overflow-hidden p-4 md:p-6 flex flex-col bg-[#fcfcfc]">
-             <StandardTableContainer>
-                <StandardTableWrapper>
-                   <thead>
-                      <tr>
-                         <StandardTh width="100px">Date</StandardTh>
-                         <StandardTh width="250px">Course</StandardTh>
-                         <StandardTh width="180px">Institution</StandardTh>
-                         <StandardTh width="90px" className="sticky right-0 bg-gray-50">Action</StandardTh>
-                      </tr>
-                   </thead>
-                   <tbody className="divide-y divide-gray-50">
-                      {isLoading ? (
-                         <TableSkeletonRows count={5} />
-                      ) : sessions.length === 0 ? (
-                         <tr><td colSpan={4} className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No matching teaching sessions</td></tr>
-                      ) : (
-                         sessions.map(s => (
-                             <StandardTr key={s.id}>
-                               <StandardTd className="font-mono text-[10px] font-bold text-gray-400">
-                                  {s.teachingDate}
-                               </StandardTd>
-                               <StandardTd>
-                                  <p className="text-xs font-bold text-[#004A74] uppercase truncate">{s.courseTitle || 'Untitled Course'}</p>
-                                  <p className="text-[9px] font-bold text-gray-400 uppercase truncate mt-0.5">{s.label}</p>
-                               </StandardTd>
-                               <StandardTd className="text-[10px] font-bold text-gray-500 uppercase truncate">{s.institution || 'N/A'}</StandardTd>
-                               <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
-                                  <button 
-                                    disabled={isLinking}
-                                    onClick={() => handleSelect(s)}
-                                    className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
-                                  >
-                                     {isLinking ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" strokeWidth={4} />} Select
-                                  </button>
-                               </StandardTd>
-                             </StandardTr>
-                         ))
-                      )}
-                   </tbody>
-                </StandardTableWrapper>
-                <StandardTableFooter 
-                  totalItems={totalCount} 
-                  currentPage={currentPage} 
-                  itemsPerPage={itemsPerPage} 
-                  totalPages={Math.ceil(totalCount / itemsPerPage)} 
-                  onPageChange={setCurrentPage} 
-                />
-             </StandardTableContainer>
+             {!isMobile ? (
+               <StandardTableContainer>
+                  <StandardTableWrapper>
+                    <thead>
+                        <tr>
+                          <StandardTh width="100px">Date</StandardTh>
+                          <StandardTh width="250px">Course</StandardTh>
+                          <StandardTh width="180px">Institution</StandardTh>
+                          <StandardTh width="90px" className="sticky right-0 bg-gray-50">Action</StandardTh>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                        {isLoading ? (
+                          <TableSkeletonRows count={5} />
+                        ) : sessions.length === 0 ? (
+                          <tr><td colSpan={4} className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No matching teaching sessions</td></tr>
+                        ) : (
+                          sessions.map(s => (
+                              <StandardTr key={s.id}>
+                                <StandardTd className="font-mono text-[10px] font-bold text-gray-400">
+                                    {s.teachingDate}
+                                </StandardTd>
+                                <StandardTd>
+                                    <p className="text-xs font-bold text-[#004A74] uppercase truncate">{s.courseTitle || 'Untitled Course'}</p>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase truncate mt-0.5">{s.label}</p>
+                                </StandardTd>
+                                <StandardTd className="text-[10px] font-bold text-gray-500 uppercase truncate">{s.institution || 'N/A'}</StandardTd>
+                                <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa]">
+                                    <button 
+                                      disabled={isLinking}
+                                      onClick={() => handleSelect(s)}
+                                      className="w-full py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] hover:text-[#004A74] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+                                    >
+                                      {isLinking ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} strokeWidth={4} />} Select
+                                    </button>
+                                </StandardTd>
+                              </StandardTr>
+                          ))
+                        )}
+                    </tbody>
+                  </StandardTableWrapper>
+                  <StandardTableFooter 
+                    totalItems={totalCount} 
+                    currentPage={currentPage} 
+                    itemsPerPage={itemsPerPage} 
+                    totalPages={Math.ceil(totalCount / itemsPerPage)} 
+                    onPageChange={setCurrentPage} 
+                  />
+               </StandardTableContainer>
+             ) : (
+               <div className="flex-1 flex flex-col min-h-0">
+                  <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+                    {isLoading ? (
+                      [...Array(4)].map((_, i) => <div key={i} className="h-32 w-full skeleton rounded-3xl" />)
+                    ) : sessions.length === 0 ? (
+                      <div className="py-20 text-center font-black text-gray-300 uppercase text-xs tracking-widest">No results</div>
+                    ) : (
+                      sessions.map(s => (
+                        <div key={s.id} className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm space-y-4">
+                           <div className="flex justify-between items-start">
+                              <span className="px-2 py-0.5 bg-[#004A74]/5 text-[#004A74] text-[8px] font-black uppercase rounded-md">{s.label}</span>
+                              <div className="flex items-center gap-1.5 text-gray-400">
+                                <Calendar size={10} />
+                                <span className="text-[8px] font-mono font-black">{s.teachingDate}</span>
+                              </div>
+                           </div>
+                           <div className="space-y-1">
+                              <h4 className="text-sm font-black text-[#004A74] leading-tight uppercase line-clamp-2">{s.courseTitle || 'Untitled Course'}</h4>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tight truncate">{s.institution || 'N/A'}</p>
+                           </div>
+                           <div className="flex items-center gap-2 text-gray-400">
+                              <School size={10} />
+                              <span className="text-[8px] font-bold uppercase truncate">{s.faculty} | {s.program}</span>
+                           </div>
+                           <button 
+                             disabled={isLinking}
+                             onClick={() => handleSelect(s)}
+                             className="w-full py-3 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-2"
+                           >
+                              {isLinking ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} strokeWidth={3} />} Select Session
+                           </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-100 shrink-0">
+                    <StandardTableFooter 
+                      totalItems={totalCount} 
+                      currentPage={currentPage} 
+                      itemsPerPage={itemsPerPage} 
+                      totalPages={Math.ceil(totalCount / itemsPerPage)} 
+                      onPageChange={setCurrentPage} 
+                    />
+                  </div>
+               </div>
+             )}
           </div>
        </div>
     </div>
