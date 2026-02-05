@@ -196,8 +196,8 @@ const ArchivedArticle: React.FC = () => {
                     <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base md:text-xl font-black text-[#004A74] uppercase tracking-tight truncate max-w-[180px] md:max-w-md">Archive Detail</h3>
-                    <p className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">Article</p>
+                    <h3 className="text-base md:text-xl font-black text-[#004A74] uppercase tracking-tight truncate max-w-[180px] md:max-w-md">Article Detail</h3>
+                    <p className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">Personal Knowledge Asset</p>
                   </div>
                </div>
                <button onClick={() => setDetailItem(null)} className="p-1.5 md:p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">

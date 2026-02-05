@@ -8,10 +8,10 @@ import {
   Trash2, 
   Star, 
   BookOpen, 
-  ChevronRight,
-  Clock,
-  Eye,
-  Calendar
+  ChevronRight, 
+  Clock, 
+  Eye, 
+  Calendar 
 } from 'lucide-react';
 import { SmartSearchBox } from '../../Common/SearchComponents';
 import { StandardPrimaryButton } from '../../Common/ButtonComponents';
@@ -239,6 +239,9 @@ const AllReview: React.FC = () => {
                 <div className="w-1.5 h-12 rounded-full shrink-0 bg-[#004A74]" />
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight">{item.label}</h4>
+                  <p className="text-[10px] font-medium text-gray-400 truncate italic mt-0.5">
+                    {item.centralQuestion || "Question not formulated yet..."}
+                  </p>
                   <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
                       <Calendar size={12} className="w-3 h-3" /> {formatShortDate(item.createdAt)}
                   </div>
