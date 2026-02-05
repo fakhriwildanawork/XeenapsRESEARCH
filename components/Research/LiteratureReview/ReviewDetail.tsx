@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate } from 'react-router-dom';
@@ -60,6 +61,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
   const [review, setReview] = useState<ReviewItem | null>(null);
   const [content, setContent] = useState<ReviewContent>({ matrix: [], finalSynthesis: '' });
   const [isLoading, setIsLoading] = useState(true);
+  const [isHydrated, setIsHydrated] = useState(false); // Gating state
   const [isBusy, setIsBusy] = useState(false);
   const [isReviewSelectorOpen, setIsReviewSelectorOpen] = useState(false);
   
@@ -68,7 +70,8 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
   const [translatingSynthesis, setTranslatingSynthesis] = useState(false);
   const [openTranslationMenu, setOpenTranslationMenu] = useState<string | null>(null);
 
-  // New state for seamless source detail overlay
+  // Snapshot ref to prevent empty-state overwrites
+  const lastKnownGoodContent = useRef<ReviewContent | null>(null);
   const [selectedSourceForDetail, setSelectedSourceForDetail] = useState<LibraryItem | null>(null);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -80,7 +83,11 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
       if (found) {
         setReview(found);
         const detail = await fetchReviewContent(found.reviewJsonId, found.storageNodeUrl);
-        if (detail) setContent(detail);
+        if (detail) {
+          setContent(detail);
+          lastKnownGoodContent.current = detail;
+        }
+        setIsHydrated(true); // Data fully loaded from cloud
       } else {
         navigate('/research/literature-review');
       }
@@ -89,15 +96,26 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     load();
   }, [id, navigate]);
 
-  // Auto-save logic
+  // AUTO-SAVE ENGINE WITH GATING
   useEffect(() => {
-    if (!review || isLoading) return;
+    // CRITICAL: Abort save if not hydrated, still loading, or AI is working
+    if (!review || isLoading || !isHydrated || isBusy) return;
+
+    // VALIDATION: Protect against accidental empty matrix save if we previously had data
+    if (content.matrix.length === 0 && lastKnownGoodContent.current && lastKnownGoodContent.current.matrix.length > 0) {
+      console.warn("Xeenaps Guard: Blocked attempt to overwrite populated matrix with empty state.");
+      return;
+    }
+
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
-      await saveReview(review, content);
+      const success = await saveReview(review, content);
+      if (success) {
+        lastKnownGoodContent.current = content; // Update snapshot on successful sync
+      }
     }, 2000);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, [review?.label, review?.centralQuestion, content, isLoading]);
+  }, [review?.label, review?.centralQuestion, content, isLoading, isHydrated, isBusy]);
 
   const handleStartExtraction = async (selectedLibs: LibraryItem[]) => {
     if (!review?.centralQuestion.trim()) {
@@ -106,10 +124,10 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     }
 
     setIsReviewSelectorOpen(false);
-    setIsBusy(true);
+    setIsBusy(true); // LOCK AUTO-SAVE
     showXeenapsToast('info', `Initializing analysis for ${selectedLibs.length} sources...`);
 
-    // Add placeholders for sequential loading feel (War Room UX)
+    // Add placeholders for sequential loading feel
     const placeholders: ReviewMatrixRow[] = selectedLibs.map(lib => ({
       collectionId: lib.id,
       title: lib.title,
@@ -144,7 +162,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
       }
     }
 
-    setIsBusy(false);
+    setIsBusy(false); // RELEASE AUTO-SAVE
     showXeenapsToast('success', 'Matrix segments updated');
   };
 
@@ -182,7 +200,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
       const translated = await translateReviewRowContent(row.answer, langCode);
       if (translated) {
         // Clean any stray dashes at beginning of translation
-        const cleanTranslated = translated.replace(/^- /gm, "").replace(/^-/gm, "").trim();
+        const cleanTranslated = translated.replace(/^[-\*\s]+/gm, "").trim();
         setContent(prev => ({
           ...prev,
           matrix: prev.matrix.map(m => m.collectionId === row.collectionId ? { ...m, answer: cleanTranslated } : m)
@@ -205,8 +223,8 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     try {
       const translated = await translateReviewRowContent(content.finalSynthesis, langCode);
       if (translated) {
-        // ULTIMATE STRAY DASH CLEANER: Remove any leading dashes often added by translation engines
-        const cleanSynthesis = translated.replace(/^- /gm, "").replace(/^-/gm, "").trim();
+        // ULTIMATE STRAY DASH CLEANER: Remove any leading dashes/artifacts
+        const cleanSynthesis = translated.replace(/^[-\*\s]+/gm, "").trim();
         setContent(prev => ({ ...prev, finalSynthesis: cleanSynthesis }));
         showXeenapsToast('success', 'Synthesis translated');
       } else {
@@ -445,7 +463,6 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                </div>
             </div>
 
-            {/* SYNTHESIZE BUTTON RELOCATED (Standardized with Gap Finder) */}
             <div className="flex justify-center pt-8 animate-in slide-in-from-bottom-5 duration-700">
                <button 
                   onClick={handleSynthesize}
@@ -456,7 +473,6 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                     {isBusy ? <Loader2 size={24} className="animate-spin" /> : <Sparkles size={24} />}
                     Synthesize Global Review
                   </div>
-                  {/* Shimmer Effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                </button>
             </div>
@@ -510,7 +526,6 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
             </div>
 
             <div className="relative group">
-               {/* INTEGRATED LOADING OVERLAY FOR TRANSLATION & SYNTHESIS */}
                {(isBusy || translatingSynthesis) && (
                  <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-[3.5rem]">
                     <Loader2 size={40} className="text-[#004A74] animate-spin mb-4" />

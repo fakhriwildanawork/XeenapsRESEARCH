@@ -1,3 +1,4 @@
+
 import { ReviewItem, ReviewContent, ReviewMatrixRow, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
@@ -35,9 +36,14 @@ export const fetchReviewContent = async (reviewJsonId: string, nodeUrl?: string)
     if (!targetUrl) return null;
     const finalUrl = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}action=getFileContent&fileId=${reviewJsonId}`;
     const response = await fetch(finalUrl);
+    if (!response.ok) throw new Error("Cloud access failed.");
     const result = await response.json();
-    return result.status === 'success' ? JSON.parse(result.content) : null;
+    if (result.status === 'success' && result.content) {
+      return JSON.parse(result.content);
+    }
+    return null;
   } catch (e) {
+    console.error("fetchReviewContent error:", e);
     return null;
   }
 };

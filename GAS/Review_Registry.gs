@@ -150,10 +150,12 @@ function saveReviewToRegistry(item, content) {
       }
     }
 
-    // Update Registry Metadata Row
-    const rowData = headers.map(h => {
+    // Update Registry Metadata Row with Robust Mapping
+    const actualHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const rowData = actualHeaders.map(h => {
       const val = item[h];
-      return (val !== undefined && val !== null) ? val : '';
+      if (val === undefined || val === null) return '';
+      return (typeof val === 'object') ? JSON.stringify(val) : val;
     });
 
     if (existingRow > -1) {
@@ -164,6 +166,7 @@ function saveReviewToRegistry(item, content) {
 
     return { status: 'success', data: item };
   } catch (e) {
+    console.error("saveReview Error: " + e.toString());
     return { status: 'error', message: e.toString() };
   }
 }

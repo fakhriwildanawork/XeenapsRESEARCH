@@ -2,7 +2,7 @@
 /**
  * XEENAPS PKM - TRANSLATION SERVICE (LINGVA ENGINE) - INDUSTRIAL GRADE
  * Menggunakan Lingva API dengan sistem Marker Unik {{XTn}} untuk preservasi tag HTML.
- * Versi stabil dengan Stray Dash Sanitizer.
+ * Versi stabil dengan Stray Dash & Markdown Artifact Sanitizer.
  */
 
 function fetchTranslation(text, targetLang) {
@@ -59,8 +59,8 @@ function fetchTranslation(text, targetLang) {
           if (response.getResponseCode() === 200) {
             const json = JSON.parse(response.getContentText());
             if (json.translation) {
-              // STRAY DASH SANITIZER: Hapus karakter dash yang sering ditambahkan engine di awal chunk
-              chunkTranslated = json.translation.replace(/^- /gm, "").replace(/^-/gm, "");
+              // ADVANCED SANITIZER: Hapus karakter dash/bintang/bullet yang sering ditambahkan engine secara liar
+              chunkTranslated = json.translation.replace(/^[-\*\s•]+/gm, "").replace(/^[-]/gm, "");
               isSuccess = true;
               break;
             }
