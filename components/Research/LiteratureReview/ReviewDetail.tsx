@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate } from 'react-router-dom';
@@ -96,6 +95,19 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     load();
   }, [id, navigate]);
 
+  // --- EXTERNAL SYNC LISTENER ---
+  useEffect(() => {
+    const handleRemoteUpdate = (e: any) => {
+      const updated = e.detail as ReviewItem;
+      // If someone updated THIS review from outside (e.g., from the List view favorite toggle)
+      if (updated.id === id && review && (updated.isFavorite !== review.isFavorite || updated.label !== review.label || updated.centralQuestion !== review.centralQuestion)) {
+        setReview(prev => prev ? { ...prev, ...updated } : updated);
+      }
+    };
+    window.addEventListener('xeenaps-review-updated', handleRemoteUpdate);
+    return () => window.removeEventListener('xeenaps-review-updated', handleRemoteUpdate);
+  }, [id, review]);
+
   // AUTO-SAVE ENGINE WITH GATING
   useEffect(() => {
     // CRITICAL: Abort save if not hydrated, still loading, or AI is working
@@ -115,7 +127,18 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
       }
     }, 2000);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, [review?.label, review?.centralQuestion, content, isLoading, isHydrated, isBusy]);
+  }, [review?.label, review?.centralQuestion, review?.isFavorite, content, isLoading, isHydrated, isBusy]);
+
+  const handleToggleFavorite = async () => {
+    if (!review || isBusy) return;
+    const updated = { ...review, isFavorite: !review.isFavorite, updatedAt: new Date().toISOString() };
+    
+    // 1. Instant UI Update
+    setReview(updated);
+    
+    // 2. IMMEDIATE SYNC (No debounce for metadata status changes)
+    await saveReview(updated, content);
+  };
 
   const handleStartExtraction = async (selectedLibs: LibraryItem[]) => {
     if (!review?.centralQuestion.trim()) {
@@ -288,7 +311,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
 
          <div className="flex items-center gap-3">
             <button 
-              onClick={() => review && setReview({ ...review, isFavorite: !review.isFavorite })}
+              onClick={handleToggleFavorite}
               className={`p-2.5 rounded-xl border transition-all ${review?.isFavorite ? 'bg-yellow-50 border-yellow-200 text-[#FED400]' : 'bg-white border-gray-100 text-gray-300'}`}
             >
               <Star size={18} fill={review?.isFavorite ? "currentColor" : "none"} />
@@ -530,7 +553,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                  <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-[3.5rem]">
                     <Loader2 size={40} className="text-[#004A74] animate-spin mb-4" />
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#004A74]">
-                       {translatingSynthesis ? 'Translating Core Wisdom...' : 'Architecting Narrative...'}
+                       {translatingSynthesis ? 'Translating...' : 'Architecting Narrative...'}
                     </p>
                  </div>
                )}

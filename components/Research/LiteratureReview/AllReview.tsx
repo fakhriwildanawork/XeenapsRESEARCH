@@ -61,6 +61,7 @@ const AllReview: React.FC = () => {
   }, [items]);
 
   const loadData = useCallback((isSilent = false) => {
+    // Only show global loading if we don't have any cached data
     if (!isSilent && !reviewMemoryCache) setIsLoading(true);
     
     workflow.execute(
@@ -77,27 +78,35 @@ const AllReview: React.FC = () => {
   }, [currentPage, appliedSearch, itemsPerPage, workflow.execute]);
 
   useEffect(() => {
-    loadData(!!reviewMemoryCache);
-  }, [loadData]);
+    // Determine if it should be a silent refresh based on cache availability
+    loadData(!!reviewMemoryCache && appliedSearch === '');
+  }, [loadData, appliedSearch]);
 
   // --- REAL-TIME EVENT SYNC ---
   useEffect(() => {
     const handleUpdate = (e: any) => {
-      const item = e.detail as ReviewItem;
+      const updatedItem = e.detail as ReviewItem;
       setItems(prev => {
-        const index = prev.findIndex(i => i.id === item.id);
-        const updated = index > -1 ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
-        reviewMemoryCache = { items: updated, totalCount: updated.length > prev.length ? totalCount + 1 : totalCount };
-        return updated;
+        const index = prev.findIndex(i => i.id === updatedItem.id);
+        const updatedList = index > -1 
+          ? prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i) 
+          : [updatedItem, ...prev];
+        
+        // Update global cache to ensure integrity during navigation
+        reviewMemoryCache = { 
+          items: updatedList, 
+          totalCount: updatedList.length > prev.length ? totalCount + 1 : totalCount 
+        };
+        return updatedList;
       });
     };
 
     const handleDeleteEvent = (e: any) => {
       const id = e.detail;
       setItems(prev => {
-        const updated = prev.filter(i => i.id !== id);
-        reviewMemoryCache = { items: updated, totalCount: Math.max(0, totalCount - 1) };
-        return updated;
+        const updatedList = prev.filter(i => i.id !== id);
+        reviewMemoryCache = { items: updatedList, totalCount: Math.max(0, totalCount - 1) };
+        return updatedList;
       });
     };
 
@@ -165,9 +174,11 @@ const AllReview: React.FC = () => {
       setItems,
       [review.id],
       (i) => ({ ...i, isFavorite: !i.isFavorite }),
-      async (updated) => await saveReview(updated, { matrix: [], finalSynthesis: '' })
+      async (updated) => {
+        // Metadata only update - content passed as undefined to prevent accidental wipe
+        return await saveReview(updated, undefined as any);
+      }
     );
-    // Sorting will automatically move the item because it depends on `items` state
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -265,7 +276,7 @@ const AllReview: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-1 pb-12">
             {sortedItems.map(item => (
               <div 
-                key={item.id}
+                key={item.id} 
                 onClick={() => navigate(`/research/literature-review/${item.id}`)}
                 className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full"
               >
