@@ -103,7 +103,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
 
     // VALIDATION: Protect against accidental empty matrix save if we previously had data
     if (content.matrix.length === 0 && lastKnownGoodContent.current && lastKnownGoodContent.current.matrix.length > 0) {
-      console.warn("Xeenaps Guard: Blocked attempt to overwrite populated matrix with empty state.");
+      console.warn("Blocked attempt to overwrite populated matrix with empty state.");
       return;
     }
 
@@ -119,7 +119,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
 
   const handleStartExtraction = async (selectedLibs: LibraryItem[]) => {
     if (!review?.centralQuestion.trim()) {
-      showXeenapsToast('warning', 'Please formulate a Central Question first.');
+      showXeenapsToast('warning', 'Please formulate a Main Question first.');
       return;
     }
 
@@ -172,7 +172,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
       return;
     }
     setIsBusy(true);
-    showXeenapsToast('info', 'Synthesizing global narrative...');
+    showXeenapsToast('info', 'Synthesizing global summary...');
     
     const result = await runReviewSynthesis(content.matrix, review!.centralQuestion);
     if (result) {
