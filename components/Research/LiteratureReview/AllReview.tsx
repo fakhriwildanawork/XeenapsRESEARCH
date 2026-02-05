@@ -25,19 +25,14 @@ import { showXeenapsToast } from '../../../utils/toastUtils';
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../../utils/swalUtils';
 
-// --- ZERO-LOADING CACHE LAYER ---
-let reviewMemoryCache: { items: ReviewItem[], totalCount: number } | null = null;
-// Mekanisme Registry untuk mencegah data ditarik kembali saat proses delete di server belum selesai
-const deletedItemsRegistry = new Set<string>();
-
 const AllReview: React.FC = () => {
   const navigate = useNavigate();
   const workflow = useAsyncWorkflow(30000);
-  const { performUpdate } = useOptimisticUpdate<ReviewItem>();
+  const { performUpdate, performDelete } = useOptimisticUpdate<ReviewItem>();
   
-  const [items, setItems] = useState<ReviewItem[]>(reviewMemoryCache?.items || []);
-  const [totalCount, setTotalCount] = useState(reviewMemoryCache?.totalCount || 0);
-  const [isLoading, setIsLoading] = useState(!reviewMemoryCache);
+  const [items, setItems] = useState<ReviewItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,22 +55,14 @@ const AllReview: React.FC = () => {
     });
   }, [items]);
 
-  const loadData = useCallback((isSilent = false) => {
-    if (!isSilent && !reviewMemoryCache) setIsLoading(true);
+  const loadData = useCallback(() => {
+    setIsLoading(true);
     
     workflow.execute(
       async (signal) => {
         const result = await fetchReviewsPaginated(currentPage, itemsPerPage, appliedSearch, "createdAt", "desc", signal);
-        
-        // PROTEKSI ZOMBIE: Filter hasil fetch server dengan registry penghapusan lokal
-        const safeItems = (result.items || []).filter(item => !deletedItemsRegistry.has(item.id));
-        const safeTotal = Math.max(0, result.totalCount - (result.items.length - safeItems.length));
-        
-        setItems(safeItems);
-        setTotalCount(safeTotal);
-        
-        // Update global cache dengan data yang sudah dibersihkan dari zombie
-        reviewMemoryCache = { items: safeItems, totalCount: safeTotal };
+        setItems(result.items || []);
+        setTotalCount(result.totalCount || 0);
       },
       () => setIsLoading(false),
       () => setIsLoading(false)
@@ -83,42 +70,25 @@ const AllReview: React.FC = () => {
   }, [currentPage, appliedSearch, itemsPerPage, workflow.execute]);
 
   useEffect(() => {
-    loadData(!!reviewMemoryCache && appliedSearch === '');
+    loadData();
   }, [loadData, appliedSearch]);
 
   // --- REAL-TIME EVENT SYNC ---
   useEffect(() => {
     const handleUpdate = (e: any) => {
       const updatedItem = e.detail as ReviewItem;
-      // Jangan terima update jika item sedang dalam proses hapus
-      if (deletedItemsRegistry.has(updatedItem.id)) return;
-
       setItems(prev => {
         const index = prev.findIndex(i => i.id === updatedItem.id);
-        const updatedList = index > -1 
+        return index > -1 
           ? prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i) 
           : [updatedItem, ...prev];
-        
-        reviewMemoryCache = { 
-          items: updatedList, 
-          totalCount: updatedList.length > prev.length ? totalCount + 1 : totalCount 
-        };
-        return updatedList;
       });
     };
 
     const handleDeleteEvent = (e: any) => {
       const id = e.detail;
-      deletedItemsRegistry.add(id); // Daftarkan ke registry pencegahan zombie
-      
-      setItems(prev => {
-        const updatedList = prev.filter(i => i.id !== id);
-        reviewMemoryCache = { 
-          items: updatedList, 
-          totalCount: Math.max(0, totalCount - 1) 
-        };
-        return updatedList;
-      });
+      setItems(prev => prev.filter(i => i.id !== id));
+      setTotalCount(prev => Math.max(0, prev - 1));
     };
 
     window.addEventListener('xeenaps-review-updated', handleUpdate);
@@ -127,7 +97,7 @@ const AllReview: React.FC = () => {
       window.removeEventListener('xeenaps-review-updated', handleUpdate);
       window.removeEventListener('xeenaps-review-deleted', handleDeleteEvent);
     };
-  }, [totalCount]);
+  }, []);
 
   const handleNewReview = async () => {
     const { value: label } = await Swal.fire({
@@ -186,10 +156,6 @@ const AllReview: React.FC = () => {
       [review.id],
       (i) => ({ ...i, isFavorite: !i.isFavorite }),
       async (updated) => {
-        // Force update cache module level agar konsisten saat navigasi cepat
-        if (reviewMemoryCache) {
-          reviewMemoryCache.items = reviewMemoryCache.items.map(i => i.id === updated.id ? updated : i);
-        }
         return await saveReview(updated, undefined as any);
       }
     );
@@ -199,23 +165,13 @@ const AllReview: React.FC = () => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Sinkronisasi Registry Zombie & Optimistic UI Instan
-      deletedItemsRegistry.add(id);
-      setItems(prev => {
-        const filtered = prev.filter(i => i.id !== id);
-        // FORCED CACHE SYNC
-        reviewMemoryCache = { items: filtered, totalCount: Math.max(0, totalCount - 1) };
-        return filtered;
-      });
-
-      // 2. Eksekusi asinkron di backend
-      const success = await deleteReview(id);
-      
-      // Jika gagal, hapus dari registry agar data bisa muncul kembali (rollback intel)
-      if (!success) {
-        deletedItemsRegistry.delete(id);
-        loadData(true);
-      }
+      // Optimistic Delete via performDelete for instant and safe removal
+      await performDelete(
+        items,
+        setItems,
+        [id],
+        async (deleteId) => await deleteReview(deleteId)
+      );
     }
   };
 
