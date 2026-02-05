@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +12,9 @@ import {
   Sparkles,
   Check,
   MoreVertical,
-  Clock
+  Clock,
+  Eye,
+  Calendar
 } from 'lucide-react';
 import { SmartSearchBox } from '../../Common/SearchComponents';
 import { StandardPrimaryButton, StandardQuickAccessBar, StandardQuickActionButton } from '../../Common/ButtonComponents';
@@ -26,28 +27,41 @@ import { showXeenapsToast } from '../../../utils/toastUtils';
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../../utils/swalUtils';
 
+// --- ZERO-LOADING CACHE LAYER ---
+let reviewMemoryCache: { items: ReviewItem[], totalCount: number } | null = null;
+
 const AllReview: React.FC = () => {
   const navigate = useNavigate();
   const workflow = useAsyncWorkflow(30000);
   const { performUpdate, performDelete } = useOptimisticUpdate<ReviewItem>();
   
-  const [items, setItems] = useState<ReviewItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [items, setItems] = useState<ReviewItem[]>(reviewMemoryCache?.items || []);
+  const [totalCount, setTotalCount] = useState(reviewMemoryCache?.totalCount || 0);
+  const [isLoading, setIsLoading] = useState(!reviewMemoryCache);
   const [currentPage, setCurrentPage] = useState(1);
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const itemsPerPage = 12;
 
-  const loadData = useCallback(() => {
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const loadData = useCallback((isSilent = false) => {
+    if (!isSilent && !reviewMemoryCache) setIsLoading(true);
+    
     workflow.execute(
       async (signal) => {
-        setIsLoading(true);
         const result = await fetchReviewsPaginated(currentPage, itemsPerPage, appliedSearch, "createdAt", "desc", signal);
         setItems(result.items);
         setTotalCount(result.totalCount);
+        // Update global cache
+        reviewMemoryCache = { items: result.items, totalCount: result.totalCount };
       },
       () => setIsLoading(false),
       () => setIsLoading(false)
@@ -55,8 +69,37 @@ const AllReview: React.FC = () => {
   }, [currentPage, appliedSearch, itemsPerPage, workflow.execute]);
 
   useEffect(() => {
-    loadData();
+    loadData(!!reviewMemoryCache);
   }, [loadData]);
+
+  // --- REAL-TIME EVENT SYNC ---
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      const item = e.detail as ReviewItem;
+      setItems(prev => {
+        const index = prev.findIndex(i => i.id === item.id);
+        const updated = index > -1 ? prev.map(i => i.id === item.id ? item : i) : [item, ...prev];
+        reviewMemoryCache = { items: updated, totalCount: updated.length > prev.length ? totalCount + 1 : totalCount };
+        return updated;
+      });
+    };
+
+    const handleDeleteEvent = (e: any) => {
+      const id = e.detail;
+      setItems(prev => {
+        const updated = prev.filter(i => i.id !== id);
+        reviewMemoryCache = { items: updated, totalCount: Math.max(0, totalCount - 1) };
+        return updated;
+      });
+    };
+
+    window.addEventListener('xeenaps-review-updated', handleUpdate);
+    window.addEventListener('xeenaps-review-deleted', handleDeleteEvent);
+    return () => {
+      window.removeEventListener('xeenaps-review-updated', handleUpdate);
+      window.removeEventListener('xeenaps-review-deleted', handleDeleteEvent);
+    };
+  }, [totalCount]);
 
   const handleNewReview = async () => {
     const { value: label } = await Swal.fire({
@@ -74,7 +117,6 @@ const AllReview: React.FC = () => {
     });
 
     if (label) {
-      // UX Improvement: Show loading feedback during cloud synchronization
       Swal.fire({
         title: 'ARCHITECTING WORKSPACE...',
         text: 'Initializing cloud synchronization...',
@@ -123,11 +165,10 @@ const AllReview: React.FC = () => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      // Optimistic locally
+      setItems(prev => prev.filter(i => i.id !== id));
       const success = await deleteReview(id);
-      if (success) {
-        showXeenapsToast('success', 'Review project removed');
-        loadData();
-      }
+      if (!success) loadData(true); // Rollback silent if failed
     }
   };
 
@@ -142,7 +183,7 @@ const AllReview: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto custom-scrollbar animate-in fade-in duration-500 pr-1">
-      {/* MODULE HEADER - Now scrolls with the page */}
+      {/* MODULE HEADER */}
       <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-8 shrink-0 px-1">
         <div className="flex items-center gap-4">
            <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
@@ -168,7 +209,7 @@ const AllReview: React.FC = () => {
         </div>
       </div>
 
-      {/* CONTENT AREA - No longer has its own scroll to allow full page scroll */}
+      {/* CONTENT AREA */}
       <div className="flex-1 pb-10">
         {isLoading ? (
           <CardGridSkeleton count={8} />
@@ -177,23 +218,53 @@ const AllReview: React.FC = () => {
              <BookOpen size={80} strokeWidth={1} className="text-[#004A74]" />
              <p className="text-sm font-black uppercase tracking-[0.4em]">No reviews created</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-1 pb-12">
-            {items.map(item => (
+        ) : isMobile ? (
+          /* MOBILE ELEGANT LIST ROW (Consistent with Presentation) */
+          <div className="flex flex-col gap-4 animate-in fade-in duration-500 px-1">
+            {items.map((item) => (
               <div 
                 key={item.id}
                 onClick={() => navigate(`/research/literature-review/${item.id}`)}
+                className="bg-white border border-gray-100 rounded-3xl p-5 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden"
+              >
+                <div className="w-1.5 h-12 rounded-full shrink-0 bg-[#004A74]" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight">{item.label}</h4>
+                  <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
+                      <Calendar size={12} className="w-3 h-3" /> {formatShortDate(item.createdAt)}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  {/* Fix: correctly pass the event object to handleToggleFavorite to prevent "Cannot find name 'e'" error */}
+                  <button onClick={(e) => handleToggleFavorite(e, item)} className="p-2 text-[#FED400] bg-yellow-50/30 rounded-xl transition-all">
+                    {item.isFavorite ? <Star size={18} fill="currentColor" /> : <Star size={18} />}
+                  </button>
+                  <button onClick={() => navigate(`/research/literature-review/${item.id}`)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><Eye size={18} /></button>
+                  <button onClick={(e) => handleDelete(e, item.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><Trash2 size={18} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* DESKTOP GRID VIEW */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-1 pb-12">
+            {items.map(item => (
+              <div 
+                key={item.id} 
+                onClick={() => navigate(`/research/literature-review/${item.id}`)}
                 className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full"
               >
-                <div className="absolute top-8 right-8" onClick={e => handleToggleFavorite(e, item)}>
-                   <Star size={20} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
+                {/* QUICK ACTION POOL TOP RIGHT */}
+                <div className="absolute top-8 right-8 flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 rounded-xl transition-all active:scale-90">
+                      <Trash2 size={18} />
+                   </button>
+                   <button onClick={e => handleToggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform text-[#FED400]">
+                      <Star size={22} className={item.isFavorite ? 'fill-current' : ''} />
+                   </button>
                 </div>
 
-                <div className="mb-6">
-                   <div className="flex items-center gap-1.5 mb-3">
-                      <Sparkles size={12} className="text-[#FED400]" />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[#004A74]/40">Synthesis Matrix</span>
-                   </div>
+                <div className="mb-6 mt-4">
                    <h3 className="text-base font-black text-[#004A74] uppercase leading-tight line-clamp-3">{item.label}</h3>
                 </div>
 
@@ -216,20 +287,13 @@ const AllReview: React.FC = () => {
                       <ChevronRight size={14} strokeWidth={3} />
                    </div>
                 </div>
-
-                <button 
-                  onClick={(e) => handleDelete(e, item.id)}
-                  className="absolute bottom-4 left-8 p-2 text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                >
-                   <Trash2 size={14} />
-                </button>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* FOOTER - Now part of the scroll flow */}
+      {/* FOOTER */}
       <div className="px-1 pb-20">
         <StandardTableFooter 
           totalItems={totalCount} 

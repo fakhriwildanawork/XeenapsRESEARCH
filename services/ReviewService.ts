@@ -1,4 +1,3 @@
-
 import { ReviewItem, ReviewContent, ReviewMatrixRow, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 
@@ -44,6 +43,9 @@ export const fetchReviewContent = async (reviewJsonId: string, nodeUrl?: string)
 };
 
 export const saveReview = async (item: ReviewItem, content: ReviewContent): Promise<boolean> => {
+  // SILENT BROADCAST FOR OPTIMISTIC UI
+  window.dispatchEvent(new CustomEvent('xeenaps-review-updated', { detail: item }));
+
   if (!GAS_WEB_APP_URL) return false;
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
@@ -52,12 +54,15 @@ export const saveReview = async (item: ReviewItem, content: ReviewContent): Prom
     });
     const result = await res.json();
     return result.status === 'success';
-  } catch (e) {
+  } catch (error) {
     return false;
   }
 };
 
 export const deleteReview = async (id: string): Promise<boolean> => {
+  // SILENT BROADCAST FOR OPTIMISTIC UI
+  window.dispatchEvent(new CustomEvent('xeenaps-review-deleted', { detail: id }));
+
   if (!GAS_WEB_APP_URL) return false;
   try {
     const res = await fetch(GAS_WEB_APP_URL, {
@@ -66,7 +71,7 @@ export const deleteReview = async (id: string): Promise<boolean> => {
     });
     const result = await res.json();
     return result.status === 'success';
-  } catch (e) {
+  } catch (error) {
     return false;
   }
 };
