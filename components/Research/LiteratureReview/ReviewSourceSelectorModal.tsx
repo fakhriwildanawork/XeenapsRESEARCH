@@ -101,7 +101,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
             onChange={setLocalSearch} 
             onSearch={handleSearch} 
             className="w-full"
-            phrases={["Filter verified title...", "Filter verified topic..."]}
+            phrases={["Search Title...", "Search Author(s)..."]}
           />
         </div>
 
