@@ -470,7 +470,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                   className="group relative flex items-center gap-4 px-20 py-6 bg-[#004A74] text-[#FED400] rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-sm shadow-[0_20px_50px_-10px_rgba(0,74,116,0.3)] hover:scale-105 active:scale-95 transition-all duration-500 disabled:opacity-40 disabled:grayscale overflow-hidden"
                >
                   <div className="relative z-10 flex items-center gap-3">
-                    {isBusy ? <Loader2 size={24} className="animate-spin" /> :}
+                    {isBusy ? <Loader2 size={24} className="animate-spin" /> : null}
                     Synthesize Final Summary
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
