@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate } from 'react-router-dom';
@@ -271,15 +272,11 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     if (!review || isBusy) return;
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      setIsBusy(true);
-      showXeenapsToast('info', 'Purging review project...');
-      if (await deleteReview(review.id)) {
-        showXeenapsToast('success', 'Project removed from cloud');
-        navigate('/research/literature-review');
-      } else {
-        showXeenapsToast('error', 'Deletion failed');
-        setIsBusy(false);
-      }
+      const idToDelete = review.id;
+      // OPTIMISTIC: Trigger delete asynchonously and navigate immediately
+      deleteReview(idToDelete); 
+      navigate('/research/literature-review', { replace: true });
+      showXeenapsToast('success', 'Processing Deletion...');
     }
   };
 

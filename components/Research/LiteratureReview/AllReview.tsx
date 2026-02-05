@@ -31,6 +31,7 @@ const AllReview: React.FC = () => {
   const { performUpdate, performDelete } = useOptimisticUpdate<ReviewItem>();
   
   const [items, setItems] = useState<ReviewItem[]>([]);
+  const [deletedIdsRegistry, setDeletedIdsRegistry] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [localSearch, setLocalSearch] = useState('');
@@ -47,13 +48,15 @@ const AllReview: React.FC = () => {
 
   // --- MULTI-LAYER SORTING LOGIC ---
   const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => {
-      if (a.isFavorite !== b.isFavorite) {
-        return a.isFavorite ? -1 : 1;
-      }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-  }, [items]);
+    return [...items]
+      .filter(item => !deletedIdsRegistry.includes(item.id)) // ANTI-ZOMBIE FILTER
+      .sort((a, b) => {
+        if (a.isFavorite !== b.isFavorite) {
+          return a.isFavorite ? -1 : 1;
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  }, [items, deletedIdsRegistry]);
 
   const loadData = useCallback(() => {
     setIsLoading(true);
@@ -87,6 +90,8 @@ const AllReview: React.FC = () => {
 
     const handleDeleteEvent = (e: any) => {
       const id = e.detail;
+      // Register to blocklist to prevent reappearing during fetch
+      setDeletedIdsRegistry(prev => [...prev, id]);
       setItems(prev => prev.filter(i => i.id !== id));
       setTotalCount(prev => Math.max(0, prev - 1));
     };

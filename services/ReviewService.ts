@@ -49,7 +49,7 @@ export const fetchReviewContent = async (reviewJsonId: string, nodeUrl?: string)
 };
 
 export const saveReview = async (item: ReviewItem, content: ReviewContent): Promise<boolean> => {
-  // SILENT BROADCAST FOR OPTIMISTIC UI
+  // SILENT BROADCAST FOR OPTIMISTIC UI (IMMEDIATE)
   window.dispatchEvent(new CustomEvent('xeenaps-review-updated', { detail: item }));
 
   if (!GAS_WEB_APP_URL) return false;
