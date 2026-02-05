@@ -266,17 +266,18 @@ const AllReview: React.FC = () => {
                 onClick={() => navigate(`/research/literature-review/${item.id}`)}
                 className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full"
               >
-                {/* QUICK ACTION POOL TOP RIGHT - Standardized with other modules */}
-                <div className="absolute top-8 right-8 flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 rounded-xl transition-all active:scale-90">
-                      <Trash2 size={18} />
-                   </button>
+                {/* Baris 1: Kontainer Quick Action */}
+                <div className="flex items-center justify-start gap-2 mb-4" onClick={e => e.stopPropagation()}>
                    <button onClick={e => handleToggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform text-[#FED400]">
                       <Star size={22} className={item.isFavorite ? 'fill-current' : ''} />
                    </button>
+                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 rounded-xl transition-all active:scale-90 ml-auto">
+                      <Trash2 size={18} />
+                   </button>
                 </div>
 
-                <div className="mb-6 mt-4">
+                {/* Baris 2: Label Proyek */}
+                <div className="mb-6">
                    <h3 className="text-base font-black text-[#004A74] uppercase leading-tight line-clamp-3">{item.label}</h3>
                 </div>
 

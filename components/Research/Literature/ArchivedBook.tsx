@@ -36,7 +36,7 @@ import {
   StandardTh, 
   StandardTr, 
   StandardTd, 
-  StandardTableFooter,
+  StandardTableFooter, 
   StandardCheckbox,
   ElegantTooltip,
   StandardGridContainer,
@@ -58,7 +58,6 @@ const ArchivedBook: React.FC = () => {
   const [serverItems, setServerItems] = useState<ArchivedBookItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -256,6 +255,7 @@ const ArchivedBook: React.FC = () => {
                   </button>
                   {detailItem.isbn && (
                     <button 
+                      // Fix: Use detailItem instead of undefined item variable
                       onClick={() => handleAddToLibrary(detailItem)}
                       className="px-3 py-2 md:px-8 md:py-4 bg-[#FED400] text-[#004A74] rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#FED400]/10 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                     >
@@ -285,12 +285,6 @@ const ArchivedBook: React.FC = () => {
            </div>
 
            <div className="flex items-center gap-2">
-              {!isMobile && (
-                <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-100">
-                  <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><LayoutGrid size={16} /></button>
-                  <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><List size={16} /></button>
-                </div>
-              )}
               <button 
                 onClick={() => navigate('/find-book')}
                 className="flex items-center gap-2 px-5 py-2.5 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all hover:shadow-lg shadow-md active:scale-95"
@@ -344,8 +338,8 @@ const ArchivedBook: React.FC = () => {
             <p className="text-sm font-medium mt-2">Go to "Find Book" to start archiving your references.</p>
           </div>
         ) : isMobile ? (
-          /* MOBILE ELEGANT LIST VIEW */
-          <div className="flex flex-col gap-4 animate-in fade-in duration-500">
+          /* MOBILE ELEGANT LIST ROW */
+          <div className="flex flex-col gap-4 animate-in fade-in duration-500 px-1">
             {serverItems.map((item) => (
               <div 
                 key={item.id}
@@ -446,7 +440,7 @@ const ArchivedBook: React.FC = () => {
       </div>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }

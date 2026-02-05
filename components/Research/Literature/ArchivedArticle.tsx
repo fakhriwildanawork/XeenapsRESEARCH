@@ -58,7 +58,6 @@ const ArchivedArticle: React.FC = () => {
   const [serverItems, setServerItems] = useState<ArchivedArticleItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -301,12 +300,6 @@ const ArchivedArticle: React.FC = () => {
            </div>
 
            <div className="flex items-center gap-2">
-              {!isMobile && (
-                <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-100">
-                  <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><LayoutGrid size={16} /></button>
-                  <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-[#004A74] shadow-sm' : 'text-gray-400'}`}><List size={16} /></button>
-                </div>
-              )}
               <button 
                 onClick={() => navigate('/find-article')}
                 className="flex items-center gap-2 px-5 py-2.5 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all hover:shadow-lg shadow-md active:scale-95"
@@ -360,8 +353,8 @@ const ArchivedArticle: React.FC = () => {
             <p className="text-sm font-medium mt-2">Go to "Find Article" to start building your reference database.</p>
           </div>
         ) : isMobile ? (
-          /* MOBILE ELEGANT LIST VIEW */
-          <div className="flex flex-col gap-4 animate-in fade-in duration-500">
+          /* MOBILE ELEGANT LIST ROW */
+          <div className="flex flex-col gap-4 animate-in fade-in duration-500 px-1">
             {serverItems.map((item) => (
               <div 
                 key={item.id}
