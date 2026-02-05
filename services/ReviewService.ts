@@ -66,7 +66,7 @@ export const saveReview = async (item: ReviewItem, content: ReviewContent): Prom
 };
 
 export const deleteReview = async (id: string): Promise<boolean> => {
-  // SILENT BROADCAST FOR OPTIMISTIC UI
+  // SILENT BROADCAST FOR OPTIMISTIC UI (IMMEDIATE)
   window.dispatchEvent(new CustomEvent('xeenaps-review-deleted', { detail: id }));
 
   if (!GAS_WEB_APP_URL) return false;

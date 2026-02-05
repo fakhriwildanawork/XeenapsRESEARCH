@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +27,8 @@ import { XEENAPS_SWAL_CONFIG } from '../../../utils/swalUtils';
 
 // --- ZERO-LOADING CACHE LAYER ---
 let reviewMemoryCache: { items: ReviewItem[], totalCount: number } | null = null;
+// Mekanisme Registry untuk mencegah data ditarik kembali saat proses delete di server belum selesai
+const deletedItemsRegistry = new Set<string>();
 
 const AllReview: React.FC = () => {
   const navigate = useNavigate();
@@ -48,29 +51,31 @@ const AllReview: React.FC = () => {
   }, []);
 
   // --- MULTI-LAYER SORTING LOGIC ---
-  // Layer 1: Favorite (Top) | Layer 2: CreatedAt (Newest)
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
-      // Sort by Favorite Status
       if (a.isFavorite !== b.isFavorite) {
         return a.isFavorite ? -1 : 1;
       }
-      // Sort by Recency (Newest First)
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [items]);
 
   const loadData = useCallback((isSilent = false) => {
-    // Only show global loading if we don't have any cached data
     if (!isSilent && !reviewMemoryCache) setIsLoading(true);
     
     workflow.execute(
       async (signal) => {
         const result = await fetchReviewsPaginated(currentPage, itemsPerPage, appliedSearch, "createdAt", "desc", signal);
-        setItems(result.items);
-        setTotalCount(result.totalCount);
-        // Update global cache
-        reviewMemoryCache = { items: result.items, totalCount: result.totalCount };
+        
+        // PROTEKSI ZOMBIE: Filter hasil fetch server dengan registry penghapusan lokal
+        const safeItems = (result.items || []).filter(item => !deletedItemsRegistry.has(item.id));
+        const safeTotal = Math.max(0, result.totalCount - (result.items.length - safeItems.length));
+        
+        setItems(safeItems);
+        setTotalCount(safeTotal);
+        
+        // Update global cache dengan data yang sudah dibersihkan dari zombie
+        reviewMemoryCache = { items: safeItems, totalCount: safeTotal };
       },
       () => setIsLoading(false),
       () => setIsLoading(false)
@@ -78,7 +83,6 @@ const AllReview: React.FC = () => {
   }, [currentPage, appliedSearch, itemsPerPage, workflow.execute]);
 
   useEffect(() => {
-    // Determine if it should be a silent refresh based on cache availability
     loadData(!!reviewMemoryCache && appliedSearch === '');
   }, [loadData, appliedSearch]);
 
@@ -86,13 +90,15 @@ const AllReview: React.FC = () => {
   useEffect(() => {
     const handleUpdate = (e: any) => {
       const updatedItem = e.detail as ReviewItem;
+      // Jangan terima update jika item sedang dalam proses hapus
+      if (deletedItemsRegistry.has(updatedItem.id)) return;
+
       setItems(prev => {
         const index = prev.findIndex(i => i.id === updatedItem.id);
         const updatedList = index > -1 
           ? prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i) 
           : [updatedItem, ...prev];
         
-        // Update global cache to ensure integrity during navigation
         reviewMemoryCache = { 
           items: updatedList, 
           totalCount: updatedList.length > prev.length ? totalCount + 1 : totalCount 
@@ -103,9 +109,14 @@ const AllReview: React.FC = () => {
 
     const handleDeleteEvent = (e: any) => {
       const id = e.detail;
+      deletedItemsRegistry.add(id); // Daftarkan ke registry pencegahan zombie
+      
       setItems(prev => {
         const updatedList = prev.filter(i => i.id !== id);
-        reviewMemoryCache = { items: updatedList, totalCount: Math.max(0, totalCount - 1) };
+        reviewMemoryCache = { 
+          items: updatedList, 
+          totalCount: Math.max(0, totalCount - 1) 
+        };
         return updatedList;
       });
     };
@@ -175,7 +186,10 @@ const AllReview: React.FC = () => {
       [review.id],
       (i) => ({ ...i, isFavorite: !i.isFavorite }),
       async (updated) => {
-        // Metadata only update - content passed as undefined to prevent accidental wipe
+        // Force update cache module level agar konsisten saat navigasi cepat
+        if (reviewMemoryCache) {
+          reviewMemoryCache.items = reviewMemoryCache.items.map(i => i.id === updated.id ? updated : i);
+        }
         return await saveReview(updated, undefined as any);
       }
     );
@@ -185,10 +199,23 @@ const AllReview: React.FC = () => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // Optimistic locally
-      setItems(prev => prev.filter(i => i.id !== id));
+      // 1. Sinkronisasi Registry Zombie & Optimistic UI Instan
+      deletedItemsRegistry.add(id);
+      setItems(prev => {
+        const filtered = prev.filter(i => i.id !== id);
+        // FORCED CACHE SYNC
+        reviewMemoryCache = { items: filtered, totalCount: Math.max(0, totalCount - 1) };
+        return filtered;
+      });
+
+      // 2. Eksekusi asinkron di backend
       const success = await deleteReview(id);
-      if (!success) loadData(true); // Rollback if failed
+      
+      // Jika gagal, hapus dari registry agar data bisa muncul kembali (rollback intel)
+      if (!success) {
+        deletedItemsRegistry.delete(id);
+        loadData(true);
+      }
     }
   };
 
