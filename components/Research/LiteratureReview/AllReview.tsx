@@ -113,7 +113,7 @@ const AllReview: React.FC = () => {
     const { value: label } = await Swal.fire({
       title: 'NEW LITERATURE REVIEW',
       input: 'text',
-      inputLabel: 'Review Project Label',
+      inputLabel: 'Review Label',
       inputPlaceholder: 'e.g., AI in Healthcare Synthesis...',
       showCancelButton: true,
       confirmButtonText: 'CREATE',
@@ -126,8 +126,8 @@ const AllReview: React.FC = () => {
 
     if (label) {
       Swal.fire({
-        title: 'ARCHITECTING WORKSPACE...',
-        text: 'Initializing cloud synchronization...',
+        title: 'CREATING WORKSPACE...',
+        text: 'Preparing workspace for new review project...',
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
@@ -200,7 +200,7 @@ const AllReview: React.FC = () => {
            </div>
            <div>
               <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Literature Review</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Multi-Source Synthesis Matrix</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Summaryze Knowledge Across Literatures</p>
            </div>
         </div>
         
@@ -209,11 +209,11 @@ const AllReview: React.FC = () => {
             value={localSearch} 
             onChange={setLocalSearch} 
             onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }}
-            phrases={["Search review project...", "Find academic synthesis..."]}
+            phrases={["Search label...", "Search question...", "Search summary..."]}
             className="w-full lg:max-w-md"
           />
           <StandardPrimaryButton onClick={handleNewReview} icon={<Plus size={20} />}>
-            Create Review
+            Create
           </StandardPrimaryButton>
         </div>
       </div>
@@ -286,7 +286,7 @@ const AllReview: React.FC = () => {
 
                 <div className="space-y-4 flex-1">
                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Central Question</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Main Question</p>
                       <p className="text-xs font-semibold text-[#004A74] line-clamp-2 italic leading-relaxed">
                         {item.centralQuestion || 'Question not formulated yet...'}
                       </p>
@@ -299,7 +299,7 @@ const AllReview: React.FC = () => {
                       <span className="text-[8px] font-black uppercase tracking-tighter">{formatShortDate(item.createdAt)}</span>
                    </div>
                    <div className="flex items-center gap-2 text-[#004A74] group-hover:text-blue-600 transition-colors">
-                      <span className="text-[9px] font-black uppercase tracking-widest">Open Room</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest">Open</span>
                       <ChevronRight size={14} strokeWidth={3} />
                    </div>
                 </div>

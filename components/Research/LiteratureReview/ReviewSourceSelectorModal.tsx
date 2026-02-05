@@ -86,7 +86,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
             </div>
             <div>
               <h2 className="text-base font-black text-[#004A74] uppercase tracking-tight leading-none">Literature Discovery</h2>
-              <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Parallel Verification Matrix</p>
+              <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Select relevant literature sources</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
@@ -133,8 +133,9 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
                         <div className="flex-1 min-w-0">
                            <h4 className="text-[11px] font-black text-[#004A74] uppercase leading-tight truncate">{item.title}</h4>
                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="px-2 py-0.5 bg-[#004A74]/5 text-[#004A74] text-[7px] font-black uppercase rounded-md tracking-widest">{item.topic || 'Literature'}</span>
-                              <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">{item.year}</span>
+                              <span className="text-[9px] font-bold text-gray-400 italic truncate tracking-tight">
+                                 {Array.isArray(item.authors) && item.authors.length > 0 ? item.authors.join(', ') : 'Unknown Author'}
+                              </span>
                            </div>
                         </div>
                     </div>
@@ -176,20 +177,20 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
                 ))}
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-[#004A74] uppercase tracking-widest">{selected.length}/{effectiveSessionMax} Session Slots</span>
-                <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Global Capacity: {currentMatrixCount + selected.length}/{GLOBAL_MAX}</span>
+                <span className="text-[10px] font-black text-[#004A74] uppercase tracking-widest">{selected.length}/{effectiveSessionMax} Slots</span>
+                <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Capacity: {currentMatrixCount + selected.length}/{GLOBAL_MAX}</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-             <button onClick={onClose} className="px-5 py-2.5 bg-white text-gray-400 rounded-xl font-black uppercase tracking-widest text-[9px] border border-gray-200 hover:bg-gray-100 transition-all shadow-sm">Cancel</button>
+             <button onClick={onClose} className="px-5 py-2.5 bg-white text-gray-400 rounded-xl font-black uppercase tracking-widest text-[9px] border border-gray-100 hover:bg-gray-100 transition-all shadow-sm">Cancel</button>
              <button 
                 onClick={handleExecute}
                 disabled={selected.length === 0}
                 className="px-8 py-3.5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:grayscale"
              >
-                <SparklesIcon className="w-4 h-4" /> Execute Extraction
+                <SparklesIcon className="w-4 h-4" /> Execute Analysis
              </button>
           </div>
         </div>

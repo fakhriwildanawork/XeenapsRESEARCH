@@ -282,7 +282,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                    placeholder="REVIEW PROJECT LABEL..."
                  />
                )}
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Multi-Source Synthesis Matrix</p>
+               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Multi-Literatures Summary Synthesis</p>
             </div>
          </div>
 
@@ -312,7 +312,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
          {/* 1. CENTRAL QUESTION HUB */}
          <section className="space-y-4">
             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">
-               <Zap size={14} className="text-[#FED400] fill-[#FED400]" /> THE COMPASS: CENTRAL REVIEW QUESTION
+               MAIN REVIEW QUESTION
             </h3>
             <div className="relative group">
                <MessageSquare className="absolute left-6 top-8 w-6 h-6 text-gray-200 group-focus-within:text-[#FED400] transition-colors" />
@@ -321,7 +321,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                ) : (
                  <textarea 
                    className="w-full bg-white p-8 pl-16 border border-gray-200 rounded-[3rem] outline-none text-base md:text-lg font-bold text-[#004A74] placeholder:text-gray-200 resize-none transition-all focus:border-[#FED400] focus:ring-8 focus:ring-[#FED400]/5 min-h-[120px]"
-                   placeholder="What specific question should AI answer across all selected papers?"
+                   placeholder="What specific question should AI answer across all selected literatures?"
                    value={review.centralQuestion}
                    onChange={(e) => setReview({ ...review, centralQuestion: e.target.value })}
                  />
@@ -332,7 +332,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
          {/* 2. MATRIX AUDIT TABLE */}
          <section className="space-y-6">
             <div className="flex items-center justify-between px-4">
-               <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><ClipboardList size={16} /> Comparative Analysis Matrix</h3>
+               <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">Comparative Analysis Matrix</h3>
                <button 
                  onClick={() => setIsReviewSelectorOpen(true)}
                  disabled={isBusy || isLoading || content.matrix.length >= 10}
@@ -369,7 +369,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                            <tr>
                               <td colSpan={4} className="py-24 text-center opacity-30">
                                  <BookOpen size={48} className="mx-auto mb-4 text-[#004A74]" />
-                                 <p className="text-[10px] font-black uppercase tracking-widest">Synthesis Matrix is empty</p>
+                                 <p className="text-[10px] font-black uppercase tracking-widest">Comparative Matrix is empty</p>
                               </td>
                            </tr>
                         ) : (
@@ -471,7 +471,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                >
                   <div className="relative z-10 flex items-center gap-3">
                     {isBusy ? <Loader2 size={24} className="animate-spin" /> : <Sparkles size={24} />}
-                    Synthesize Global Review
+                    Synthesize Final Summary
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                </button>
@@ -482,8 +482,8 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
          <section className="space-y-6 pt-10">
             <div className="flex items-center justify-between px-4">
                <div className="space-y-1">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><Sparkles size={14} className="text-[#FED400]" /> Holistic synthesis Output</h3>
-                  <h2 className="text-3xl font-black text-[#004A74] uppercase tracking-tighter">THE FINAL REVIEW</h2>
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">Multi-Literatures holistic summary</h3>
+                  <h2 className="text-3xl font-black text-[#004A74] uppercase tracking-tighter">GLOBAL SUMMARY</h2>
                </div>
                <div className="flex items-center gap-2">
                   <div className="relative">
@@ -550,7 +550,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                   ) : (
                     <div 
                       className="text-sm md:text-base leading-[1.8] text-[#004A74] font-medium relative z-10 review-output-body"
-                      dangerouslySetInnerHTML={{ __html: content.finalSynthesis || '<p className="text-gray-200 text-center py-20 uppercase font-black tracking-widest">Synthesis Pending Matrix Completion</p>' }}
+                      dangerouslySetInnerHTML={{ __html: content.finalSynthesis || '<p className="text-gray-200 text-center py-20 uppercase font-black tracking-widest">Summary is not created yet</p>' }}
                     />
                   )}
                </div>
@@ -562,7 +562,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                   <div>
                     <h4 className="text-sm font-black text-[#004A74] uppercase tracking-widest mb-1">Scientific Integrity Guard</h4>
                     <p className="text-xs font-bold text-[#004A74]/50 leading-relaxed italic">
-                      "The narrative above is synthesized from the matrix evidence. Numbered lists provide comparative clarity for major knowledge pillars."
+                      "The AI-Generated summary above is synthesized from the matrix evidence. We highly recommend that you re-read the literature thoroughly. "
                     </p>
                   </div>
                </div>
