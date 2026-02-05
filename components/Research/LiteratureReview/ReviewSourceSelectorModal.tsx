@@ -190,7 +190,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
                 disabled={selected.length === 0}
                 className="px-8 py-3.5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:grayscale"
              >
-                <SparklesIcon className="w-4 h-4" /> Execute Analysis
+                Execute Analysis
              </button>
           </div>
         </div>

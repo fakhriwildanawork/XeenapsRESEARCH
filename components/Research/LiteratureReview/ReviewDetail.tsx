@@ -349,7 +349,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                      <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-100">
                            <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[20%]">Source Identity</th>
-                           <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[40%]">AI Analysis Result</th>
+                           <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[40%]">Analysis Result</th>
                            <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[30%]">Verbatim Evidence</th>
                            <th className="p-6 text-[9px] font-black uppercase tracking-widest text-gray-400 w-[10%] text-center">Action</th>
                         </tr>
@@ -470,7 +470,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                   className="group relative flex items-center gap-4 px-20 py-6 bg-[#004A74] text-[#FED400] rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-sm shadow-[0_20px_50px_-10px_rgba(0,74,116,0.3)] hover:scale-105 active:scale-95 transition-all duration-500 disabled:opacity-40 disabled:grayscale overflow-hidden"
                >
                   <div className="relative z-10 flex items-center gap-3">
-                    {isBusy ? <Loader2 size={24} className="animate-spin" /> : <Sparkles size={24} />}
+                    {isBusy ? <Loader2 size={24} className="animate-spin" /> :}
                     Synthesize Final Summary
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
@@ -562,7 +562,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                   <div>
                     <h4 className="text-sm font-black text-[#004A74] uppercase tracking-widest mb-1">Scientific Integrity Guard</h4>
                     <p className="text-xs font-bold text-[#004A74]/50 leading-relaxed italic">
-                      "The AI-Generated summary above is synthesized from the matrix evidence. We highly recommend that you re-read the literature thoroughly. "
+                      "The AI-generated summary above is synthesized from the matrix evidence. We highly recommend that you re-read the literature thoroughly. "
                     </p>
                   </div>
                </div>
