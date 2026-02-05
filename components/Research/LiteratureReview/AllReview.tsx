@@ -31,7 +31,6 @@ const AllReview: React.FC = () => {
   const { performUpdate, performDelete } = useOptimisticUpdate<ReviewItem>();
   
   const [items, setItems] = useState<ReviewItem[]>([]);
-  const [deletedIdsRegistry, setDeletedIdsRegistry] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [localSearch, setLocalSearch] = useState('');
@@ -48,15 +47,13 @@ const AllReview: React.FC = () => {
 
   // --- MULTI-LAYER SORTING LOGIC ---
   const sortedItems = useMemo(() => {
-    return [...items]
-      .filter(item => !deletedIdsRegistry.includes(item.id)) // ANTI-ZOMBIE FILTER
-      .sort((a, b) => {
-        if (a.isFavorite !== b.isFavorite) {
-          return a.isFavorite ? -1 : 1;
-        }
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-  }, [items, deletedIdsRegistry]);
+    return [...items].sort((a, b) => {
+      if (a.isFavorite !== b.isFavorite) {
+        return a.isFavorite ? -1 : 1;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [items]);
 
   const loadData = useCallback(() => {
     setIsLoading(true);
@@ -76,22 +73,26 @@ const AllReview: React.FC = () => {
     loadData();
   }, [loadData, appliedSearch]);
 
-  // --- REAL-TIME EVENT SYNC ---
+  // --- REAL-TIME EVENT SYNC (UPSERT LOGIC) ---
   useEffect(() => {
     const handleUpdate = (e: any) => {
       const updatedItem = e.detail as ReviewItem;
       setItems(prev => {
         const index = prev.findIndex(i => i.id === updatedItem.id);
-        return index > -1 
-          ? prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i) 
-          : [updatedItem, ...prev];
+        if (index > -1) {
+           // Update Existing
+           return prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i);
+        } else {
+           // Insert New Instantly
+           return [updatedItem, ...prev];
+        }
       });
+      // Correct total count if it's a new item
+      setTotalCount(prev => items.some(i => i.id === updatedItem.id) ? prev : prev + 1);
     };
 
     const handleDeleteEvent = (e: any) => {
       const id = e.detail;
-      // Register to blocklist to prevent reappearing during fetch
-      setDeletedIdsRegistry(prev => [...prev, id]);
       setItems(prev => prev.filter(i => i.id !== id));
       setTotalCount(prev => Math.max(0, prev - 1));
     };
@@ -102,7 +103,7 @@ const AllReview: React.FC = () => {
       window.removeEventListener('xeenaps-review-updated', handleUpdate);
       window.removeEventListener('xeenaps-review-deleted', handleDeleteEvent);
     };
-  }, []);
+  }, [items.length]);
 
   const handleNewReview = async () => {
     const { value: label } = await Swal.fire({
@@ -146,7 +147,8 @@ const AllReview: React.FC = () => {
       Swal.close();
       
       if (success) {
-        navigate(`/research/literature-review/${id}`);
+        // PASS STATE FOR INSTANT DETAIL LOADING
+        navigate(`/research/literature-review/${id}`, { state: { review: newItem } });
       } else {
         showXeenapsToast('error', 'Cloud sync failed. Please try again.');
       }
@@ -170,7 +172,7 @@ const AllReview: React.FC = () => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // Optimistic Delete via performDelete for instant and safe removal
+      // Optimistic Delete via performDelete for instant removal
       await performDelete(
         items,
         setItems,
@@ -232,7 +234,7 @@ const AllReview: React.FC = () => {
             {sortedItems.map((item) => (
               <div 
                 key={item.id}
-                onClick={() => navigate(`/research/literature-review/${item.id}`)}
+                onClick={() => navigate(`/research/literature-review/${item.id}`, { state: { review: item } })}
                 className="bg-white border border-gray-100 rounded-3xl p-5 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden"
               >
                 <div className="w-1.5 h-12 rounded-full shrink-0 bg-[#004A74]" />
@@ -249,7 +251,7 @@ const AllReview: React.FC = () => {
                   <button onClick={(e) => handleToggleFavorite(e, item)} className="p-2 text-[#FED400] bg-yellow-50/30 rounded-xl transition-all">
                     {item.isFavorite ? <Star size={18} fill="currentColor" /> : <Star size={18} />}
                   </button>
-                  <button onClick={() => navigate(`/research/literature-review/${item.id}`)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all">
+                  <button onClick={() => navigate(`/research/literature-review/${item.id}`, { state: { review: item } })} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all">
                     <Eye size={18} />
                   </button>
                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all">
@@ -265,7 +267,7 @@ const AllReview: React.FC = () => {
             {sortedItems.map(item => (
               <div 
                 key={item.id} 
-                onClick={() => navigate(`/research/literature-review/${item.id}`)}
+                onClick={() => navigate(`/research/literature-review/${item.id}`, { state: { review: item } })}
                 className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full"
               >
                 {/* Baris 1: Kontainer Quick Action */}

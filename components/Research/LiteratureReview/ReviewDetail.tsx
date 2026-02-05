@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ReviewItem, ReviewContent, ReviewMatrixRow, LibraryItem } from '../../../types';
 /* Added missing deleteReview import from ReviewService */
 import { fetchReviewsPaginated, fetchReviewContent, saveReview, deleteReview, runMatrixExtraction, runReviewSynthesis, translateReviewRowContent } from '../../../services/ReviewService';
@@ -57,11 +57,13 @@ interface ReviewDetailProps {
 const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSidebarOpen }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   
-  const [review, setReview] = useState<ReviewItem | null>(null);
+  // INITIALIZE FROM STATE (INSTANT ACCESS)
+  const [review, setReview] = useState<ReviewItem | null>(() => (location.state as any)?.review || null);
   const [content, setContent] = useState<ReviewContent>({ matrix: [], finalSynthesis: '' });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isHydrated, setIsHydrated] = useState(false); // Gating state
+  const [isLoading, setIsLoading] = useState(!((location.state as any)?.review));
+  const [isHydrated, setIsHydrated] = useState(false); 
   const [isBusy, setIsBusy] = useState(false);
   const [isReviewSelectorOpen, setIsReviewSelectorOpen] = useState(false);
   
@@ -70,53 +72,49 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
   const [translatingSynthesis, setTranslatingSynthesis] = useState(false);
   const [openTranslationMenu, setOpenTranslationMenu] = useState<string | null>(null);
 
-  // Snapshot ref to prevent empty-state overwrites
   const lastKnownGoodContent = useRef<ReviewContent | null>(null);
   const [selectedSourceForDetail, setSelectedSourceForDetail] = useState<LibraryItem | null>(null);
-
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const load = async () => {
+      // Fetch latest metadata from Cloud in background
       const res = await fetchReviewsPaginated(1, 1000);
       const found = res.items.find(i => i.id === id);
+      
       if (found) {
-        setReview(found);
+        setReview(prev => ({ ...prev, ...found }));
         const detail = await fetchReviewContent(found.reviewJsonId, found.storageNodeUrl);
         if (detail) {
           setContent(detail);
           lastKnownGoodContent.current = detail;
         }
-        setIsHydrated(true); // Data fully loaded from cloud
-      } else {
+        setIsHydrated(true);
+      } else if (!review) {
         navigate('/research/literature-review');
       }
       setIsLoading(false);
     };
     load();
-  }, [id, navigate]);
+  }, [id]);
 
-  // --- EXTERNAL SYNC LISTENER ---
+  // --- EXTERNAL SYNC LISTENER (Point #2 & #5 Fix) ---
   useEffect(() => {
     const handleRemoteUpdate = (e: any) => {
       const updated = e.detail as ReviewItem;
-      // If someone updated THIS review from outside (e.g., from the List view favorite toggle)
-      if (updated.id === id && review && (updated.isFavorite !== review.isFavorite || updated.label !== review.label || updated.centralQuestion !== review.centralQuestion)) {
+      if (updated.id === id) {
         setReview(prev => prev ? { ...prev, ...updated } : updated);
       }
     };
     window.addEventListener('xeenaps-review-updated', handleRemoteUpdate);
     return () => window.removeEventListener('xeenaps-review-updated', handleRemoteUpdate);
-  }, [id, review]);
+  }, [id]);
 
-  // AUTO-SAVE ENGINE WITH GATING
+  // AUTO-SAVE ENGINE
   useEffect(() => {
-    // CRITICAL: Abort save if not hydrated, still loading, or AI is working
     if (!review || isLoading || !isHydrated || isBusy) return;
 
-    // VALIDATION: Protect against accidental empty matrix save if we previously had data
     if (content.matrix.length === 0 && lastKnownGoodContent.current && lastKnownGoodContent.current.matrix.length > 0) {
-      console.warn("Blocked attempt to overwrite populated matrix with empty state.");
       return;
     }
 
@@ -124,7 +122,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     saveTimeoutRef.current = setTimeout(async () => {
       const success = await saveReview(review, content);
       if (success) {
-        lastKnownGoodContent.current = content; // Update snapshot on successful sync
+        lastKnownGoodContent.current = content;
       }
     }, 2000);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
@@ -134,10 +132,10 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     if (!review || isBusy) return;
     const updated = { ...review, isFavorite: !review.isFavorite, updatedAt: new Date().toISOString() };
     
-    // 1. Instant UI Update
+    // 1. Instant UI & Local State Update
     setReview(updated);
     
-    // 2. IMMEDIATE SYNC (No debounce for metadata status changes)
+    // 2. Immediate Global Broadcast & Cloud Sync
     await saveReview(updated, content);
   };
 
@@ -148,10 +146,9 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     }
 
     setIsReviewSelectorOpen(false);
-    setIsBusy(true); // LOCK AUTO-SAVE
+    setIsBusy(true);
     showXeenapsToast('info', `Initializing analysis for ${selectedLibs.length} sources...`);
 
-    // Add placeholders for sequential loading feel
     const placeholders: ReviewMatrixRow[] = selectedLibs.map(lib => ({
       collectionId: lib.id,
       title: lib.title,
@@ -162,7 +159,6 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     setAnalyzingIds(prev => [...prev, ...selectedLibs.map(l => l.id)]);
     setContent(prev => ({ ...prev, matrix: [...prev.matrix, ...placeholders] }));
     
-    // SEQUENTIAL AI PROCESSING
     for (const lib of selectedLibs) {
       try {
         const result = await runMatrixExtraction(lib.id, review.centralQuestion);
@@ -186,7 +182,7 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
       }
     }
 
-    setIsBusy(false); // RELEASE AUTO-SAVE
+    setIsBusy(false);
     showXeenapsToast('success', 'Matrix segments updated');
   };
 
@@ -223,7 +219,6 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     try {
       const translated = await translateReviewRowContent(row.answer, langCode);
       if (translated) {
-        // Clean any stray dashes at beginning of translation
         const cleanTranslated = translated.replace(/^[-\*\s]+/gm, "").trim();
         setContent(prev => ({
           ...prev,
@@ -247,7 +242,6 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     try {
       const translated = await translateReviewRowContent(content.finalSynthesis, langCode);
       if (translated) {
-        // ULTIMATE STRAY DASH CLEANER: Remove any leading dashes/artifacts
         const cleanSynthesis = translated.replace(/^[-\*\s]+/gm, "").trim();
         setContent(prev => ({ ...prev, finalSynthesis: cleanSynthesis }));
         showXeenapsToast('success', 'Synthesis translated');
@@ -273,8 +267,9 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
       const idToDelete = review.id;
-      // OPTIMISTIC: Trigger delete asynchonously and navigate immediately
+      // 1. SILENT BROADCAST (OPTIMISTIC)
       deleteReview(idToDelete); 
+      // 2. INSTANT NAVIGATION (Point #4 Fix)
       navigate('/research/literature-review', { replace: true });
       showXeenapsToast('success', 'Processing Deletion...');
     }

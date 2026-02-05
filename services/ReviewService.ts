@@ -4,8 +4,12 @@ import { GAS_WEB_APP_URL } from '../constants';
 
 /**
  * XEENAPS LITERATURE REVIEW SERVICE
- * Coordinates metadata persistence and sharded Groq synthesis.
+ * In-Memory Sync Registry ensures instant cross-component consistency.
  */
+
+// SESSION SINGLETON CACHE
+const reviewUpdateCache = new Map<string, ReviewItem>();
+const reviewDeletedRegistry = new Set<string>();
 
 export const fetchReviewsPaginated = async (
   page: number = 1,
@@ -20,8 +24,18 @@ export const fetchReviewsPaginated = async (
     const url = `${GAS_WEB_APP_URL}?action=getReviews&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sortKey=${sortKey}&sortDir=${sortDir}`;
     const res = await fetch(url, { signal });
     const result = await res.json();
+    
+    // MERGE SERVER DATA WITH SESSION MEMORY (DEFEATS LATENCY)
+    const serverItems: ReviewItem[] = result.data || [];
+    const mergedItems = serverItems
+      .filter(item => !reviewDeletedRegistry.has(item.id))
+      .map(item => {
+        const cached = reviewUpdateCache.get(item.id);
+        return cached ? { ...item, ...cached } : item;
+      });
+
     return { 
-      items: result.data || [], 
+      items: mergedItems, 
       totalCount: result.totalCount || 0 
     };
   } catch (error) {
@@ -49,7 +63,10 @@ export const fetchReviewContent = async (reviewJsonId: string, nodeUrl?: string)
 };
 
 export const saveReview = async (item: ReviewItem, content: ReviewContent): Promise<boolean> => {
-  // SILENT BROADCAST FOR OPTIMISTIC UI (IMMEDIATE)
+  // 1. UPDATE SESSION MEMORY (INSTANT TRUTH)
+  reviewUpdateCache.set(item.id, item);
+  
+  // 2. BROADCAST TO ACTIVE COMPONENTS
   window.dispatchEvent(new CustomEvent('xeenaps-review-updated', { detail: item }));
 
   if (!GAS_WEB_APP_URL) return false;
@@ -66,7 +83,11 @@ export const saveReview = async (item: ReviewItem, content: ReviewContent): Prom
 };
 
 export const deleteReview = async (id: string): Promise<boolean> => {
-  // SILENT BROADCAST FOR OPTIMISTIC UI (IMMEDIATE)
+  // 1. UPDATE SESSION MEMORY (BLOCKLIST)
+  reviewDeletedRegistry.add(id);
+  reviewUpdateCache.delete(id);
+  
+  // 2. BROADCAST TO ACTIVE COMPONENTS
   window.dispatchEvent(new CustomEvent('xeenaps-review-deleted', { detail: id }));
 
   if (!GAS_WEB_APP_URL) return false;
