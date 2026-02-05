@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { ReviewItem } from '../../../types';
@@ -9,15 +9,12 @@ import {
   Star, 
   BookOpen, 
   ChevronRight,
-  Sparkles,
-  Check,
-  MoreVertical,
   Clock,
   Eye,
   Calendar
 } from 'lucide-react';
 import { SmartSearchBox } from '../../Common/SearchComponents';
-import { StandardPrimaryButton, StandardQuickAccessBar, StandardQuickActionButton } from '../../Common/ButtonComponents';
+import { StandardPrimaryButton } from '../../Common/ButtonComponents';
 import { CardGridSkeleton } from '../../Common/LoadingComponents';
 import { StandardTableFooter } from '../../Common/TableComponents';
 import { useAsyncWorkflow } from '../../../hooks/useAsyncWorkflow';
@@ -33,16 +30,14 @@ let reviewMemoryCache: { items: ReviewItem[], totalCount: number } | null = null
 const AllReview: React.FC = () => {
   const navigate = useNavigate();
   const workflow = useAsyncWorkflow(30000);
-  const { performUpdate, performDelete } = useOptimisticUpdate<ReviewItem>();
+  const { performUpdate } = useOptimisticUpdate<ReviewItem>();
   
   const [items, setItems] = useState<ReviewItem[]>(reviewMemoryCache?.items || []);
   const [totalCount, setTotalCount] = useState(reviewMemoryCache?.totalCount || 0);
   const [isLoading, setIsLoading] = useState(!reviewMemoryCache);
-  const [currentPage, setCurrentPage] = useState(1);
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-  
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const itemsPerPage = 12;
 
@@ -51,6 +46,19 @@ const AllReview: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // --- MULTI-LAYER SORTING LOGIC ---
+  // Layer 1: Favorite (Top) | Layer 2: CreatedAt (Newest)
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => {
+      // Sort by Favorite Status
+      if (a.isFavorite !== b.isFavorite) {
+        return a.isFavorite ? -1 : 1;
+      }
+      // Sort by Recency (Newest First)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [items]);
 
   const loadData = useCallback((isSilent = false) => {
     if (!isSilent && !reviewMemoryCache) setIsLoading(true);
@@ -159,6 +167,7 @@ const AllReview: React.FC = () => {
       (i) => ({ ...i, isFavorite: !i.isFavorite }),
       async (updated) => await saveReview(updated, { matrix: [], finalSynthesis: '' })
     );
+    // Sorting will automatically move the item because it depends on `items` state
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -168,7 +177,7 @@ const AllReview: React.FC = () => {
       // Optimistic locally
       setItems(prev => prev.filter(i => i.id !== id));
       const success = await deleteReview(id);
-      if (!success) loadData(true); // Rollback silent if failed
+      if (!success) loadData(true); // Rollback if failed
     }
   };
 
@@ -219,9 +228,9 @@ const AllReview: React.FC = () => {
              <p className="text-sm font-black uppercase tracking-[0.4em]">No reviews created</p>
           </div>
         ) : isMobile ? (
-          /* MOBILE ELEGANT LIST ROW (Consistent with Presentation) */
+          /* MOBILE ELEGANT LIST ROW (Consistent with Presentation Module) */
           <div className="flex flex-col gap-4 animate-in fade-in duration-500 px-1">
-            {items.map((item) => (
+            {sortedItems.map((item) => (
               <div 
                 key={item.id}
                 onClick={() => navigate(`/research/literature-review/${item.id}`)}
@@ -235,12 +244,15 @@ const AllReview: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                  {/* Fix: correctly pass the event object to handleToggleFavorite to prevent "Cannot find name 'e'" error */}
                   <button onClick={(e) => handleToggleFavorite(e, item)} className="p-2 text-[#FED400] bg-yellow-50/30 rounded-xl transition-all">
                     {item.isFavorite ? <Star size={18} fill="currentColor" /> : <Star size={18} />}
                   </button>
-                  <button onClick={() => navigate(`/research/literature-review/${item.id}`)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><Eye size={18} /></button>
-                  <button onClick={(e) => handleDelete(e, item.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><Trash2 size={18} /></button>
+                  <button onClick={() => navigate(`/research/literature-review/${item.id}`)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all">
+                    <Eye size={18} />
+                  </button>
+                  <button onClick={(e) => handleDelete(e, item.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all">
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -248,13 +260,13 @@ const AllReview: React.FC = () => {
         ) : (
           /* DESKTOP GRID VIEW */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-1 pb-12">
-            {items.map(item => (
+            {sortedItems.map(item => (
               <div 
-                key={item.id} 
+                key={item.id}
                 onClick={() => navigate(`/research/literature-review/${item.id}`)}
                 className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full"
               >
-                {/* QUICK ACTION POOL TOP RIGHT */}
+                {/* QUICK ACTION POOL TOP RIGHT - Standardized with other modules */}
                 <div className="absolute top-8 right-8 flex items-center gap-2" onClick={e => e.stopPropagation()}>
                    <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-200 hover:text-red-500 rounded-xl transition-all active:scale-90">
                       <Trash2 size={18} />
